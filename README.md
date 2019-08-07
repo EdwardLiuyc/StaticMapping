@@ -1,70 +1,24 @@
-<img src="doc/logo.png" />
+<img src="https://i.v2ex.co/701l6CyX.png" />
+
+[![Badge](https://img.shields.io/badge/link-996.icu-%23FF4D5B.svg?style=flat-square)](https://996.icu/#/en_US)
+[![LICENSE](https://img.shields.io/badge/license-Anti%20996-blue.svg?style=flat-square)](https://github.com/996icu/996.ICU/blob/master/LICENSE)
+[![Slack](https://img.shields.io/badge/slack-996icu-green.svg?style=flat-square)](https://join.slack.com/t/996icu/shared_invite/enQtNjI0MjEzMTUxNDI0LTkyMGViNmJiZjYwOWVlNzQ3NmQ4NTQyMDRiZTNmOWFkMzYxZWNmZGI0NDA4MWIwOGVhOThhMzc3NGQyMDBhZDc)
+
 
 ## Introduction
-<img src="doc/mapping.png" width="800" />
+<img src="https://i.v2ex.co/JJR3KAjT.png" width="800" />
 
-## build
+## Build
 ### requirements  
-- PCL(1.8 or higher)
-- GTSAM(4.0 or higher)
-- Ceres Solver(1.12 or higher)
-- Boost
-- Eigen
-- libPNG
-- libnabo
-- libpointmatcher
-- CUDA(optional, default: OFF)
-  - cuda_utils( if use cuda )
-- TBB(optional, default: ON)
-- OpenCV(optional, default: ON)
-
-#### GTSAM
 ```bash
-git clone https://bitbucket.org/gtborg/gtsam.git
-cd gtsam 
-mkdir build && cd build
-ccmake ..
+## basic depencencies
+sudo apt install cmake \
+  libboost-dev \
+  ibeigen3-dev \
+  libpng-dev \
+  libgoogle-glog-dev \
+  libatlas-base-dev
 
-### important ### 
-# set GTSAM_USE_SYSTEM_EIGEN to ON
-# then generate makefile
-
-make -j8
-sudo make install 
-```
-
-#### libnabo
-```bash
-git clone https://github.com/ethz-asl/libnabo.git
-cd libnabo
-### checkout to the latest release version
-git checkout tags/1.0.6
-mkdir build && cd build
-cmake ..
-make -j8
-sudo make install
-```
-
-#### libpointmatcher 
-```bash
-git clone https://github.com/ethz-asl/libpointmatcher.git
-cd libnabo
-mkdir build && cd build
-cmake ..
-make -j8
-sudo make install
-```
-
-#### Ceres Solver
-```bash
-# CMake
-sudo apt-get install cmake
-# google-glog + gflags
-sudo apt-get install libgoogle-glog-dev
-# BLAS & LAPACK
-sudo apt-get install libatlas-base-dev
-# Eigen3
-sudo apt-get install libeigen3-dev
 # SuiteSparse and CXSparse (optional)
 # - If you want to build Ceres as a *static* library (the default)
 #   you can use the SuiteSparse package in the main Ubuntu package
@@ -73,9 +27,28 @@ sudo apt-get install libsuitesparse-dev
 # - However, if you want to build Ceres as a *shared* library, you must
 #   add the following PPA:
 sudo add-apt-repository ppa:bzindovic/suitesparse-bugfix-1319687
-sudo apt-get update
-sudo apt-get install libsuitesparse-dev
-# Get Ceres 1.14.0 and build
+sudo apt update
+sudo apt install libsuitesparse-dev
+
+## PCL(1.8 or higher version is strongly recommended)
+sudo apt install libpcl-dev
+
+## clone some 3rd party libs into a new folder
+mkdir workspace
+cd workspace
+## GTSAM(4.0 or higher is needed)
+git clone https://bitbucket.org/gtborg/gtsam.git
+cd gtsam 
+mkdir build && cd build
+ccmake ..
+### important
+# set GTSAM_USE_SYSTEM_EIGEN to ON
+# then generate makefile
+make -j8
+sudo make install 
+cd ../..
+
+## Ceres Solver(1.12 or higher)
 git clone https://github.com/ceres-solver/ceres-solver.git
 cd ceres-solver
 git checkout tags/1.14.0
@@ -83,19 +56,41 @@ mkdir build && cd build
 cmake ..
 make -j8
 sudo make install
+cd ../..
+
+## libnabo 
+git clone https://github.com/ethz-asl/libnabo.git
+cd libnabo
+### checkout to the latest release version
+git checkout tags/1.0.6
+mkdir build && cd build
+cmake ..
+make -j8
+sudo make install
+cd ../..
+
+## libpointmatcher
+git clone https://github.com/ethz-asl/libpointmatcher.git
+cd libnabo
+mkdir build && cd build
+cmake ..
+make -j8
+sudo make install
+cd ../..
 ```
 
-### About optional libs
+### Optional libs
 - Cuda: We have made some attempts in fasting the kdtree in ICP by creating the kdtree on GPU, but the GPU Kdtree is not fast enough(just 1.5~2 times faster than libnabo). Notice that if you use CUDA, your g++ version should be lower than 6.0 because the nvcc does not support the 6.0 or high version g++.  
+- cuda_utils: 
 - TBB: We have used concurrency containers in TBB for many multi-thread situations, if you turn off this options, the process will use stl containers such as std::vector instead and many multi-thread algorithm will degenerate into single-thread. So, Using TBB is **strongly recommended**;  
 - Opencv: All the matrices in code is in Eigen way, Opencv is only for generating the jpg file of pose gragh. It is a debug function so you can change this option as you wish.
 
 ### compiling
 ```bash
-chmod +x make.sh
 mkdir build && cd build
-cmake .. & cd ..
-./make.sh  # directly using cmake
+cmake ..
+make -j8
+sudo make install
 ```
 
 ### BUG
@@ -110,7 +105,7 @@ mkdir -p pkgs/test
 ```
 before that, you should kown what is in the script:
 ```bash
-## usally, you can just leave this config file just like this, it will work fine
+## usally, you can leave this config file just like this, it will work fine
 CONFIG_PATH=./config/static_mapping_default.xml
 ## the follow 2 items must be set!!!
 ## the topic name of your pointcloud msg (ros)
@@ -152,11 +147,14 @@ exit 0
 ### step2 
 play bag that includes pointcloud msgs or run the lidar driver
 
-### step3 
+### step3  
 when finished, just press 'CTRL+C' to terminate the mapping process. NOTICE that the mapping process will not end right after you 'CTRL+C', it has many more calculations to do, so just wait.  
-Finally, you will get a static map like this:
-<img src="doc/xi1_xi2.png" witdh="800" />  
-<img src="doc/detail.png" witdh="800" />  
+Finally, you will get a static map like this:  
+
+<img src="https://i.v2ex.co/39r4ya20l.png" witdh="800" />
+
+part of it:  
+<img src="https://i.v2ex.co/Z2hNFv49l.png" witdh="800" />
 
 ## document  
 You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` folder.
