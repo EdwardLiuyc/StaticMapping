@@ -1,0 +1,11 @@
+build/*
+pcd/*
+pkgs/*
+*.vscode/*
+*.pcd
+*.jpg
+*.csv
+*.png
+*.cam
+doc/html/*
+doc/latex/*

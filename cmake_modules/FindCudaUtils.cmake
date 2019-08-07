@@ -1,0 +1,17 @@
+# CUDA_UTILS_FOUND
+# CUDA_UTILS_INCLUDE_DIR
+# CUDA_UTILS_LIBRARIES
+
+FIND_PACKAGE ( PackageHandleStandardArgs )
+
+find_path(CUDA_UTILS_INCLUDE_DIR cugar/basic/utils.h
+  /usr/local/include/cuda_utils)
+
+FIND_PACKAGE_HANDLE_STANDARD_ARGS ( CUDA_UTILS
+  REQUIRED_VARS CUDA_UTILS_INCLUDE_DIR
+  )
+
+if(CUDA_UTILS_FOUND)
+  #message(STATUS "Found CudaUtils in ${CUDA_UTILS_INCLUDE_DIR}")
+  set(CUDA_UTILS_LIBRARIES cugar_basic)
+endif(CUDA_UTILS_FOUND)

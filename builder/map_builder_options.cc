@@ -1,0 +1,241 @@
+// MIT License
+
+// Copyright (c) 2019 Edward Liu
+
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
+#include "builder/map_builder.h"
+#include "common/pugixml.hpp"
+
+namespace static_map {
+
+int MapBuilder::Initialise(const char* config_file_name) {
+  bool use_default_config = false;
+  if (!config_file_name || config_file_name[0] == '\0') {
+    PRINT_WARNING("Invalid config file name. using default config.");
+    use_default_config = true;
+  }
+  std::ifstream file(config_file_name);
+  if (!use_default_config && !file.good()) {
+    PRINT_WARNING("File not exist. using default config.");
+    use_default_config = true;
+  }
+
+  pugi::xml_document doc;
+  if (!use_default_config && !doc.load_file(config_file_name)) {
+    PRINT_WARNING("Failed to load target file. using default config.");
+    use_default_config = true;
+  }
+  pugi::xml_node nullmax_node = doc.child("nullmax");
+  if (!use_default_config && nullmax_node.empty()) {
+    PRINT_WARNING("Wrong node. using default config.");
+    use_default_config = true;
+  }
+  pugi::xml_node static_map_node = nullmax_node.child("static_mapping");
+  if (!use_default_config && static_map_node.empty()) {
+    PRINT_WARNING("Wrong node. using default config.");
+    use_default_config = true;
+  }
+
+  if (use_default_config) {
+    InitialiseInside();
+    return -1;
+  }
+
+  PRINT_INFO_FMT("Load configurations from file: %s", config_file_name);
+
+  std::cout
+      << BOLD
+      << "\n*********************** configs from file ***********************\n"
+      << NONE_FORMAT << std::endl;
+
+  // whole options
+  auto& whole_options = options_.whole_options;
+  using std::string;
+  GET_SINGLE_OPTION(static_map_node, "whole_options", "export_file_path",
+                    whole_options.export_file_path, string, string);
+  GET_SINGLE_OPTION(static_map_node, "whole_options", "map_package_path",
+                    whole_options.map_package_path, string, string);
+  GET_SINGLE_OPTION(static_map_node, "whole_options", "odom_calib_mode",
+                    whole_options.odom_calib_mode, int, OdomCalibrationMode);
+  std::cout << std::endl;
+
+  auto& output_mrvm_settings = options_.output_mrvm_settings;
+  GET_SINGLE_OPTION(static_map_node, "output_mrvm_settings", "output_average",
+                    output_mrvm_settings.output_average, bool, bool);
+  GET_SINGLE_OPTION(static_map_node, "output_mrvm_settings", "prob_threshold",
+                    output_mrvm_settings.prob_threshold, float, float);
+  GET_SINGLE_OPTION(static_map_node, "output_mrvm_settings", "low_resolution",
+                    output_mrvm_settings.low_resolution, float, float);
+  GET_SINGLE_OPTION(static_map_node, "output_mrvm_settings", "high_resolution",
+                    output_mrvm_settings.high_resolution, float, float);
+  GET_SINGLE_OPTION(static_map_node, "output_mrvm_settings", "hit_prob",
+                    output_mrvm_settings.hit_prob, float, float);
+  GET_SINGLE_OPTION(static_map_node, "output_mrvm_settings", "miss_prob",
+                    output_mrvm_settings.miss_prob, float, float);
+  GET_SINGLE_OPTION(static_map_node, "output_mrvm_settings", "z_offset",
+                    output_mrvm_settings.z_offset, float, float);
+  GET_SINGLE_OPTION(static_map_node, "output_mrvm_settings",
+                    "max_point_num_in_cell",
+                    output_mrvm_settings.max_point_num_in_cell, int, int);
+
+  std::cout << std::endl;
+
+  // filters
+  auto filters_node = static_map_node.child("filters");
+  if (!filters_node.empty()) {
+    filter_factory_.InitFromXmlNode(filters_node);
+  } else {
+    std::cout << BOLD << "  No filters" << std::endl;
+  }
+  std::cout << std::endl;
+
+  // front end options
+  auto front_end_node = static_map_node.child("front_end_options");
+  if (!front_end_node.empty()) {
+    auto& scan_matcher_options =
+        options_.front_end_options.scan_matcher_options;
+    GET_SINGLE_OPTION(front_end_node, "scan_matcher_options", "type",
+                      scan_matcher_options.type, int, registrator::Type);
+    GET_SINGLE_OPTION(front_end_node, "scan_matcher_options", "enable_ndt",
+                      scan_matcher_options.enable_ndt, bool, bool);
+    GET_SINGLE_OPTION(front_end_node, "scan_matcher_options",
+                      "use_voxel_filter", scan_matcher_options.use_voxel_filter,
+                      bool, bool);
+    GET_SINGLE_OPTION(
+        front_end_node, "scan_matcher_options", "voxel_filter_resolution",
+        scan_matcher_options.voxel_filter_resolution, float, float);
+
+    if (!front_end_node.child("scan_matcher_options").empty() &&
+        !front_end_node.child("scan_matcher_options")
+             .child("inner_filters")
+             .empty()) {
+      scan_matcher_options.inner_filters_node =
+          front_end_node.child("scan_matcher_options").child("inner_filters");
+    }
+
+    auto& motion_filter_options = options_.front_end_options.motion_filter;
+    GET_SINGLE_OPTION(front_end_node, "motion_filter", "translation_range",
+                      motion_filter_options.translation_range, float, float);
+    GET_SINGLE_OPTION(front_end_node, "motion_filter", "angle_range",
+                      motion_filter_options.angle_range, float, float);
+
+    GET_SINGLE_OPTION(front_end_node, "imu_options", "use_imu",
+                      options_.front_end_options.use_imu, bool, bool);
+    GET_SINGLE_OPTION(front_end_node, "imu_options", "imu_frequency",
+                      options_.front_end_options.imu_frequency, int, int32_t);
+  } else {
+    PRINT_WARNING("No config for front end");
+  }
+
+  // back end options
+  auto back_end_node = static_map_node.child("back_end_options");
+  if (!back_end_node.empty()) {
+    auto& submap_matcher_options =
+        options_.back_end_options.submap_matcher_options;
+    GET_SINGLE_OPTION(back_end_node, "submap_matcher_options", "type",
+                      submap_matcher_options.type, int, registrator::Type);
+    GET_SINGLE_OPTION(back_end_node, "submap_matcher_options", "enable_ndt",
+                      submap_matcher_options.enable_ndt, bool, bool);
+    GET_SINGLE_OPTION(back_end_node, "submap_matcher_options",
+                      "use_voxel_filter",
+                      submap_matcher_options.use_voxel_filter, bool, bool);
+    GET_SINGLE_OPTION(
+        back_end_node, "submap_matcher_options", "voxel_filter_resolution",
+        submap_matcher_options.voxel_filter_resolution, float, float);
+    GET_SINGLE_OPTION(back_end_node, "submap_matcher_options",
+                      "accepted_min_score",
+                      submap_matcher_options.accepted_min_score, float, float);
+
+    auto& submap_options = options_.back_end_options.submap_options;
+    GET_SINGLE_OPTION(back_end_node, "submap_options", "frame_count",
+                      submap_options.frame_count, int, int32_t);
+    GET_SINGLE_OPTION(back_end_node, "submap_options",
+                      "enable_inner_multiview_icp",
+                      submap_options.enable_inner_multiview_icp, bool, bool);
+    GET_SINGLE_OPTION(back_end_node, "submap_options", "enable_voxel_filter",
+                      submap_options.enable_voxel_filter, bool, bool);
+    GET_SINGLE_OPTION(back_end_node, "submap_options",
+                      "enable_random_sampleing",
+                      submap_options.enable_random_sampleing, bool, bool);
+    GET_SINGLE_OPTION(back_end_node, "submap_options", "random_sampling_rate",
+                      submap_options.random_sampling_rate, float, float);
+    GET_SINGLE_OPTION(back_end_node, "submap_options", "enable_disk_saving",
+                      submap_options.enable_disk_saving, bool, bool);
+    GET_SINGLE_OPTION(back_end_node, "submap_options", "enable_check",
+                      submap_options.enable_check, bool, bool);
+    GET_SINGLE_OPTION(back_end_node, "submap_options", "disk_saving_delay",
+                      submap_options.disk_saving_delay, int, int32_t);
+    GET_SINGLE_OPTION(back_end_node, "submap_options", "saving_name_prefix",
+                      submap_options.saving_name_prefix, string, string);
+
+    auto& isam_optimizer_options =
+        options_.back_end_options.isam_optimizer_options;
+    GET_SINGLE_OPTION(back_end_node, "isam_optimizer_options", "use_odom",
+                      isam_optimizer_options.use_odom, bool, bool);
+    GET_SINGLE_OPTION(back_end_node, "isam_optimizer_options", "use_gps",
+                      isam_optimizer_options.use_gps, bool, bool);
+
+    auto& loop_detector_setting =
+        options_.back_end_options.loop_detector_setting;
+    GET_SINGLE_OPTION(back_end_node, "loop_detector_setting", "use_gps",
+                      loop_detector_setting.use_gps, bool, bool);
+    GET_SINGLE_OPTION(back_end_node, "loop_detector_setting", "use_descriptor",
+                      loop_detector_setting.use_descriptor, bool, bool);
+    GET_SINGLE_OPTION(back_end_node, "loop_detector_setting",
+                      "trying_detect_loop_count",
+                      loop_detector_setting.trying_detect_loop_count, int, int);
+    GET_SINGLE_OPTION(back_end_node, "loop_detector_setting",
+                      "loop_ignore_threshold",
+                      loop_detector_setting.loop_ignore_threshold, int, int);
+    GET_SINGLE_OPTION(back_end_node, "loop_detector_setting",
+                      "nearest_history_pos_num",
+                      loop_detector_setting.nearest_history_pos_num, int, int);
+    GET_SINGLE_OPTION(
+        back_end_node, "loop_detector_setting", "max_close_loop_distance",
+        loop_detector_setting.max_close_loop_distance, float, float);
+    GET_SINGLE_OPTION(back_end_node, "loop_detector_setting",
+                      "m2dp_match_score",
+                      loop_detector_setting.m2dp_match_score, float, float);
+  }
+
+  auto& map_package_options = options_.map_package_options;
+  GET_SINGLE_OPTION(static_map_node, "map_package_options", "enable",
+                    map_package_options.enable, bool, bool);
+  GET_SINGLE_OPTION(static_map_node, "map_package_options", "border_offset",
+                    map_package_options.border_offset, double, double);
+  GET_SINGLE_OPTION(static_map_node, "map_package_options", "piece_width",
+                    map_package_options.piece_width, double, double);
+  GET_SINGLE_OPTION(static_map_node, "map_package_options", "cloud_file_prefix",
+                    map_package_options.cloud_file_prefix, string, string);
+  GET_SINGLE_OPTION(static_map_node, "map_package_options", "descript_filename",
+                    map_package_options.descript_filename, string, string);
+
+  std::cout
+      << BOLD
+      << "\n*****************************************************************\n"
+      << NONE_FORMAT << std::endl;
+
+  InitialiseInside();
+  return 0;
+}
+
+}  // namespace static_map
+
+#undef GET_SINGLE_OPTION
