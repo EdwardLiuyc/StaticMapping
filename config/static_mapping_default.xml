@@ -3,7 +3,7 @@
   <static_mapping>
     <whole_options 
       export_file_path="pcd/"
-      map_package_path="/mnt/Data/mapping/pkgs/xi2_xi3/" />
+      map_package_path="pkgs/test/" />
     <map_package_options
       enable="false"
       border_offset="100"
@@ -97,7 +97,7 @@
         enable_random_sampleing="false"
         enable_check="false"
         random_sampling_rate="0.5"
-        enable_disk_saving="true"
+        enable_disk_saving="false"
         disk_saving_delay="30"
         saving_name_prefix="s_" />
       <isam_optimizer_options 
@@ -108,7 +108,7 @@
         use_descriptor="false"
         loop_ignore_threshold="15"
         trying_detect_loop_count="1"
-        max_close_loop_distance="40."
+        max_close_loop_distance="15."
         m2dp_match_score="0.985"
         nearest_history_pos_num="3" />
     </back_end_options>

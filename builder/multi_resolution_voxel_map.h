@@ -53,10 +53,10 @@ typedef uint8_t Probability;
 
 constexpr size_t kTableSize = (1 << (sizeof(Probability) * 8));
 constexpr Probability kUnknown = (kTableSize >> 1);
-constexpr float min_hit_prob = 0.501;
-constexpr float max_miss_prob = 0.499;
-constexpr float max_prob = 0.9;
-constexpr float min_prob = 0.1;
+constexpr float kMinHitProb = 0.501f;
+constexpr float kMaxMissProb = 0.499f;
+constexpr float kMaxProb = 0.9f;
+constexpr float kMinProb = 0.1f;
 
 constexpr int kTrue = 1;
 constexpr int kFalse = 0;
@@ -144,10 +144,10 @@ class MultiResolutionVoxelMap {
 
   // Setters for the inner parameters
   inline void SetHitProbability(float hit_prob) {
-    settings_.hit_prob = Clamp(hit_prob, min_hit_prob, max_prob);
+    settings_.hit_prob = Clamp(hit_prob, kMinHitProb, kMaxProb);
   }
   inline void SetMissProbability(float miss_prob) {
-    settings_.miss_prob = Clamp(miss_prob, min_prob, max_miss_prob);
+    settings_.miss_prob = Clamp(miss_prob, kMinProb, kMaxMissProb);
   }
   inline void SetLowResolution(const float& res) {
     settings_.low_resolution = res;
@@ -171,6 +171,9 @@ class MultiResolutionVoxelMap {
   inline void Initialise(const MrvmSettings& settings) {
     settings_ = settings;
     CHECK_GT(settings_.max_point_num_in_cell, 0);
+
+    settings_.hit_prob = Clamp(settings_.hit_prob, kMinHitProb, kMaxProb);
+    settings_.miss_prob = Clamp(settings_.miss_prob, kMinProb, kMaxMissProb);
   }
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW

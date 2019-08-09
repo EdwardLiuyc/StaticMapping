@@ -1,4 +1,4 @@
-<img src="https://i.v2ex.co/701l6CyX.png" />
+<img src="doc/logo.png" />
 
 [![Badge](https://img.shields.io/badge/link-996.icu-%23FF4D5B.svg?style=flat-square)](https://996.icu/#/en_US)
 [![LICENSE](https://img.shields.io/badge/license-Anti%20996-blue.svg?style=flat-square)](https://github.com/996icu/996.ICU/blob/master/LICENSE)
@@ -6,7 +6,7 @@
 
 
 ## Introduction
-<img src="https://i.v2ex.co/JJR3KAjT.png" width="800" />
+<img src="doc/mapping.png" width="800" />
 
 ## Build
 ### requirements  
@@ -32,6 +32,13 @@ sudo apt install libsuitesparse-dev
 
 ## PCL(1.8 or higher version is strongly recommended)
 sudo apt install libpcl-dev
+
+## ROS 
+## you can refer to 
+## http://wiki.ros.org/kinetic/Installation/Ubuntu 
+## to install ROS kinetic 
+## or high version 
+## this project is tested in both kinetic (ubunut 16.04) and melodic (ubuntu 18.04)
 
 ## clone some 3rd party libs into a new folder
 mkdir workspace
@@ -80,10 +87,10 @@ cd ../..
 ```
 
 ### Optional libs
-- Cuda: We have made some attempts in fasting the kdtree in ICP by creating the kdtree on GPU, but the GPU Kdtree is not fast enough(just 1.5~2 times faster than libnabo). Notice that if you use CUDA, your g++ version should be lower than 6.0 because the nvcc does not support the 6.0 or high version g++.  
-- cuda_utils: 
-- TBB: We have used concurrency containers in TBB for many multi-thread situations, if you turn off this options, the process will use stl containers such as std::vector instead and many multi-thread algorithm will degenerate into single-thread. So, Using TBB is **strongly recommended**;  
-- Opencv: All the matrices in code is in Eigen way, Opencv is only for generating the jpg file of pose gragh. It is a debug function so you can change this option as you wish.
+- **CUDA**: We have made some attempts in fasting the kdtree in ICP by creating the kdtree on GPU, but the GPU Kdtree is not fast enough(just 1.5~2 times faster than libnabo). Notice that if you use CUDA, your g++ version should be lower than 6.0 because the nvcc does not support the 6.0 or high version g++.  
+- **cuda_utils**: 
+- **TBB**: We have used concurrency containers in TBB for many multi-thread situations, if you turn off this options, the process will use stl containers such as std::vector instead and many multi-thread algorithm will degenerate into single-thread. So, Using TBB is **strongly recommended**;  
+- **OpenCV**: All the matrices in code is in Eigen way, Opencv is only for generating the jpg file of pose gragh. It is a debug function so you can change this option as you wish.
 
 ### compiling
 ```bash
@@ -150,13 +157,11 @@ play bag that includes pointcloud msgs or run the lidar driver
 ### step3  
 when finished, just press 'CTRL+C' to terminate the mapping process. NOTICE that the mapping process will not end right after you 'CTRL+C', it has many more calculations to do, so just wait.  
 Finally, you will get a static map like this:  
-
-<img src="https://i.v2ex.co/39r4ya20l.png" witdh="800" />
-
+<img src="doc/xi1_xi2.png" width="800" />  
 part of it:  
-<img src="https://i.v2ex.co/Z2hNFv49l.png" witdh="800" />
+<img src="doc/detail.png" width="800" />
 
-## document  
+## Document  
 You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` folder.
 
 ## References
@@ -164,3 +169,15 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 2. **ISAM2: Incremental smoothing and mapping using the Bayes tree**,Michael Kaess, Hordur Johannsson, Richard Roberts, Viorela Ila, John Leonard, and Frank Dellaert Abstract, International Journal of Robotics Research (2012) 31(2) 216-235
 3. **Comparing ICP Variants on Real-World Data Sets**, Autonomous Robots 2013
 4. **Fast Segmentation of 3D Pointcloud for Ground Vehicles**, M. Himmelsbach and Felix v. Hundelshausen and H.-J. Wuensche, IEEE Intelligent Vehicles Symposium, Proceedings, 2010
+
+## TODO
+- [ ] add tests 
+- [ ] use el_wheel
+- [ ] lidar motion compensention inside
+- [ ] ICP using GPU 
+- [ ] stand-alone ICP without libpointmatcher
+- [ ] parallel PointCloudLib 
+- [ ] finish multi-trajectory map builder
+- [ ] improve MRVM 
+- [ ] use ground detection to label the pointcloud 
+- [ ] use some machine learning or deep learning method to add semantic labels

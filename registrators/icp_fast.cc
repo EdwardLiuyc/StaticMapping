@@ -113,7 +113,7 @@ void IcpFast<PointT>::setInputTarget(const PointCloudTargetPtr& cloud) {
   start_clock();
   target_inner_cloud_->points.resize(query_num);
 #if defined _OPENMP
-#pragma omp parallel for num_threads(10)
+#pragma omp parallel for num_threads(LOCAL_OMP_THREADS_NUM)
 #endif
   for (int i = 0; i < query_num; ++i) {
     auto& inner_point = target_inner_cloud_->points[i];

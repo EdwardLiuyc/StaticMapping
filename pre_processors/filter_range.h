@@ -60,7 +60,7 @@ class Range : public Interface<PointT> {
     const int size = this->inner_cloud_->size();
     bool is_inlier[size];
 #ifdef _OPENMP
-#pragma omp parallel for num_threads(6)
+#pragma omp parallel for num_threads(LOCAL_OMP_THREADS_NUM)
 #endif
     for (int i = 0; i < size; ++i) {
       auto &point = this->inner_cloud_->points[i];

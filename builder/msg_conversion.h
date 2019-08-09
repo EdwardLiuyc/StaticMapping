@@ -37,7 +37,7 @@
 namespace static_map {
 namespace sensors {
 
-typedef uint64_t PclTimeStamp;
+using PclTimeStamp = uint64_t;
 SimpleTime ToLocalTime(const ros::Time& time);
 SimpleTime ToLocalTime(const PclTimeStamp& time);
 

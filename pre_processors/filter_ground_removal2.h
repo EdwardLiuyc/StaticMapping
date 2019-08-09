@@ -175,7 +175,7 @@ class GroundRemoval2 : public Interface<PointT> {
 
 // step2 insert the cloud into grids
 #if defined _OPENMP
-#pragma omp parallel for num_threads(4)
+#pragma omp parallel for num_threads(LOCAL_OMP_THREADS_NUM)
 #endif
     for (int i = 0; i < size; ++i) {
       auto& point = this->inner_cloud_->points[i];
@@ -361,7 +361,7 @@ class GroundRemoval2 : public Interface<PointT> {
     };
 #if defined _OPENMP
 // openmp version
-#pragma omp parallel for num_threads(4)
+#pragma omp parallel for num_threads(LOCAL_OMP_THREADS_NUM)
     for (int i = 0; i < segment_num_; ++i) {
       calculate_in_one_thread(i);
     }

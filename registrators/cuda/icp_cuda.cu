@@ -122,7 +122,7 @@ bool knn_cugar(const float *ref, int ref_points_num, const float *query,
   // cugar::cuda::sync_and_check_error("knn search error.");
   if (knn_dist2 && knn_index) {
     cugar::vector<host_tag, cugar::cuda::Kd_knn_result> h_results(d_results);
-#pragma omp parallel for num_threads(6)
+#pragma omp parallel for num_threads(LOCAL_OMP_THREADS_NUM)
     for (int i = 0; i < kNNForNormal; ++i) {
       for (int j = 0; j < query_points_num; ++j) {
         const int index = j * kNNForNormal + i;

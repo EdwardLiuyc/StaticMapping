@@ -42,7 +42,7 @@ void MultiResolutionVoxelMap<PointT>::InsertPointCloud(
   auto update_prob = [&](Probability former_prob, bool hit) -> float {
     float odd = odds_table_[former_prob];
     odd += hit ? hit_log_odd : miss_log_odd;
-    return Clamp(OddToProbability(odd), min_prob, max_prob);
+    return Clamp(OddToProbability(odd), kMinProb, kMaxProb);
   };
 
   size_t point_index = 0;

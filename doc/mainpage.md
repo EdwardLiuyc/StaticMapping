@@ -1,4 +1,3 @@
-# STATIC MAPPING
 ## Introduction
 <img src="../mapping.png" width="800" />
 
@@ -160,6 +159,6 @@ play bag that includes pointcloud msgs or run the lidar driver
 ### step3 
 when finished, just press 'CTRL+C' to terminate the mapping process. NOTICE that the mapping process will not end right after you 'CTRL+C', it has many more calculations to do, so just wait.  
 Finally, you will get a static map like this:
-<img src="../xi1_xi2.png" witdh="800" />  
-<img src="../detail.png" witdh="800" />  
+<img src="../xi1_xi2.png" width="800" />  
+<img src="../detail.png" width="800" />  
 

@@ -1,9 +1,34 @@
+// MIT License
+
+// Copyright (c) 2019 Edward Liu
+
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
 #include <pcl/console/parse.h>
 #include <pcl/filters/random_sample.h>
 #include <pcl/io/pcd_io.h>
 #include <pcl/point_types.h>
 #include <chrono>
 #include <iostream>
+
+// @todo use zlib instead of blosc
+#if 0
 
 #include <blosc.h>
 
@@ -30,9 +55,9 @@ int main(int argc, char** argv) {
       cloud->points.size() > 100000 ? 100000 : cloud->points.size();
   const int dim = 4;
   const int mem_size = cloud_size * dim * sizeof(int32_t);
-  int32_t* original_mem = (int32_t*)malloc(mem_size);
-  int32_t* out_mem = (int32_t*)malloc(mem_size);
-  int32_t* decompressed_mem = (int32_t*)malloc(mem_size);
+  int32_t* original_mem = reinterpret_cast<int32_t*>(malloc(mem_size));
+  int32_t* out_mem = reinterpret_cast<int32_t*>(malloc(mem_size));
+  int32_t* decompressed_mem = reinterpret_cast<int32_t*>(malloc(mem_size));
   for (int i = 0; i < cloud_size; ++i) {
     auto& point = cloud->points[i];
     original_mem[i * dim] = (int32_t)(point.x * 1000);
@@ -89,3 +114,5 @@ int main(int argc, char** argv) {
   printf("Succesful roundtrip!\n");
   return 0;
 }
+
+#endif
