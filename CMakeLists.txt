@@ -165,6 +165,7 @@ message(STATUS "Link libs: ${require_libs}")
 message(STATUS "CXX FLAGS: ${CMAKE_CXX_FLAGS}")
 
 add_library(${TARGET_LIB_NAME} ${srcs} ${common_srcs} ${registrators_srcs} ${backend_srcs} ${desp_srcs})
+target_link_libraries(${TARGET_LIB_NAME} ${OpenCV_LIBRARIES})
 
 add_executable(static_mapping_node ros_node/static_mapping_node.cpp)
 target_link_libraries(static_mapping_node ${TARGET_LIB_NAME} ${require_libs})

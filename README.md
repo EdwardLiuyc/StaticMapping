@@ -5,11 +5,13 @@
 [![Slack](https://img.shields.io/badge/slack-996icu-green.svg?style=flat-square)](https://join.slack.com/t/996icu/shared_invite/enQtNjI0MjEzMTUxNDI0LTkyMGViNmJiZjYwOWVlNzQ3NmQ4NTQyMDRiZTNmOWFkMzYxZWNmZGI0NDA4MWIwOGVhOThhMzc3NGQyMDBhZDc)
 
 
-## Introduction
+# Introduction
 <img src="doc/mapping.png" width="800" />
 
-## Build
-### requirements  
+# Build
+## requirements 
+### Basic 
+
 ```bash
 ## basic depencencies
 sudo apt install cmake \
@@ -28,21 +30,24 @@ sudo apt-get install libsuitesparse-dev
 #   add the following PPA:
 sudo add-apt-repository ppa:bzindovic/suitesparse-bugfix-1319687
 sudo apt update
-sudo apt install libsuitesparse-dev
+sudo apt install libsuitesparse-dev 
+```
 
+### ROS 
+
+You can refer to [http://wiki.ros.org/kinetic/Installation/Ubuntu](http://wiki.ros.org/kinetic/Installation/Ubuntu) for more information for installing ROS kinetic or higher version. This repo has been tested in kinetic and melodic.
+
+### PCL
+
+```bash
 ## PCL(1.8 or higher version is strongly recommended)
 sudo apt install libpcl-dev
+```
 
-## ROS 
-## you can refer to 
-## http://wiki.ros.org/kinetic/Installation/Ubuntu 
-## to install ROS kinetic 
-## or high version 
-## this project is tested in both kinetic (ubunut 16.04) and melodic (ubuntu 18.04)
+### GTSAM
 
-## clone some 3rd party libs into a new folder
-mkdir workspace
-cd workspace
+```bash
+## Go to your wordspace lisk /home/user/3rd_parties
 ## GTSAM(4.0 or higher is needed)
 git clone https://bitbucket.org/gtborg/gtsam.git
 cd gtsam 
@@ -53,8 +58,11 @@ ccmake ..
 # then generate makefile
 make -j8
 sudo make install 
-cd ../..
+```
 
+### Ceres Solver 
+
+```bash
 ## Ceres Solver(1.12 or higher)
 git clone https://github.com/ceres-solver/ceres-solver.git
 cd ceres-solver
@@ -63,36 +71,39 @@ mkdir build && cd build
 cmake ..
 make -j8
 sudo make install
-cd ../..
+```
 
-## libnabo 
+### libnabo
+
+```bash 
 git clone https://github.com/ethz-asl/libnabo.git
 cd libnabo
 ### checkout to the latest release version
-git checkout tags/1.0.6
+git checkout tags/1.0.7
 mkdir build && cd build
 cmake ..
 make -j8
 sudo make install
-cd ../..
-
-## libpointmatcher
-git clone https://github.com/ethz-asl/libpointmatcher.git
-cd libnabo
-mkdir build && cd build
-cmake ..
-make -j8
-sudo make install
-cd ../..
 ```
 
-### Optional libs
+### libpointmatcher
+
+```bash
+git clone https://github.com/ethz-asl/libpointmatcher.git
+cd libpointmatcher
+mkdir build && cd build
+cmake ..
+make -j8
+sudo make install
+```
+
+## Optional libs
 - **CUDA**: We have made some attempts in fasting the kdtree in ICP by creating the kdtree on GPU, but the GPU Kdtree is not fast enough(just 1.5~2 times faster than libnabo). Notice that if you use CUDA, your g++ version should be lower than 6.0 because the nvcc does not support the 6.0 or high version g++.  
 - **cuda_utils**: 
 - **TBB**: We have used concurrency containers in TBB for many multi-thread situations, if you turn off this options, the process will use stl containers such as std::vector instead and many multi-thread algorithm will degenerate into single-thread. So, Using TBB is **strongly recommended**;  
 - **OpenCV**: All the matrices in code is in Eigen way, Opencv is only for generating the jpg file of pose gragh. It is a debug function so you can change this option as you wish.
 
-### compiling
+## compiling
 ```bash
 mkdir build && cd build
 cmake ..
@@ -100,11 +111,11 @@ make -j8
 sudo make install
 ```
 
-### BUG
+## BUG
 - DO NOT use g++ 7.x, unknow bug with Eigen
 
-## How to use?
-### step1 run the mapping process
+# How to use?
+## step1 run the mapping process
 ```bash
 mkdir pcd
 mkdir -p pkgs/test
@@ -151,26 +162,26 @@ GPS_FRAME_ID=novatel_imu
 exit 0 
 ```
 
-### step2 
+## step2 
 play bag that includes pointcloud msgs or run the lidar driver
 
-### step3  
+## step3  
 when finished, just press 'CTRL+C' to terminate the mapping process. NOTICE that the mapping process will not end right after you 'CTRL+C', it has many more calculations to do, so just wait.  
 Finally, you will get a static map like this:  
 <img src="doc/xi1_xi2.png" width="800" />  
 part of it:  
 <img src="doc/detail.png" width="800" />
 
-## Document  
+# Document  
 You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` folder.
 
-## References
+# References
 1. **M2DP: A Novel 3D Point Cloud Descriptor and Its Application in Loop**,Li He, Xiaolong Wang and Hong Zhang,IEEE International Conference on Intelligent Robots and Systems (2016) 2016-November 231-237
 2. **ISAM2: Incremental smoothing and mapping using the Bayes tree**,Michael Kaess, Hordur Johannsson, Richard Roberts, Viorela Ila, John Leonard, and Frank Dellaert Abstract, International Journal of Robotics Research (2012) 31(2) 216-235
 3. **Comparing ICP Variants on Real-World Data Sets**, Autonomous Robots 2013
 4. **Fast Segmentation of 3D Pointcloud for Ground Vehicles**, M. Himmelsbach and Felix v. Hundelshausen and H.-J. Wuensche, IEEE Intelligent Vehicles Symposium, Proceedings, 2010
 
-## TODO
+# TODO
 - [ ] add tests 
 - [ ] use el_wheel
 - [ ] lidar motion compensention inside
@@ -181,3 +192,6 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - [ ] improve MRVM 
 - [ ] use ground detection to label the pointcloud 
 - [ ] use some machine learning or deep learning method to add semantic labels
+- [ ] use a docker to release the environment
+- [ ] get odom message from a cheap GPS and IMU intergration  
+- [ ] add a pose extrapolator (refer to google caortgrapher) using imu to do motion compensation
