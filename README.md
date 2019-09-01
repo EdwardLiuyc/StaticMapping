@@ -40,7 +40,8 @@ You can refer to [http://wiki.ros.org/kinetic/Installation/Ubuntu](http://wiki.r
 ### PCL
 
 ```bash
-## PCL(1.8 or higher version is strongly recommended)
+## tested in pcl-1.7 (ubuntu16.04) and pcl-1.8 (ubuntu18.04)
+## pcl-1.8 or higher version is strongly recommended
 sudo apt install libpcl-dev
 ```
 
@@ -195,3 +196,4 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - [ ] use a docker to release the environment
 - [ ] get odom message from a cheap GPS and IMU intergration  
 - [ ] add a pose extrapolator (refer to google caortgrapher) using imu to do motion compensation
+- [x] add a checker for options

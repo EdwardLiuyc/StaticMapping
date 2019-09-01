@@ -25,6 +25,19 @@
 
 namespace static_map {
 
+void CheckOptions(const MapBuilderOptions& options) {
+  CHECK_GE(options.back_end_options.submap_options.frame_count, 2)
+      << "A submap must constain at least 2 frames" << std::endl;
+  CHECK(!options.back_end_options.loop_detector_setting.use_gps ||
+        !options.back_end_options.loop_detector_setting.use_descriptor)
+      << "You should selete at least one way to do loop detect: use gps or "
+         "descriptor or both"
+      << std::endl;
+  CHECK_GT(options.output_mrvm_settings.hit_prob, 0.5);
+  CHECK_LT(options.output_mrvm_settings.miss_prob, 0.5);
+  CHECK_GE(options.output_mrvm_settings.max_point_num_in_cell, 1);
+}
+
 int MapBuilder::Initialise(const char* config_file_name) {
   bool use_default_config = false;
   if (!config_file_name || config_file_name[0] == '\0') {
@@ -232,6 +245,7 @@ int MapBuilder::Initialise(const char* config_file_name) {
       << "\n*****************************************************************\n"
       << NONE_FORMAT << std::endl;
 
+  CheckOptions(options_);
   InitialiseInside();
   return 0;
 }
