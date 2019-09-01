@@ -16,7 +16,7 @@
 ## basic depencencies
 sudo apt install cmake \
   libboost-dev \
-  ibeigen3-dev \
+  libeigen3-dev \
   libpng-dev \
   libgoogle-glog-dev \
   libatlas-base-dev
