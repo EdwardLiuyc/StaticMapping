@@ -101,11 +101,11 @@
         disk_saving_delay="30"
         saving_name_prefix="s_" />
       <isam_optimizer_options 
-        use_odom="true"
+        use_odom="false"
         use_gps="false" />
       <loop_detector_setting 
-        use_gps="true"
-        use_descriptor="false"
+        use_gps="false"
+        use_descriptor="true"
         loop_ignore_threshold="15"
         trying_detect_loop_count="1"
         max_close_loop_distance="15."
