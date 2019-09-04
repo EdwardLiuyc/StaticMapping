@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<nullmax>
+<edward_liu>
   <static_mapping>
     <whole_options 
       export_file_path="pcd/"
@@ -123,4 +123,4 @@
       max_point_num_in_cell="4">
     </output_mrvm_settings>
   </static_mapping>
-</nullmax>
+</edward_liu>

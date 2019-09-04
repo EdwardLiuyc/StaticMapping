@@ -87,7 +87,9 @@ struct Vector3 {
     return Vector3(x - b.x, y - b.y, z - b.z);
   }
 
-  Eigen::Vector3d ToEigenVector() { return Eigen::Vector3d(x, y, z); }
+  const Eigen::Vector3d ToEigenVector() const {
+    return Eigen::Vector3d(x, y, z);
+  }
 
   std::string DebugString() const {
     std::ostringstream out;

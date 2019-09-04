@@ -46,6 +46,7 @@
 #include "builder/map_utm_matcher.h"
 #include "builder/msg_conversion.h"
 #include "builder/multi_resolution_voxel_map.h"
+#include "builder/pose_extrapolator.h"
 #include "builder/trajectory.h"
 #include "pre_processors/filter_factory.h"
 #include "registrators/registrator_interface.h"
