@@ -55,12 +55,12 @@ int MapBuilder::Initialise(const char* config_file_name) {
     PRINT_WARNING("Failed to load target file. using default config.");
     use_default_config = true;
   }
-  pugi::xml_node nullmax_node = doc.child("nullmax");
-  if (!use_default_config && nullmax_node.empty()) {
+  pugi::xml_node doc_node = doc.child("edward_liu");
+  if (!use_default_config && doc_node.empty()) {
     PRINT_WARNING("Wrong node. using default config.");
     use_default_config = true;
   }
-  pugi::xml_node static_map_node = nullmax_node.child("static_mapping");
+  pugi::xml_node static_map_node = doc_node.child("static_mapping");
   if (!use_default_config && static_map_node.empty()) {
     PRINT_WARNING("Wrong node. using default config.");
     use_default_config = true;

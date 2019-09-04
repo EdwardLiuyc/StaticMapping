@@ -63,6 +63,11 @@ sudo make install
 
 ### Ceres Solver 
 
+you can just install with apt  
+```bash 
+sudo apt install libceres-dev
+```
+or compile with source code
 ```bash
 ## Ceres Solver(1.12 or higher)
 git clone https://github.com/ceres-solver/ceres-solver.git
