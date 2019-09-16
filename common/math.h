@@ -167,6 +167,18 @@ Vector6ToTransform(const TRANSFORM_6D(T) & v) {
 }
 
 template <typename T>
+ROTATION(T)
+Rotation(const TRANSFORM(T) & t) {
+  return t.template block<3, 3>(0, 0);
+}
+
+template <typename T>
+TRANSLATION(T)
+Translation(const TRANSFORM(T) & t) {
+  return t.template block<3, 1>(0, 3);
+}
+
+template <typename T>
 void PrintTransform(const TRANSFORM(T) & t) {
   TRANSFORM_6D(T) vec_6d = TransformToVector6(t);
   std::cout << "  translation : (" << vec_6d[0] << ", " << vec_6d[1] << ", "

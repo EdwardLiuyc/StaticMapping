@@ -100,6 +100,7 @@ int main(int argc, char** argv) {
 
   // imu
   std::string imu_topic = "";
+  bool use_imu = false;
   ros::Subscriber sub_imu;
   std::string imu_frame_id = "/novatel_imu";
   pcl::console::parse_argument(argc, argv, "-imu", imu_topic);
@@ -109,6 +110,7 @@ int main(int argc, char** argv) {
     PRINT_INFO_FMT("Get imu data from ROS topic: %s", imu_topic.c_str());
     sub_imu = n.subscribe(imu_topic, 100, imu_callback);
     pcl::console::parse_argument(argc, argv, "-imu_frame_id", imu_frame_id);
+    use_imu = true;
   }
 
   // odom
@@ -211,10 +213,36 @@ int main(int argc, char** argv) {
 
   map_builder = std::make_shared<MapBuilder>();
 
-  if (use_odom) {
-    tf::TransformListener listener;
+  const std::string tracking_frame = "base_link";
+
+  tf::TransformListener listener;
+  if (use_imu) {
     std::string tf_error_msg;
-    int wait_count = 1000;
+    int wait_count = 30;
+    while (!listener.waitForTransform(tracking_frame, imu_frame_id,
+                                      ros::Time(0), ros::Duration(2.),
+                                      ros::Duration(0.001), &tf_error_msg)) {
+      PRINT_INFO_FMT("Wating for tf from %s to %s", tracking_frame.c_str(),
+                     imu_frame_id.c_str());
+      wait_count--;
+      if (wait_count == 0) {
+        PRINT_ERROR(tf_error_msg);
+        return -1;
+      }
+    }
+    tf::StampedTransform transform;
+    /// get the tf odom -> lidar
+    listener.lookupTransform(tracking_frame, imu_frame_id, ros::Time(0),
+                             transform);
+
+    Eigen::Isometry3d tracking_to_imu = Eigen::Isometry3d::Identity();
+    tf::transformTFToEigen(transform, tracking_to_imu);
+    map_builder->SetTrackingToImu(tracking_to_imu.matrix().cast<float>());
+  }
+
+  if (use_odom) {
+    std::string tf_error_msg;
+    int wait_count = 30;
     while (!listener.waitForTransform(odom_frame_id, cloud_frame_id,
                                       ros::Time(0), ros::Duration(2.),
                                       ros::Duration(0.001), &tf_error_msg)) {
@@ -237,7 +265,12 @@ int main(int argc, char** argv) {
   }
 
   if (!config_file.empty()) {
-    map_builder->Initialise(config_file.c_str());
+    const auto options = map_builder->Initialise(config_file.c_str());
+    if (options.front_end_options.imu_options.enabled && !use_imu) {
+      PRINT_ERROR("You should set a imu topic if you enable using imu.");
+      map_builder->FinishAllComputations();
+      return 0;
+    }
   } else {
     map_builder->Initialise(NULL);
   }

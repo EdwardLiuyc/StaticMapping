@@ -57,14 +57,16 @@ std::unique_ptr<PoseExtrapolator> PoseExtrapolator::InitializeWithImu(
   return extrapolator;
 }
 
-SimpleTime PoseExtrapolator::GetLastPoseTime() const {
+SimpleTime PoseExtrapolator::GetLastPoseTime() {
+  common::MutexLocker locker(&mutex_);
   if (timed_pose_queue_.empty()) {
     return SimpleTime();
   }
   return timed_pose_queue_.back().time;
 }
 
-SimpleTime PoseExtrapolator::GetLastExtrapolatedTime() const {
+SimpleTime PoseExtrapolator::GetLastExtrapolatedTime() {
+  common::MutexLocker locker(&mutex_);
   if (!extrapolation_imu_tracker_) {
     return SimpleTime();
   }
@@ -72,6 +74,7 @@ SimpleTime PoseExtrapolator::GetLastExtrapolatedTime() const {
 }
 
 void PoseExtrapolator::AddPose(const SimpleTime time, const RigidPose3d& pose) {
+  common::MutexLocker locker(&mutex_);
   if (imu_tracker_ == nullptr) {
     SimpleTime tracker_start = time;
     if (!imu_data_.empty()) {
@@ -94,6 +97,7 @@ void PoseExtrapolator::AddPose(const SimpleTime time, const RigidPose3d& pose) {
 }
 
 void PoseExtrapolator::AddImuData(const sensors::ImuMsg& imu_data) {
+  common::MutexLocker locker(&mutex_);
   CHECK(timed_pose_queue_.empty() ||
         imu_data.header.stamp >= timed_pose_queue_.back().time);
   imu_data_.push_back(imu_data);
@@ -101,6 +105,7 @@ void PoseExtrapolator::AddImuData(const sensors::ImuMsg& imu_data) {
 }
 
 void PoseExtrapolator::AddOdometryData(const sensors::OdomMsg& odometry_data) {
+  common::MutexLocker locker(&mutex_);
   CHECK(timed_pose_queue_.empty() ||
         odometry_data.header.stamp >= timed_pose_queue_.back().time);
   odometry_data_.push_back(odometry_data);
@@ -139,6 +144,7 @@ void PoseExtrapolator::AddOdometryData(const sensors::OdomMsg& odometry_data) {
 
 PoseExtrapolator::RigidPose3d PoseExtrapolator::ExtrapolatePose(
     const SimpleTime time) {
+  common::MutexLocker locker(&mutex_);
   const TimedPose& newest_timed_pose = timed_pose_queue_.back();
   CHECK_GE(time, newest_timed_pose.time);
   if (cached_extrapolated_pose_.time != time) {
@@ -160,6 +166,7 @@ PoseExtrapolator::RigidPose3d PoseExtrapolator::ExtrapolatePose(
 
 Eigen::Quaterniond PoseExtrapolator::EstimateGravityOrientation(
     const SimpleTime time) {
+  common::MutexLocker locker(&mutex_);
   ImuTracker imu_tracker = *imu_tracker_;
   AdvanceImuTracker(time, &imu_tracker);
   return imu_tracker.orientation();
@@ -167,6 +174,7 @@ Eigen::Quaterniond PoseExtrapolator::EstimateGravityOrientation(
 
 void PoseExtrapolator::InitRoughLinearVelocity(
     const Eigen::Vector3d& velocity) {
+  common::MutexLocker locker(&mutex_);
   linear_velocity_from_poses_ = velocity;
 }
 

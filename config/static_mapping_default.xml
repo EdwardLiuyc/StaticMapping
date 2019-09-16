@@ -78,9 +78,14 @@
       <motion_filter 
         translation_range="1"
         angle_range="1.5" />
+      <!-- imu type 
+          0: normal type
+          1: imu in ins(combined imu) -->
       <imu_options 
-        use_imu="false"
-        imu_frequency="100" />
+        use_imu="true"
+        imu_frequency="100."
+        type="0"
+        gravity_constant="9.8" />
     </front_end_options>
     <back_end_options>
       <!-- type just the same as front end -->
@@ -108,7 +113,7 @@
         use_descriptor="true"
         loop_ignore_threshold="15"
         trying_detect_loop_count="1"
-        max_close_loop_distance="15."
+        max_close_loop_distance="25."
         m2dp_match_score="0.985"
         nearest_history_pos_num="3" />
     </back_end_options>

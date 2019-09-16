@@ -65,12 +65,17 @@ struct Options {
   } scan_matcher_options;
 
   // for imu
-  bool use_imu = true;
-  int32_t imu_frequency = 100;  // hz
+  struct {
+    bool enabled = true;
+    sensors::ImuType type = sensors::ImuType::kNormalImu;
+    float frequency = 0.f;
+    float gravity_constant = 9.8f;
+  } imu_options;
 
   struct {
     float translation_range = 0.35;
     float angle_range = 1.5;
+    float time_range = 0.5;
   } motion_filter;
 };
 
@@ -143,7 +148,7 @@ class MapBuilder {
 
   // functions
   /// @brief initialise the mapbuilder with a config file (xml)
-  int Initialise(const char* config_file_name);
+  MapBuilderOptions& Initialise(const char* config_file_name);
   /// @brief finish all remaining computations for imu and pointcloud
   void FinishAllComputations();
   /// @brief set a callback function when the map updated
@@ -169,6 +174,10 @@ class MapBuilder {
   /// @brief set static tf link from imu to lidar(cloud frame)
   void SetTransformImuToLidar(const Eigen::Matrix4f& t);
 
+  void SetTrackingToImu(const Eigen::Matrix4f& t);
+  void SetTrackingToOdom(const Eigen::Matrix4f& t);
+  void SetTrackingToLidar(const Eigen::Matrix4f& t);
+
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
  protected:
@@ -187,15 +196,15 @@ class MapBuilder {
   /// @return true if succeed, otherwise, return false
   bool GetUtmAtTime(const SimpleTime& stamp, sensors::UtmMsg* utm,
                     double threshold_in_sec = 0.008 /* default: 8ms */);
-  /// @brief get the result of imu pre-intergration at the given time
-  /// @return used imu data count
-  /// @todo interpolate the result
-  int GetImuAtTime(const SimpleTime& stamp);
   /// @brief add a new trajectory
   /// when build a new map or load a exsiting map
   void AddNewTrajectory();
   /// @brief thread for scan to scan matching
   void ScanMatchProcessing();
+  /// @brief
+  void InsertFrameForSubmap(const PointCloudPtr& cloud_ptr,
+                            const Eigen::Matrix4f& global_pose,
+                            const double match_score);
   /// @brief thread for all operations on submaps
   void SubmapProcessing();
   /// @brief lifelong thread for connecting all submap in back-end
@@ -224,7 +233,6 @@ class MapBuilder {
   MapBuilderOptions options_;
   // input data from sensors
   std::vector<PointCloudPtr> point_clouds_;
-  std::vector<sensors::ImuMsg::Ptr> imus_;
   // odoms
   std::vector<sensors::OdomMsg::Ptr> odom_msgs_;
   sensors::OdomMsg init_odom_msg_;
@@ -234,6 +242,9 @@ class MapBuilder {
   // even if we have several lidars, we still use the fused cloud only
   Eigen::Matrix4f transform_odom_lidar_;
   Eigen::Matrix4f transform_imu_lidar_;
+  Eigen::Matrix4f tracking_to_imu_;
+  Eigen::Matrix4f tracking_to_odom_;
+  Eigen::Matrix4f tracking_to_lidar_;
   bool use_imu_;
   bool use_odom_;
   bool use_gps_;
@@ -244,15 +255,13 @@ class MapBuilder {
   // ********************* pre processors *********************
   pre_processers::filter::Factory<PointType> filter_factory_;
   // frond end
+  std::unique_ptr<PoseExtrapolator> extrapolator_ = nullptr;
   std::unique_ptr<registrator::Interface<PointType>> scan_matcher_ = nullptr;
   std::unique_ptr<std::thread> scan_match_thread_;
   std::vector<std::shared_ptr<Frame<PointType>>> frames_;
   bool scan_match_thread_running_ = false;
   bool got_first_point_cloud_ = false;
   uint32_t got_clouds_count_ = 0u;
-  // imu preintergration
-  std::unique_ptr<gtsam::CombinedImuFactor::CombinedPreintegratedMeasurements>
-      imu_current_estimate_;
 
   // ************************ back end ************************
   // submaps

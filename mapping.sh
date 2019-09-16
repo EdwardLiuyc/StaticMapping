@@ -14,7 +14,7 @@ POINT_CLOUD_FRAME_ID=base_link
 ## gps: -gps -gps_frame_id
 ## and If you got one of these topics
 ## you MUST provide the tf connection between the one to pointcloud frame
-IMU_TOPIC=/imu/data
+IMU_TOPIC=/raw_imu
 IMU_FRAME_ID=novatel_imu
 
 ODOM_TOPIC=/navsat/odom
@@ -27,12 +27,12 @@ GPS_FRAME_ID=novatel_imu
   -cfg ${CONFIG_PATH} \
   -pc ${POINT_CLOUD_TOPIC} \
   -pc_frame_id ${POINT_CLOUD_FRAME_ID} \
-  -imu ${IMU_TOPIC} \
-  -imu_frame_id ${IMU_FRAME_ID} \
-  -odom ${ODOM_TOPIC} \
-  -odom_frame_id ${ODOM_FRAME_ID} \
   -gps ${GPS_TOPIC} \
-  -gps_frame_id ${GPS_FRAME_ID} 
+  -gps_frame_id ${GPS_FRAME_ID} \
+  -imu ${IMU_TOPIC} \
+  -imu_frame_id ${IMU_FRAME_ID}
+  # -odom ${ODOM_TOPIC} \
+  # -odom_frame_id ${ODOM_FRAME_ID} \
 
 exit 0 
 
