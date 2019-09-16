@@ -101,21 +101,9 @@ int MapBuilder::InitialiseInside() {
       return -1;
   }
 
-  use_imu_ = options_.front_end_options.use_imu;
-  if (options_.front_end_options.imu_frequency > 0) {
-    imu_update_peroid_ = 1. / options_.front_end_options.imu_frequency;
-  }
-  if (use_imu_) {
-    PRINT_INFO("Enable using imu, init imu estimater.");
-    gtsam::imuBias::ConstantBias bias(gtsam::Vector3(0, 0, 0),
-                                      gtsam::Vector3(0, 0, 0));
-    imu_current_estimate_ = common::make_unique<
-        gtsam::CombinedImuFactor::CombinedPreintegratedMeasurements>(
-        bias, gtsam::Matrix3::Zero(), gtsam::Matrix3::Zero(),
-        gtsam::Matrix3::Zero(), gtsam::Matrix3::Zero(), gtsam::Matrix3::Zero(),
-        gtsam::Matrix::Zero(6, 6));
-    imus_.reserve(2000);
-  }
+  use_imu_ = options_.front_end_options.imu_options.enabled;
+  CHECK_GT(options_.front_end_options.imu_options.frequency, 1.e-6);
+  imu_update_peroid_ = 1.f / options_.front_end_options.imu_options.frequency;
 
   PRINT_INFO("Init isam optimizer.");
   isam_optimizer_ = common::make_unique<back_end::IsamOptimizer<PointType>>(
@@ -155,15 +143,36 @@ int MapBuilder::InitialiseInside() {
 
 void MapBuilder::SetTransformOdomToLidar(const Eigen::Matrix4f& t) {
   transform_odom_lidar_ = t;
-
   PRINT_INFO("Got tf : odom -> lidar ");
   common::PrintTransform(t);
 }
 
 void MapBuilder::SetTransformImuToLidar(const Eigen::Matrix4f& t) {
   transform_imu_lidar_ = t;
-
   PRINT_INFO("Got tf : imu -> lidar ");
+  common::PrintTransform(t);
+}
+
+void MapBuilder::SetTrackingToImu(const Eigen::Matrix4f& t) {
+  tracking_to_imu_ = t;
+  // CHECK the transform
+  PRINT_INFO("Got tf : tracking -> imu ");
+  common::PrintTransform(t);
+  // @todo(edward) incude z!
+  CHECK(t.block(0, 3, 2, 1).norm() < 1.e-6)
+      << "The tracking frame should be just lying on the imu_link, otherwise "
+         "the acceleration calculation should be wrong!";
+}
+
+void MapBuilder::SetTrackingToOdom(const Eigen::Matrix4f& t) {
+  tracking_to_odom_ = t;
+  PRINT_INFO("Got tf : tracking -> imu ");
+  common::PrintTransform(t);
+}
+
+void MapBuilder::SetTrackingToLidar(const Eigen::Matrix4f& t) {
+  tracking_to_lidar_ = t;
+  PRINT_INFO("Got tf : tracking -> lidar ");
   common::PrintTransform(t);
 }
 
@@ -195,8 +204,32 @@ void MapBuilder::InsertImuMsg(const sensors::ImuMsg::Ptr& imu_msg) {
   if (!use_imu_ || end_all_thread_.load()) {
     return;
   }
-  common::MutexLocker locker(&mutex_);
-  imus_.push_back(imu_msg);
+
+  const Eigen::Matrix3d rotation =
+      common::Rotation(tracking_to_imu_).cast<double>();
+  Eigen::Vector3d new_acc =
+      rotation * Eigen::Vector3d(imu_msg->linear_acceleration.x,
+                                 imu_msg->linear_acceleration.y,
+                                 imu_msg->linear_acceleration.z);
+  Eigen::Vector3d new_angular_velocity =
+      rotation * Eigen::Vector3d(imu_msg->angular_velocity.x,
+                                 imu_msg->angular_velocity.y,
+                                 imu_msg->angular_velocity.z);
+
+  imu_msg->linear_acceleration.x = new_acc[0];
+  imu_msg->linear_acceleration.y = new_acc[1];
+  imu_msg->linear_acceleration.z = new_acc[2];
+  imu_msg->angular_velocity.x = new_angular_velocity[0];
+  imu_msg->angular_velocity.y = new_angular_velocity[1];
+  imu_msg->angular_velocity.z = new_angular_velocity[2];
+
+  if (!extrapolator_) {
+    extrapolator_ = PoseExtrapolator::InitializeWithImu(
+        SimpleTime::from_sec(0.001),
+        options_.front_end_options.imu_options.gravity_constant, *imu_msg);
+  } else {
+    extrapolator_->AddImuData(*imu_msg);
+  }
 }
 
 void MapBuilder::InsertOdomMsg(const sensors::OdomMsg::Ptr& odom_msg) {
@@ -204,13 +237,27 @@ void MapBuilder::InsertOdomMsg(const sensors::OdomMsg::Ptr& odom_msg) {
     return;
   }
 
+  // transform to tracking frame
+  const Eigen::Matrix4d tracking_frame_odom =
+      odom_msg->PoseInMatrix() * tracking_to_odom_.inverse().cast<double>();
+  odom_msg->SetPose(tracking_frame_odom);
+
+  static bool warned = false;
+  if (extrapolator_ == nullptr) {
+    // Until we've initialized the extrapolator we cannot add odometry data.
+    if (!warned) {
+      PRINT_WARNING("Extrapolator not yet initialized.");
+      warned = true;
+    }
+    return;
+  }
+  extrapolator_->AddOdometryData(*odom_msg);
+
   common::MutexLocker locker(&mutex_);
+  // odom_msgs_ are just for generating path file now
   if (odom_msgs_.empty()) {
     init_odom_msg_ = *odom_msg;
-  }  //  else {
-     // CHECK(odom_msg->header.stamp > odom_msgs_.back()->header.stamp);
-  // }
-
+  }
   Eigen::Matrix4d init_pose = init_odom_msg_.PoseInMatrix();
   Eigen::Matrix4d relative_pose =
       init_pose.inverse() * odom_msg->PoseInMatrix();
@@ -259,36 +306,34 @@ void MapBuilder::AddNewTrajectory() {
   PRINT_INFO_FMT("Add a new trajectory : %d", current_trajectory_->GetId());
 }
 
+void MapBuilder::InsertFrameForSubmap(const PointCloudPtr& cloud_ptr,
+                                      const Eigen::Matrix4f& global_pose,
+                                      const double match_score) {
+  auto frame = std::make_shared<Frame<PointType>>();
+  frame->SetCloud(cloud_ptr);
+  frame->CalculateDescriptor();
+  frame->SetTimeStamp(sensors::ToLocalTime(cloud_ptr->header.stamp));
+  frame->SetGlobalPose(global_pose);
+
+  common::MutexLocker locker(&mutex_);
+  frames_.push_back(frame);
+}
+
 void MapBuilder::ScanMatchProcessing() {
+  using Pose3d = PoseExtrapolator::RigidPose3d;
+
   scan_match_thread_running_ = true;
 
   PointCloudPtr target_cloud;
   PointCloudPtr source_cloud;
-  sensors::OdomMsg target_cloud_odom;
-  sensors::OdomMsg source_cloud_odom;
-
-  TransformMatrix last_guess = TransformMatrix::Identity();
-  TransformMatrix final_transform = TransformMatrix::Identity();
-  TransformMatrix accumulative_transform = TransformMatrix::Identity();
+  Pose3d pose_target = Pose3d::Identity();
+  Pose3d final_transform = Pose3d::Identity();
+  Pose3d accumulative_transform = Pose3d::Identity();
   SimpleTime last_source_time;
-
-  auto insert_frame_for_submap = [&](const PointCloudPtr& cloud_ptr,
-                                     const Eigen::Matrix4f& global_pose,
-                                     double match_score) {
-    auto frame = std::make_shared<Frame<PointType>>();
-    frame->SetCloud(cloud_ptr);
-    frame->CalculateDescriptor();
-    frame->SetTimeStamp(sensors::ToLocalTime(cloud_ptr->header.stamp));
-    frame->SetGlobalPose(global_pose);
-    {
-      common::MutexLocker locker(&mutex_);
-      frames_.push_back(frame);
-    }
-  };
 
   // get a new cloud from the cloud buffer
   // it is usually not the newest one but hasn't been calculated
-  auto get_new_cloud = [&](PointCloudPtr& cloud) -> bool {
+  const auto get_new_cloud = [&](PointCloudPtr& cloud) -> bool {
     common::MutexLocker locker(&mutex_);
     if (point_clouds_.empty()) {
       return false;
@@ -305,113 +350,73 @@ void MapBuilder::ScanMatchProcessing() {
     if (get_new_cloud(source_cloud)) {
       // if the first point cloud has no odom related, drop it!
       auto source_time = sensors::ToLocalTime(source_cloud->header.stamp);
-      if (!got_first_point_cloud_) {
-        if (use_odom_ && !GetOdomAtTime(source_time, &source_cloud_odom)) {
-          SimpleTime::from_sec(0.01).sleep();
-          continue;
-        }
+      if (!got_first_point_cloud_ && extrapolator_ != nullptr) {
         got_first_point_cloud_ = true;
         target_cloud = source_cloud;
-        target_cloud_odom = source_cloud_odom;
         history_cloud = target_cloud;
-        insert_frame_for_submap(source_cloud, Eigen::Matrix4f::Identity(), 1.);
+        InsertFrameForSubmap(source_cloud, Eigen::Matrix4f::Identity(), 1.);
         continue;
       }
     } else {
       if (end_all_thread_.load()) {
         break;
       }
-
       SimpleTime::from_sec(0.01).sleep();
       continue;
     }
 
-    // priority :
-    // 1. odom
-    // 2. imu
-    // 3. last aligning result
-    TransformMatrix guess = last_guess;
-    if (use_odom_) {
-      // try using odom first, then imu
-      if (GetOdomAtTime(sensors::ToLocalTime(source_cloud->header.stamp),
-                        &source_cloud_odom)) {
-        Eigen::Matrix4d delta_odom =
-            target_cloud_odom.PoseInMatrix().inverse() *
-            source_cloud_odom.PoseInMatrix();
-        // std::cout << "odom\n ";
-        // common::PrintTransform(source_cloud_odom.PoseInMatrix());
-
-        guess = transform_odom_lidar_.inverse() * delta_odom.cast<float>() *
-                transform_odom_lidar_;
-        // std::cout << "guess\n";
-        // common::PrintTransform(guess);
-        Eigen::Vector3f euler_angles = common::RotationMatrixToEulerAngles(
-            Eigen::Matrix3f(guess.block(0, 0, 3, 3)));
-        float guess_angles = std::fabs(euler_angles[0]) +
-                             std::fabs(euler_angles[1]) +
-                             std::fabs(euler_angles[2]);
-        guess_angles *= (180. / M_PI);
-        if (guess.block(0, 3, 3, 1).norm() <
-                options_.front_end_options.motion_filter.translation_range &&
-            guess_angles <
-                options_.front_end_options.motion_filter.angle_range) {
-          // @todo should check the status of gps
-          // when status of gps is good, we assume the guess is reletively
-          // accurate, so that we skip the scan match
-
-          // PRINT_DEBUG("SKIP the scan match.");
-          // it is a useless point cloud, remove the memory
-          source_cloud.reset();
-          continue;
-        }
-      } else {
-        PRINT_WARNING(
-            "Got no odom data at this time, use last result as the input "
-            "guess.");
-      }
-    } else if (use_imu_) {
-      gtsam::Rot3 last_rotation = imu_current_estimate_->deltaRij();
-      gtsam::Vector3 last_position = imu_current_estimate_->deltaPij();
-
-      GetImuAtTime(sensors::ToLocalTime(source_cloud->header.stamp));
-
-      double delta_yaw =
-          imu_current_estimate_->deltaRij().yaw() - last_rotation.yaw();
-      double delta_translation =
-          (imu_current_estimate_->deltaPij() - last_position)
-              .block(0, 0, 2, 1)
-              .norm();
-
-      Eigen::AngleAxisf delta_rotation(delta_yaw, Eigen::Vector3f::UnitZ());
-      guess.block(0, 0, 3, 3) = delta_rotation.matrix();
-      guess.block(0, 3, 3, 1) =
-          Eigen::Vector3f(delta_translation * std::cos(delta_yaw * 0.5),
-                          delta_translation * std::sin(delta_yaw * 0.5), 0.);
+    if (extrapolator_ == nullptr ||
+        sensors::ToLocalTime(source_cloud->header.stamp) <
+            extrapolator_->GetLastPoseTime()) {
+      PRINT_INFO("Extrapolator still initialising...");
+      target_cloud = source_cloud;
+      continue;
     }
+    Pose3d pose_source = extrapolator_->ExtrapolatePose(
+        sensors::ToLocalTime(source_cloud->header.stamp));
 
-    // start_clock();
+    common::PrintTransform(pose_source);
+
+    Pose3d guess = pose_target.inverse() * pose_source;
     common::NormalizeRotation(guess);
-    CHECK(target_cloud);
-    CHECK(source_cloud);
+
+    // filter some registration if not moving
+    // const double guess_angles =
+    //     common::RotationMatrixToEulerAngles(common::Rotation(guess)).norm() *
+    //     180. / M_PI;
+    // const double guess_translation = common::Translation(guess).norm();
+    // if (guess_translation <
+    //         options_.front_end_options.motion_filter.translation_range &&
+    //     guess_angles < options_.front_end_options.motion_filter.angle_range
+    //     && sensors::ToLocalTime(source_cloud->header.stamp -
+    //                          target_cloud->header.stamp)
+    //             .toSec() <
+    //         options_.front_end_options.motion_filter.time_range ) {
+    //   source_cloud.reset();
+    //   continue;
+    // }
+
     scan_matcher_->setInputTarget(target_cloud);
     scan_matcher_->setInputSource(source_cloud);
-    TransformMatrix align_result = TransformMatrix::Identity();
-    if (scan_matcher_->align(guess, align_result)) {
-      // end_clock(__FILE__, __FUNCTION__, __LINE__);
+    Eigen::Matrix4f align_result = Eigen::Matrix4f::Identity();
+    if (scan_matcher_->align(guess.cast<float>(), align_result)) {
       if (last_match_is_good) {
-        last_guess = align_result;
-        accumulative_transform *= align_result;
+        accumulative_transform *= align_result.cast<double>();
       } else {
-        last_guess = Eigen::Matrix4f::Identity();
+        //
       }
 
-      float accu_translation = accumulative_transform.block(0, 3, 3, 1).norm();
-      Eigen::Vector3f euler_angles = common::RotationMatrixToEulerAngles(
-          Eigen::Matrix3f(accumulative_transform.block(0, 0, 3, 3)));
-      float accu_angles = std::fabs(euler_angles[0]) +
-                          std::fabs(euler_angles[1]) +
-                          std::fabs(euler_angles[2]);
-      accu_angles *= (180. / M_PI);
+      pose_source = pose_target * align_result.cast<double>();
+      extrapolator_->AddPose(sensors::ToLocalTime(source_cloud->header.stamp),
+                             pose_source);
+      const float accu_translation =
+          common::Translation(accumulative_transform).norm();
+      Eigen::Vector3d euler_angles = common::RotationMatrixToEulerAngles(
+          common::Rotation(accumulative_transform));
+      const float accu_angles =
+          (std::fabs(euler_angles[0]) + std::fabs(euler_angles[1]) +
+           std::fabs(euler_angles[2])) *
+          (180. / M_PI);
       const float translation_range =
           options_.front_end_options.motion_filter.translation_range;
       const float angle_range =
@@ -423,15 +428,19 @@ void MapBuilder::ScanMatchProcessing() {
           scan_matcher_->setInputSource(source_cloud);
           scan_matcher_->setInputTarget(history_cloud);
           Eigen::Matrix4f tmp_result;
-          scan_matcher_->align(accumulative_transform, tmp_result);
-          accumulative_transform = tmp_result;
+          scan_matcher_->align(accumulative_transform.cast<float>(),
+                               tmp_result);
+          accumulative_transform = tmp_result.cast<double>();
         }
 
         final_transform *= accumulative_transform;
-        insert_frame_for_submap(source_cloud, final_transform,
-                                scan_matcher_->getFitnessScore());
+        // extrapolator_->AddPose(sensors::ToLocalTime(source_cloud->header.stamp),
+        //                        final_transform);
+        InsertFrameForSubmap(source_cloud, final_transform.cast<float>(),
+                             scan_matcher_->getFitnessScore());
+        pose_source = final_transform;
 
-        accumulative_transform = Eigen::Matrix4f::Identity();
+        accumulative_transform = Pose3d::Identity();
         history_cloud = source_cloud;
         first_in_accumulate = true;
       } else {
@@ -443,43 +452,11 @@ void MapBuilder::ScanMatchProcessing() {
     }
 
     target_cloud = source_cloud;
-    target_cloud_odom = source_cloud_odom;
+    pose_target = pose_source;
   }
 
   scan_match_thread_running_ = false;
   PRINT_INFO("point cloud thread exit.");
-}
-
-int MapBuilder::GetImuAtTime(const SimpleTime& stamp) {
-  std::vector<sensors::ImuMsg::Ptr> used_imus;
-  {
-    common::MutexLocker locker(&mutex_);
-    if (imus_.empty() || imus_.front()->header.stamp >= stamp) {
-      return 0;
-    }
-    if (imus_.back()->header.stamp <= stamp) {
-      std::swap(used_imus, imus_);
-    } else {
-      while (imus_.front()->header.stamp <= stamp) {
-        used_imus.push_back(imus_.front());
-        imus_.erase(imus_.begin());
-      }
-    }
-    if (used_imus.empty()) {
-      return 0;
-    }
-  }
-
-  for (auto& imu : used_imus) {
-    gtsam::Vector3 acc(imu->linear_acceleration.x, imu->linear_acceleration.y,
-                       imu->linear_acceleration.z);
-    gtsam::Vector3 angle_velocity(imu->angular_velocity.x,
-                                  imu->angular_velocity.y,
-                                  imu->angular_velocity.z);
-    imu_current_estimate_->integrateMeasurement(acc, angle_velocity,
-                                                imu_update_peroid_);
-  }
-  return static_cast<int>(used_imus.size());
 }
 
 sensors::OdomMsg InterpolateOdom(

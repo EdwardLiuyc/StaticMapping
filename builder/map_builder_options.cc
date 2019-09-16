@@ -38,7 +38,7 @@ void CheckOptions(const MapBuilderOptions& options) {
   CHECK_GE(options.output_mrvm_settings.max_point_num_in_cell, 1);
 }
 
-int MapBuilder::Initialise(const char* config_file_name) {
+MapBuilderOptions& MapBuilder::Initialise(const char* config_file_name) {
   bool use_default_config = false;
   if (!config_file_name || config_file_name[0] == '\0') {
     PRINT_WARNING("Invalid config file name. using default config.");
@@ -68,7 +68,7 @@ int MapBuilder::Initialise(const char* config_file_name) {
 
   if (use_default_config) {
     InitialiseInside();
-    return -1;
+    return options_;
   }
 
   PRINT_INFO_FMT("Load configurations from file: %s", config_file_name);
@@ -149,10 +149,15 @@ int MapBuilder::Initialise(const char* config_file_name) {
     GET_SINGLE_OPTION(front_end_node, "motion_filter", "angle_range",
                       motion_filter_options.angle_range, float, float);
 
+    auto& imu_options = options_.front_end_options.imu_options;
     GET_SINGLE_OPTION(front_end_node, "imu_options", "use_imu",
-                      options_.front_end_options.use_imu, bool, bool);
+                      imu_options.enabled, bool, bool);
+    GET_SINGLE_OPTION(front_end_node, "imu_options", "type", imu_options.type,
+                      int, sensors::ImuType);
     GET_SINGLE_OPTION(front_end_node, "imu_options", "imu_frequency",
-                      options_.front_end_options.imu_frequency, int, int32_t);
+                      imu_options.frequency, float, float);
+    GET_SINGLE_OPTION(front_end_node, "imu_options", "gravity_constant",
+                      imu_options.gravity_constant, float, float);
   } else {
     PRINT_WARNING("No config for front end");
   }
@@ -247,7 +252,7 @@ int MapBuilder::Initialise(const char* config_file_name) {
 
   CheckOptions(options_);
   InitialiseInside();
-  return 0;
+  return options_;
 }
 
 }  // namespace static_map

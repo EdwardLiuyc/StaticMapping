@@ -29,6 +29,7 @@
 #include "builder/imu_tracker.h"
 #include "builder/sensors.h"
 #include "common/math.h"
+#include "common/mutex.h"
 #include "common/simple_time.h"
 
 namespace static_map {
@@ -49,8 +50,8 @@ class PoseExtrapolator {
 
   // Returns the time of the last added pose or Time::min() if no pose was added
   // yet.
-  SimpleTime GetLastPoseTime() const;
-  SimpleTime GetLastExtrapolatedTime() const;
+  SimpleTime GetLastPoseTime();
+  SimpleTime GetLastExtrapolatedTime();
 
   void AddPose(SimpleTime time, const RigidPose3d& pose);
   void AddImuData(const sensors::ImuMsg& imu_data);
@@ -78,6 +79,7 @@ class PoseExtrapolator {
                                          ImuTracker* imu_tracker) const;
   Eigen::Vector3d ExtrapolateTranslation(SimpleTime time);
 
+  common::Mutex mutex_;
   const SimpleTime pose_queue_duration_;
   struct TimedPose {
     TimedPose() {}

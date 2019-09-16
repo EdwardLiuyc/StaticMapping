@@ -120,6 +120,7 @@ struct Header {
   std::string frame_id;
 };
 
+enum ImuType { kNormalImu, kInsCombinedImu, kImuTypeCount };
 struct ImuMsg {
  public:
   ImuMsg() = default;
