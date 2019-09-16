@@ -77,6 +77,8 @@ struct Options {
     float angle_range = 1.5;
     float time_range = 0.5;
   } motion_filter;
+
+  int accumulate_cloud_num = 1;
 };
 
 }  // namespace front_end
@@ -232,6 +234,8 @@ class MapBuilder {
   // ********************* data & options *********************
   MapBuilderOptions options_;
   // input data from sensors
+  PointCloudPtr accumulated_point_cloud_;
+  int accumulated_cloud_count_;
   std::vector<PointCloudPtr> point_clouds_;
   // odoms
   std::vector<sensors::OdomMsg::Ptr> odom_msgs_;

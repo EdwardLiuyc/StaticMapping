@@ -30,9 +30,6 @@
 #include <sensor_msgs/PointCloud.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <std_msgs/String.h>
-#include <tf/transform_listener.h>
-#include <tf2_msgs/TFMessage.h>
-#include <tf_conversions/tf_eigen.h>
 #include <visualization_msgs/Marker.h>
 // stl
 #include <sstream>
@@ -40,6 +37,7 @@
 #include "builder/map_builder.h"
 #include "builder/msg_conversion.h"
 #include "common/simple_time.h"
+#include "ros_node/tf_bridge.h"
 
 using static_map::MapBuilder;
 static MapBuilder::Ptr map_builder;
@@ -147,6 +145,10 @@ int main(int argc, char** argv) {
   std::string config_file = "";
   pcl::console::parse_argument(argc, argv, "-cfg", config_file);
 
+  // urdf file
+  std::string urdf_file = "";
+  pcl::console::parse_argument(argc, argv, "-urdf", urdf_file);
+
   ros::Publisher map_publisher =
       n.advertise<sensor_msgs::PointCloud2>("/optimized_map", 1);
   ros::Publisher submap_publisher =
@@ -213,55 +215,44 @@ int main(int argc, char** argv) {
 
   map_builder = std::make_shared<MapBuilder>();
 
+  // @todo(edward) add a paramater fot tracking frame
   const std::string tracking_frame = "base_link";
 
-  tf::TransformListener listener;
-  if (use_imu) {
-    std::string tf_error_msg;
-    int wait_count = 30;
-    while (!listener.waitForTransform(tracking_frame, imu_frame_id,
-                                      ros::Time(0), ros::Duration(2.),
-                                      ros::Duration(0.001), &tf_error_msg)) {
-      PRINT_INFO_FMT("Wating for tf from %s to %s", tracking_frame.c_str(),
-                     imu_frame_id.c_str());
-      wait_count--;
-      if (wait_count == 0) {
-        PRINT_ERROR(tf_error_msg);
-        return -1;
-      }
+  if (urdf_file.empty()) {
+    tf::TransformListener listener;
+    map_builder->SetTrackingToLidar(
+        static_map_ros::LoopUpTransfrom(tracking_frame, cloud_frame_id,
+                                        listener)
+            .cast<float>());
+    if (use_imu) {
+      map_builder->SetTrackingToImu(static_map_ros::LoopUpTransfrom(
+                                        tracking_frame, imu_frame_id, listener)
+                                        .cast<float>());
     }
-    tf::StampedTransform transform;
-    /// get the tf odom -> lidar
-    listener.lookupTransform(tracking_frame, imu_frame_id, ros::Time(0),
-                             transform);
-
-    Eigen::Isometry3d tracking_to_imu = Eigen::Isometry3d::Identity();
-    tf::transformTFToEigen(transform, tracking_to_imu);
-    map_builder->SetTrackingToImu(tracking_to_imu.matrix().cast<float>());
-  }
-
-  if (use_odom) {
-    std::string tf_error_msg;
-    int wait_count = 30;
-    while (!listener.waitForTransform(odom_frame_id, cloud_frame_id,
-                                      ros::Time(0), ros::Duration(2.),
-                                      ros::Duration(0.001), &tf_error_msg)) {
-      PRINT_INFO_FMT("Wating for tf from %s to %s", odom_frame_id.c_str(),
-                     cloud_frame_id.c_str());
-      wait_count--;
-      if (wait_count == 0) {
-        PRINT_ERROR(tf_error_msg);
-        return -1;
-      }
+    if (use_odom) {
+      map_builder->SetTransformOdomToLidar(
+          static_map_ros::LoopUpTransfrom(odom_frame_id, cloud_frame_id,
+                                          listener)
+              .cast<float>());
     }
-    tf::StampedTransform transform;
-    /// get the tf odom -> lidar
-    listener.lookupTransform(odom_frame_id, cloud_frame_id, ros::Time(0),
-                             transform);
-
-    Eigen::Isometry3d t_odom_lidar = Eigen::Isometry3d::Identity();
-    tf::transformTFToEigen(transform, t_odom_lidar);
-    map_builder->SetTransformOdomToLidar(t_odom_lidar.matrix().cast<float>());
+  } else {
+    tf2_ros::Buffer tf_buffer;
+    static_map_ros::ReadStaticTransformsFromUrdf(urdf_file, &tf_buffer);
+    map_builder->SetTrackingToLidar(
+        static_map_ros::LoopUpTransfrom(tracking_frame, cloud_frame_id,
+                                        tf_buffer)
+            .cast<float>());
+    if (use_imu) {
+      map_builder->SetTrackingToImu(static_map_ros::LoopUpTransfrom(
+                                        tracking_frame, imu_frame_id, tf_buffer)
+                                        .cast<float>());
+    }
+    if (use_odom) {
+      map_builder->SetTransformOdomToLidar(
+          static_map_ros::LoopUpTransfrom(odom_frame_id, cloud_frame_id,
+                                          tf_buffer)
+              .cast<float>());
+    }
   }
 
   if (!config_file.empty()) {

@@ -200,8 +200,6 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - [ ] use some machine learning or deep learning method to add semantic labels
 - [ ] use a docker to release the environment
 - [ ] get odom message from a cheap GPS and IMU intergration  
-- [x] add a pose extrapolator (refer to google caortgrapher) using imu to do motion compensation
-- [x] add a checker for options
 - [ ] fix bug in imu pre-integration (now the imu is just for INS but not normal IMU)
 - [ ] add support for different kind of GPS (INS&RTK&cheap gps)
 - [ ] add support for different king of IMU and ODOM
@@ -214,4 +212,4 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - [ ] add a time threshold for motion filter
 - [ ] add gps factor in isam optimizer
 - [ ] using kdtree for loop detection (m2dp search and matching)
-- [x] make pose extrapolator thread-safe
+- [ ] add a tf bridge

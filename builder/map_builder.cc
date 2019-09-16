@@ -56,7 +56,9 @@ constexpr int kSubmapResSize = 100;
 constexpr int kUtmZone = 51;
 
 MapBuilder::MapBuilder()
-    : use_imu_(false),
+    : accumulated_point_cloud_(new PointCloudType),
+      accumulated_cloud_count_(0),
+      use_imu_(false),
       use_gps_(false),
       end_all_thread_(false),
       end_managing_memory_(false),
@@ -180,16 +182,33 @@ void MapBuilder::InsertPointcloudMsg(const PointCloudPtr& point_cloud) {
   if (end_all_thread_.load()) {
     return;
   }
-  // start_clock();
+
+  // @todo(edward) if accumulate_cloud_num == 1
+  // skip this part
+  {
+    common::MutexLocker locker(&mutex_);
+    *accumulated_point_cloud_ += *point_cloud;
+    accumulated_cloud_count_++;
+    if (accumulated_cloud_count_ <
+        options_.front_end_options.accumulate_cloud_num) {
+      return;
+    }
+  }
+
+  PointCloudPtr transformed_cloud(new PointCloudType);
+  pcl::transformPointCloud(*accumulated_point_cloud_, *transformed_cloud,
+                           tracking_to_lidar_);
+
   PointCloudPtr filtered_cloud(new PointCloudType);
-  DownSamplePointcloud(point_cloud, filtered_cloud);
-  // end_clock(__FILE__, __FUNCTION__, __LINE__);
+  DownSamplePointcloud(transformed_cloud, filtered_cloud);
 
   // registrator::IcpFast<PointType> matcher;
   // matcher.setInputTarget(point_cloud);
 
   point_cloud->points.clear();
   point_cloud->points.shrink_to_fit();
+  accumulated_cloud_count_ = 0;
+  accumulated_point_cloud_->clear();
 
   common::MutexLocker locker(&mutex_);
   point_clouds_.push_back(filtered_cloud);
