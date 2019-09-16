@@ -31,8 +31,8 @@ void CheckOptions(const MapBuilderOptions& options) {
   CHECK(!options.back_end_options.loop_detector_setting.use_gps ||
         !options.back_end_options.loop_detector_setting.use_descriptor)
       << "You should selete at least one way to do loop detect: use gps or "
-         "descriptor or both"
-      << std::endl;
+         "descriptor or both.";
+  CHECK_GE(options.front_end_options.accumulate_cloud_num, 1);
   CHECK_GT(options.output_mrvm_settings.hit_prob, 0.5);
   CHECK_LT(options.output_mrvm_settings.miss_prob, 0.5);
   CHECK_GE(options.output_mrvm_settings.max_point_num_in_cell, 1);
@@ -134,6 +134,11 @@ MapBuilderOptions& MapBuilder::Initialise(const char* config_file_name) {
     GET_SINGLE_OPTION(
         front_end_node, "scan_matcher_options", "voxel_filter_resolution",
         scan_matcher_options.voxel_filter_resolution, float, float);
+
+    auto& front_end_options = options_.front_end_options;
+    GET_SINGLE_OPTION(static_map_node, "front_end_options",
+                      "accumulate_cloud_num",
+                      front_end_options.accumulate_cloud_num, int, int);
 
     if (!front_end_node.child("scan_matcher_options").empty() &&
         !front_end_node.child("scan_matcher_options")

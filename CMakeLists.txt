@@ -87,6 +87,7 @@ find_package(catkin COMPONENTS
   tf
   tf_conversions
   pcl_conversions
+  urdf
   REQUIRED
 )
 include_directories(${catkin_INCLUDE_DIRS})
@@ -167,7 +168,10 @@ message(STATUS "CXX FLAGS: ${CMAKE_CXX_FLAGS}")
 add_library(${TARGET_LIB_NAME} ${srcs} ${common_srcs} ${registrators_srcs} ${backend_srcs} ${desp_srcs})
 target_link_libraries(${TARGET_LIB_NAME} ${OpenCV_LIBRARIES})
 
-add_executable(static_mapping_node ros_node/static_mapping_node.cpp)
+add_executable(static_mapping_node 
+  ros_node/static_mapping_node.cpp
+  ros_node/urdf_reader.cc
+  ros_node/tf_bridge.cc)
 target_link_libraries(static_mapping_node ${TARGET_LIB_NAME} ${require_libs})
 
 add_executable(join_maps_node ros_node/join_maps_node.cpp)
