@@ -188,28 +188,27 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 4. **Fast Segmentation of 3D Pointcloud for Ground Vehicles**, M. Himmelsbach and Felix v. Hundelshausen and H.-J. Wuensche, IEEE Intelligent Vehicles Symposium, Proceedings, 2010
 
 # TODO
-- [ ] add tests 
-- [ ] use el_wheel
-- [ ] lidar motion compensention inside
-- [ ] ICP using GPU 
-- [ ] stand-alone ICP without libpointmatcher
-- [ ] parallel PointCloudLib 
-- [ ] finish multi-trajectory map builder
-- [ ] improve MRVM 
-- [ ] use ground detection to label the pointcloud 
-- [ ] use some machine learning or deep learning method to add semantic labels
-- [ ] use a docker to release the environment
-- [ ] get odom message from a cheap GPS and IMU intergration  
-- [ ] fix bug in imu pre-integration (now the imu is just for INS but not normal IMU)
-- [ ] add support for different kind of GPS (INS&RTK&cheap gps)
-- [ ] add support for different king of IMU and ODOM
-- [ ] add support for more kind of pointclouds
-- [ ] add support for cloud packets not only pointcloud in a entire view
-- [ ] add a Pose3d strcut for simple operation of matrix4f or just use gtsam::pose3d
-- [ ] using Eigen::Vector instead of sensors::Vector3
-- [ ] add support for urdf file
-- [ ] use double instead of float (eigen::matrix)
-- [ ] add a time threshold for motion filter
-- [ ] add gps factor in isam optimizer
-- [ ] using kdtree for loop detection (m2dp search and matching)
-- [ ] add a tf bridge
+- add tests 
+- **lidar motion compensention inside**
+- ICP using GPU 
+- stand-alone ICP without libpointmatcher
+- parallel PointCloudLib 
+- finish multi-trajectory map builder
+- improve MRVM 
+- use ground detection to label the pointcloud 
+- use some machine learning or deep learning method to add semantic labels
+- use a docker to release the environment
+- get odom message from a cheap GPS and IMU intergration  
+- fix bug in imu pre-integration (now the imu is just for INS but not normal IMU)
+- add support for different kind of GPS (INS&RTK&cheap gps)
+- add support for different king of IMU and ODOM
+- add support for more kind of pointclouds
+- add support for cloud packets not only pointcloud in a entire view
+- add a Pose3d struct for simple operation of matrix4f or just use gtsam::pose3d
+- using Eigen::Vector instead of sensors::Vector3
+- use double instead of float (eigen::matrix)
+- add a time threshold for motion filter
+- **add gps factor in isam optimizer**
+- using kdtree for loop detection (m2dp search and matching)
+- mrvm output to a special format data file and can be transformed to pcd independently
+- mrvm output center of voxels

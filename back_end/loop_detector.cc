@@ -280,9 +280,9 @@ bool LoopDetector<PointT>::CloseLoop(const int target_id, const int source_id,
   scan_matcher.setInputTarget(all_frames_.at(target_id)->Cloud());
 
   scan_matcher.align(init_guess, *result);
-  auto match_score = scan_matcher.getFitnessScore();
+  const double match_score = scan_matcher.getFitnessScore();
   // @todo add a parameter for this threshold
-  if (match_score > 0.8) {
+  if (match_score > 0.75) {
     // match score = exp(-score)
     // so, score = -log_e(match_score)
     *score = -std::log(match_score);
@@ -293,11 +293,11 @@ bool LoopDetector<PointT>::CloseLoop(const int target_id, const int source_id,
     //           << all_frames_.at(source_id)->GlobalPose()
     //           << "\nfirst: " << target_id << std::endl
     //           << all_frames_.at(target_id)->GlobalPose() << std::endl;
-    // PRINT_DEBUG_FMT("match score: %lf, score: %lf", match_score, score);
+    // PRINT_DEBUG_FMT("match score: %lf, score: %lf", match_score, *score);
     // typename pcl::PointCloud<PointT>::Ptr matched_cloud(
     //     new typename pcl::PointCloud<PointT>);
     // pcl::transformPointCloud(*all_frames_.at(source_id)->Cloud(),
-    //                          *matched_cloud, result);
+    //                          *matched_cloud, *result);
     // *matched_cloud += *all_frames_.at(target_id)->Cloud();
     // pcl::io::savePCDFile("pcd/matched_" + std::to_string(target_id) + "_" +
     //                          std::to_string(source_id) + ".pcd",
