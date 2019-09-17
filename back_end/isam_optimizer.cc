@@ -61,14 +61,10 @@ IsamOptimizer<PointT>::IsamOptimizer(const IsamOptimizerOptions &options,
 
   prior_noise_model_ = NM::Diagonal::Sigmas(
       (gtsam::Vector(6) << 0.2, 0.2, 0.2, 0.01, 0.01, 0.01).finished());
-  frame_match_noise_model_ = NM::Robust::Create(
-      NM::mEstimator::Huber::Create(1),
-      NM::Diagonal::Sigmas(
-          (gtsam::Vector(6) << 0.1, 0.1, 0.15, 0.1, 0.1, 0.1).finished()));
-  loop_closure_noise_model_ = NM::Robust::Create(
-      NM::mEstimator::Huber::Create(1),
-      NM::Diagonal::Sigmas(
-          (gtsam::Vector(6) << 0.1, 0.1, 0.15, 0.1, 0.1, 0.1).finished()));
+  frame_match_noise_model_ = NM::Diagonal::Sigmas(
+      (gtsam::Vector(6) << 0.05, 0.05, 0.1, 0.1, 0.1, 0.1).finished());
+  loop_closure_noise_model_ = NM::Diagonal::Sigmas(
+      (gtsam::Vector(6) << 0.05, 0.05, 0.1, 0.1, 0.1, 0.1).finished());
   odom_tf_noise_model_ = NM::Diagonal::Sigmas(
       (gtsam::Vector(6) << 0.5, 0.5, 1.5, 0.1, 0.1, 0.1).finished());
   odom_noise_model_ = NM::Robust::Create(

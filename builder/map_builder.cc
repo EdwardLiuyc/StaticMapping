@@ -179,13 +179,16 @@ void MapBuilder::SetTrackingToLidar(const Eigen::Matrix4f& t) {
 }
 
 void MapBuilder::InsertPointcloudMsg(const PointCloudPtr& point_cloud) {
-  if (end_all_thread_.load()) {
+  if (end_all_thread_.load() || extrapolator_ == nullptr ||
+      sensors::ToLocalTime(point_cloud->header.stamp) <
+          extrapolator_->GetLastPoseTime()) {
     return;
   }
 
-  // @todo(edward) if accumulate_cloud_num == 1
-  // skip this part
-  {
+  // transform to tracking frame
+  pcl::transformPointCloud(*point_cloud, *point_cloud, tracking_to_lidar_);
+  // accumulating clouds into one
+  if (options_.front_end_options.accumulate_cloud_num > 1) {
     common::MutexLocker locker(&mutex_);
     *accumulated_point_cloud_ += *point_cloud;
     accumulated_cloud_count_++;
@@ -193,14 +196,13 @@ void MapBuilder::InsertPointcloudMsg(const PointCloudPtr& point_cloud) {
         options_.front_end_options.accumulate_cloud_num) {
       return;
     }
+  } else {
+    accumulated_point_cloud_.reset();
+    accumulated_point_cloud_ = point_cloud;
   }
-
-  PointCloudPtr transformed_cloud(new PointCloudType);
-  pcl::transformPointCloud(*accumulated_point_cloud_, *transformed_cloud,
-                           tracking_to_lidar_);
-
+  // filtering cloud
   PointCloudPtr filtered_cloud(new PointCloudType);
-  DownSamplePointcloud(transformed_cloud, filtered_cloud);
+  DownSamplePointcloud(accumulated_point_cloud_, filtered_cloud);
 
   // registrator::IcpFast<PointType> matcher;
   // matcher.setInputTarget(point_cloud);
@@ -369,7 +371,7 @@ void MapBuilder::ScanMatchProcessing() {
     if (get_new_cloud(source_cloud)) {
       // if the first point cloud has no odom related, drop it!
       auto source_time = sensors::ToLocalTime(source_cloud->header.stamp);
-      if (!got_first_point_cloud_ && extrapolator_ != nullptr) {
+      if (!got_first_point_cloud_) {
         got_first_point_cloud_ = true;
         target_cloud = source_cloud;
         history_cloud = target_cloud;
@@ -384,17 +386,15 @@ void MapBuilder::ScanMatchProcessing() {
       continue;
     }
 
-    if (extrapolator_ == nullptr ||
-        sensors::ToLocalTime(source_cloud->header.stamp) <
-            extrapolator_->GetLastPoseTime()) {
+    const auto source_time = sensors::ToLocalTime(source_cloud->header.stamp);
+    if (source_time < extrapolator_->GetLastPoseTime()) {
       PRINT_INFO("Extrapolator still initialising...");
       target_cloud = source_cloud;
       continue;
     }
-    Pose3d pose_source = extrapolator_->ExtrapolatePose(
-        sensors::ToLocalTime(source_cloud->header.stamp));
+    Pose3d pose_source = extrapolator_->ExtrapolatePose(source_time);
 
-    common::PrintTransform(pose_source);
+    // common::PrintTransform(pose_source);
 
     Pose3d guess = pose_target.inverse() * pose_source;
     common::NormalizeRotation(guess);
@@ -418,56 +418,48 @@ void MapBuilder::ScanMatchProcessing() {
     scan_matcher_->setInputTarget(target_cloud);
     scan_matcher_->setInputSource(source_cloud);
     Eigen::Matrix4f align_result = Eigen::Matrix4f::Identity();
-    if (scan_matcher_->align(guess.cast<float>(), align_result)) {
-      if (last_match_is_good) {
-        accumulative_transform *= align_result.cast<double>();
-      } else {
-        //
+    scan_matcher_->align(guess.cast<float>(), align_result);
+    accumulative_transform *= align_result.cast<double>();
+
+    pose_source = pose_target * align_result.cast<double>();
+    extrapolator_->AddPose(source_time, pose_source);
+    const Eigen::Quaterniond gravity_alignment =
+        extrapolator_->EstimateGravityOrientation(source_time);
+    const float accu_translation =
+        common::Translation(accumulative_transform).norm();
+    Eigen::Vector3d euler_angles = common::RotationMatrixToEulerAngles(
+        common::Rotation(accumulative_transform));
+    const float accu_angles =
+        (std::fabs(euler_angles[0]) + std::fabs(euler_angles[1]) +
+         std::fabs(euler_angles[2])) *
+        (180. / M_PI);
+    const float translation_range =
+        options_.front_end_options.motion_filter.translation_range;
+    const float angle_range =
+        options_.front_end_options.motion_filter.angle_range;
+    if (accu_translation >= translation_range ||
+        (angle_range > 1e-3 && accu_angles >= angle_range)) {
+      // re-align if nessary
+      if (!first_in_accumulate) {
+        scan_matcher_->setInputSource(source_cloud);
+        scan_matcher_->setInputTarget(history_cloud);
+        Eigen::Matrix4f tmp_result;
+        scan_matcher_->align(accumulative_transform.cast<float>(), tmp_result);
+        accumulative_transform = tmp_result.cast<double>();
       }
 
-      pose_source = pose_target * align_result.cast<double>();
-      extrapolator_->AddPose(sensors::ToLocalTime(source_cloud->header.stamp),
-                             pose_source);
-      const float accu_translation =
-          common::Translation(accumulative_transform).norm();
-      Eigen::Vector3d euler_angles = common::RotationMatrixToEulerAngles(
-          common::Rotation(accumulative_transform));
-      const float accu_angles =
-          (std::fabs(euler_angles[0]) + std::fabs(euler_angles[1]) +
-           std::fabs(euler_angles[2])) *
-          (180. / M_PI);
-      const float translation_range =
-          options_.front_end_options.motion_filter.translation_range;
-      const float angle_range =
-          options_.front_end_options.motion_filter.angle_range;
-      if (accu_translation >= translation_range ||
-          (angle_range > 1e-3 && accu_angles >= angle_range)) {
-        // re-align if nessary
-        if (!first_in_accumulate) {
-          scan_matcher_->setInputSource(source_cloud);
-          scan_matcher_->setInputTarget(history_cloud);
-          Eigen::Matrix4f tmp_result;
-          scan_matcher_->align(accumulative_transform.cast<float>(),
-                               tmp_result);
-          accumulative_transform = tmp_result.cast<double>();
-        }
+      final_transform *= accumulative_transform;
+      // extrapolator_->AddPose(sensors::ToLocalTime(source_cloud->header.stamp),
+      //                        final_transform);
+      InsertFrameForSubmap(source_cloud, final_transform.cast<float>(),
+                           scan_matcher_->getFitnessScore());
+      pose_source = final_transform;
 
-        final_transform *= accumulative_transform;
-        // extrapolator_->AddPose(sensors::ToLocalTime(source_cloud->header.stamp),
-        //                        final_transform);
-        InsertFrameForSubmap(source_cloud, final_transform.cast<float>(),
-                             scan_matcher_->getFitnessScore());
-        pose_source = final_transform;
-
-        accumulative_transform = Pose3d::Identity();
-        history_cloud = source_cloud;
-        first_in_accumulate = true;
-      } else {
-        first_in_accumulate = false;
-      }
-    } else {  // align failed
-      PRINT_ERROR("failed to aligning clouds");
-      last_match_is_good = false;
+      accumulative_transform = Pose3d::Identity();
+      history_cloud = source_cloud;
+      first_in_accumulate = true;
+    } else {
+      first_in_accumulate = false;
     }
 
     target_cloud = source_cloud;

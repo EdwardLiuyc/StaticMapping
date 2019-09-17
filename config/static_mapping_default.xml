@@ -94,7 +94,7 @@
         enable_ndt="false" 
         use_voxel_filter="true" 
         voxel_filter_resolution="0.2"
-        accepted_min_score="0.8" />
+        accepted_min_score="0.75" />
       <submap_options 
         frame_count="2"
         enable_inner_multiview_icp="false"
@@ -114,18 +114,18 @@
         loop_ignore_threshold="15"
         trying_detect_loop_count="1"
         max_close_loop_distance="25."
-        m2dp_match_score="0.985"
-        nearest_history_pos_num="3" />
+        m2dp_match_score="0.96"
+        nearest_history_pos_num="5" />
     </back_end_options>
     <output_mrvm_settings
-      output_average="false"
-      prob_threshold="0.57" 
+      output_average="true"
+      prob_threshold="0.55" 
       low_resolution="1." 
       high_resolution="0.1"
       hit_prob="0.55"
       miss_prob="0.48"
       z_offset="1.2"
-      max_point_num_in_cell="4">
+      max_point_num_in_cell="10">
     </output_mrvm_settings>
   </static_mapping>
 </edward_liu>
