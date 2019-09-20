@@ -30,7 +30,7 @@
 namespace static_map {
 namespace common {
 
-constexpr double kValidLength = 10000.;
+constexpr double kValidLength = 100000000.;
 
 template <typename PointT>
 double Length(const PointT& point) {

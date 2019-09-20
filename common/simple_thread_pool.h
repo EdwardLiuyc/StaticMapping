@@ -31,6 +31,7 @@
 #include <queue>
 #include <stdexcept>
 #include <thread>
+#include <utility>
 #include <vector>
 
 namespace static_map {

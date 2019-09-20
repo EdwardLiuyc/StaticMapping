@@ -37,7 +37,9 @@
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 // stl
+#include <boost/optional.hpp>
 #include <memory>
+#include <utility>
 // local
 #include "back_end/loop_detector.h"
 #include "back_end/view_graph.h"
@@ -68,6 +70,10 @@ class IsamOptimizer {
   /// @brief get the odom->lidar tf after calibration
   Eigen::Matrix4f GetTransformOdomToLidar();
 
+  void SetTrackingToGps(const Eigen::Matrix4f &t);
+
+  Eigen::Matrix4f GetTransformTrackingToGps();
+
   void RunFinalOptimazation();
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -83,9 +89,10 @@ class IsamOptimizer {
 
  private:
   std::unique_ptr<gtsam::ISAM2> isam_;
-  std::shared_ptr<gtsam::ExpressionFactorGraph> isam_factor_graph_;
+  std::shared_ptr<gtsam::NonlinearFactorGraph> isam_factor_graph_;
   gtsam::Values initial_estimate_;
   gtsam::noiseModel::Base::shared_ptr prior_noise_model_;
+  gtsam::noiseModel::Base::shared_ptr gps_noise_model_;
   gtsam::noiseModel::Base::shared_ptr frame_match_noise_model_;
   gtsam::noiseModel::Base::shared_ptr loop_closure_noise_model_;
   // used in online calibration
@@ -93,12 +100,15 @@ class IsamOptimizer {
   gtsam::noiseModel::Base::shared_ptr odom_noise_model_;
 
   Eigen::Matrix4f tf_odom_lidar_ = Eigen::Matrix4f::Identity();
+  Eigen::Matrix4f tf_tracking_gps_ = Eigen::Matrix4f::Identity();
+  boost::optional<Eigen::Vector3d> first_gps_;
 
   LoopDetector<PointT> loop_detector_;
   IsamOptimizerOptions options_;
 
   ViewGraph view_graph_;
   bool calib_factor_inserted_ = false;
+  int accumulated_gps_count_ = 0;
 };
 
 }  // namespace back_end

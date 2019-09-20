@@ -212,3 +212,4 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - using kdtree for loop detection (m2dp search and matching)
 - mrvm output to a special format data file and can be transformed to pcd independently
 - mrvm output center of voxels
+- **add more config files and .sh files for other sensor-sets**
