@@ -149,6 +149,11 @@ int main(int argc, char** argv) {
   std::string urdf_file = "";
   pcl::console::parse_argument(argc, argv, "-urdf", urdf_file);
 
+  // tracking frame
+  // default: base_link
+  std::string tracking_frame = "base_link";
+  pcl::console::parse_argument(argc, argv, "-track", tracking_frame);
+
   ros::Publisher map_publisher =
       n.advertise<sensor_msgs::PointCloud2>("/optimized_map", 1);
   ros::Publisher submap_publisher =
@@ -214,9 +219,6 @@ int main(int argc, char** argv) {
   };
 
   map_builder = std::make_shared<MapBuilder>();
-
-  // @todo(edward) add a paramater fot tracking frame
-  const std::string tracking_frame = "base_link";
 
   if (urdf_file.empty()) {
     tf::TransformListener listener;

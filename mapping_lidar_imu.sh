@@ -1,5 +1,7 @@
 ## usally, you can just leave this config file just like this, it will work fine
-CONFIG_PATH=./config/static_mapping_default.xml
+CONFIG_PATH=./config/lidar_imu_default.xml
+## if you have a urdf file that contains robot model,
+## set it here and the mapping process will not listen to tf topics
 URDF_FILE=./urdf/test.urdf
 ## the follow 2 items must be set!!!
 ## the topic name of your pointcloud msg (ros)
@@ -26,15 +28,11 @@ GPS_FRAME_ID=novatel_imu
 
 ./build/static_mapping_node \
   -cfg ${CONFIG_PATH} \
+  -urdf ${URDF_FILE} \
   -pc ${POINT_CLOUD_TOPIC} \
   -pc_frame_id ${POINT_CLOUD_FRAME_ID} \
   -imu ${IMU_TOPIC} \
   -imu_frame_id ${IMU_FRAME_ID}
-  # -urdf ${URDF_FILE} \
-  # -odom ${ODOM_TOPIC} \
-  # -odom_frame_id ${ODOM_FRAME_ID} \
-  # -gps ${GPS_TOPIC} \
-  # -gps_frame_id ${GPS_FRAME_ID} \
 
 exit 0 
 
