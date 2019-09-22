@@ -1,0 +1,1 @@
+../../build/tools/join_pieces -pkg ../../pcd/map_package.xml

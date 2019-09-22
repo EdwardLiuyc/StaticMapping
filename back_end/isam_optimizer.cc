@@ -190,13 +190,10 @@ void IsamOptimizer<PointT>::AddFrame(
 
   if (options_.use_gps && frame->HasUtm()) {
     const Eigen::Vector3d gps = frame->GetRelatedUtm();
-    if (!first_gps_) {
-      first_gps_ = gps;
-    }
     if (accumulated_gps_count_ % kGpsSkipNum == 0) {
       // PRINT_INFO("add a gps constraint.");
       isam_factor_graph_->addExpressionFactor(
-          gps_noise_model_, gtsam::Point3(gps - first_gps_.value()),
+          gps_noise_model_, gtsam::Point3(gps),
           gtsam::transform_from(
               gtsam::compose(Pose3_(GPS_COORD_KEY),
                              Pose3_(POSE_KEY(result.current_frame_index))),
@@ -237,6 +234,15 @@ void IsamOptimizer<PointT>::RunFinalOptimazation() {
     Eigen::Matrix4f pose =
         estimate_poses.at<gtsam::Pose3>(POSE_KEY(i)).matrix().cast<float>();
     frames[i]->SetGlobalPose(pose);
+  }
+
+  if (options_.use_gps) {
+    const Eigen::Vector3d gps_origin_offset =
+        estimate_poses.at<gtsam::Pose3>(GPS_COORD_KEY)
+            .matrix()
+            .block(0, 3, 3, 1);
+    PRINT_DEBUG_FMT("utm offset: %lf, %lf", gps_origin_offset[0],
+                    gps_origin_offset[1]);
   }
 
   view_graph_.SaveTextFile("pcd/graph.txt");

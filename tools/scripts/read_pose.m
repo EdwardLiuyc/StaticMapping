@@ -1,0 +1,1 @@
+pose = readtable("path.csv");

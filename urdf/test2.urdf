@@ -1,0 +1,91 @@
+<!--
+  Copyright 2016 The Cartographer Authors
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<robot name="cartographer_my_robot">
+  <material name="orange">
+    <color rgba="1.0 0.5 0.2 1" />
+  </material>
+  <material name="gray">
+    <color rgba="0.2 0.2 0.2 1" />
+  </material>
+
+  <link name="imu_link">
+    <visual>
+      <origin xyz="0.0 0.0 0.0" />
+      <geometry>
+        <box size="0.06 0.04 0.02" />
+      </geometry>
+      <material name="orange" />
+    </visual>
+  </link>
+
+  <link name="gps">
+    <visual>
+      <origin xyz="0.0 0.0 0.0" />
+      <geometry>
+        <cylinder length="0.04" radius="0.1" />
+      </geometry>
+      <material name="green" />
+    </visual>
+  </link>
+
+  <link name="frame_velodyne_points">
+    <visual>
+      <origin xyz="0.0 0.0 0.0" />
+      <geometry>
+        <cylinder length="0.07" radius="0.05" />
+      </geometry>
+      <material name="gray" />
+    </visual>
+  </link>
+
+  <link name="frame_l2">
+    <visual>
+      <origin xyz="0.0 0.0 0.0" />
+      <geometry>
+        <cylinder length="0.07" radius="0.05" />
+      </geometry>
+      <material name="gray" />
+    </visual>
+  </link>
+
+  <link name="base_link" />
+
+  <joint name="imu_link_joint" type="fixed">
+    <parent link="base_link" />
+    <child link="imu_link" />
+    <origin xyz="0 0.0 0.0" rpy="0.0 0.0 3.1415927" />
+  </joint>
+
+  <joint name="velodyne_joint" type="fixed">
+    <parent link="base_link" />
+    <child link="frame_velodyne_points" />
+    <origin xyz="-0.04 0.02 +0.30" rpy="0.0 0.0 3.1415927" />
+  </joint>
+
+  <joint name="velodyne_joint_between" type="fixed">
+    <parent link="frame_velodyne_points" />
+    <child link="frame_l2" />
+    <origin xyz="-0.0034 -0.0026 -0.1537" rpy="-0.0123633 0.5231489 -0.0007506" />
+  </joint>
+
+  <joint name="gps_joint" type="fixed">
+    <parent link="base_link" />
+    <child link="gps" />
+    <origin xyz="0.6 0. 0.15" rpy="0.0 0.0 0.0" />
+    </joint>
+
+</robot>

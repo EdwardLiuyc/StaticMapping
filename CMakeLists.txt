@@ -154,6 +154,7 @@ endif(USE_OPENCV)
 ###  Source files
 #######################################################
 file(GLOB srcs "builder/*.cc" ) 
+file(GLOB sensors_fusion_srcs "builder/sensor_fusions/*.cc")
 file(GLOB common_srcs "common/*.cc")
 file(GLOB registrators_srcs "registrators/*.cc")
 file(GLOB backend_srcs "back_end/*.cc")
@@ -165,7 +166,10 @@ file(GLOB desp_srcs "descriptor/*.cc")
 message(STATUS "Link libs: ${require_libs}")
 message(STATUS "CXX FLAGS: ${CMAKE_CXX_FLAGS}")
 
-add_library(${TARGET_LIB_NAME} ${srcs} ${common_srcs} ${registrators_srcs} ${backend_srcs} ${desp_srcs})
+add_library(${TARGET_LIB_NAME} 
+  ${srcs} ${sensors_fusion_srcs} 
+  ${common_srcs} ${registrators_srcs} 
+  ${backend_srcs} ${desp_srcs})
 target_link_libraries(${TARGET_LIB_NAME} ${OpenCV_LIBRARIES})
 
 add_executable(static_mapping_node 

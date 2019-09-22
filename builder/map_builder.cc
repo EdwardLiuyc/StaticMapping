@@ -299,10 +299,18 @@ void MapBuilder::InsertGpsMsg(const sensors::NavSatFixMsg::Ptr& gps_msg) {
   sensors::UtmMsg::Ptr utm(new sensors::UtmMsg);
   utm::LatLonToUTMXY(gps_msg->latitude, gps_msg->longtitude, kUtmZone, utm->x,
                      utm->y);
-  // std::string zone = "";
-  // lat_long_to_utm(gps_msg->latitude, gps_msg->longtitude, utm->y, utm->x,
-  // zone);
   utm->z = gps_msg->altitude;
+
+  if (!utm_init_offset_) {
+    if (gps_msg->status.status != sensors::STATUS_FIX) {
+      return;
+    }
+    utm_init_offset_ = Eigen::Vector3d(utm->x, utm->y, utm->z);
+  }
+  utm->x -= utm_init_offset_.value()[0];
+  utm->y -= utm_init_offset_.value()[1];
+  utm->z -= utm_init_offset_.value()[2];
+
   Eigen::Vector4d utm_point;
   utm_point[0] = utm->x;
   utm_point[1] = utm->y;
@@ -657,7 +665,8 @@ void MapBuilder::SubmapPairMatch(const int source_index,
   double submap_match_score = matcher->getFitnessScore();
   // PRINT_DEBUG_FMT("submap match score: %lf", submap_match_score);
   source_submap->match_score_to_previous_submap_ = submap_match_score;
-  if (submap_match_score >= 0.8) {
+  if (submap_match_score >=
+      options_.back_end_options.submap_matcher_options.accepted_min_score) {
     target_submap->SetMatchedTransformedToNext(result);
   } else {
     // do nothing
