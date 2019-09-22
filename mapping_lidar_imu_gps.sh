@@ -1,11 +1,11 @@
 ## usally, you can just leave this config file just like this, it will work fine
 CONFIG_PATH=./config/lidar_imu_gps_default.xml
-URDF_FILE=./urdf/test.urdf
+URDF_FILE=./urdf/test2.urdf
 ## the follow 2 items must be set!!!
 ## the topic name of your pointcloud msg (ros)
 POINT_CLOUD_TOPIC=velodyne_points
 ## the frame id of your pointcloud msg (ros)
-POINT_CLOUD_FRAME_ID=velodyne
+POINT_CLOUD_FRAME_ID=frame_velodyne_points
 
 ## the following items are optional
 ## if you do not have an imu or gps or odom

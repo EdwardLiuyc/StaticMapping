@@ -41,14 +41,7 @@ void MapUtmMatcher<DIM>::InsertPositionData(
     const Eigen::VectorNd<DIM>& utm_position,
     const Eigen::VectorNd<DIM>& map_position,
     const Eigen::VectorNd<DIM>& map_direction) {
-  if (init_utm_[0] < 0. && init_utm_[1] < 0) {
-    init_utm_ = utm_position;
-  }
-
-  CHECK(utm_position[0] >= 0.);
-  CHECK(utm_position[1] >= 0.);
-
-  const Eigen::VectorNd<DIM> new_utm = utm_position - init_utm_;
+  const Eigen::VectorNd<DIM> new_utm = utm_position;
   utm_positions_.push_back(new_utm);
   map_positions_.push_back(map_position);
   map_directions_.push_back(map_direction);
@@ -243,7 +236,7 @@ Eigen::Matrix4d MapUtmMatcher<DIM>::RunMatch(bool output_files) {
 
   Eigen::Matrix4d result = Eigen::Matrix4d::Identity();
   result.block<DIM, DIM>(0, 0) = rotation.inverse();
-  result.block<DIM, 1>(0, 3) = init_utm_ - rotation.inverse() * translation;
+  result.block<DIM, 1>(0, 3) = -rotation.inverse() * translation;
   if (output_files) {
     std::ofstream utm_file(output_file_path_ + "utm.txt");
     if (utm_file.is_open()) {
@@ -272,7 +265,7 @@ void MapUtmMatcher<DIM>::OutputError(const Eigen::Matrix4d& result,
   for (int i = 0; i < map_positions_.size(); ++i) {
     Eigen::VectorNd<DIM> map_position = map_positions_[i];
     Eigen::VectorNd<DIM> utm_in_map =
-        rotation.inverse() * (utm_positions_[i] + init_utm_ - translation);
+        rotation.inverse() * (utm_positions_[i] - translation);
     Eigen::VectorNd<DIM> map_direction = map_directions_[i];
     // ingore the distance in Z axis
     if (kDimValue == 3) {

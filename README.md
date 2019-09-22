@@ -188,6 +188,12 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 4. **Fast Segmentation of 3D Pointcloud for Ground Vehicles**, M. Himmelsbach and Felix v. Hundelshausen and H.-J. Wuensche, IEEE Intelligent Vehicles Symposium, Proceedings, 2010
 
 # TODO
+- filtering the cars directly at the input of the pointclouds
+- **add imu integrating factor in backend**
+- improve motion filter
+- culling data structures like ImuMsg, NavSatMsg, etc.
+- do not need a utm matcher outside anymore, may deprecate it.
+- <del>remove the utm offset at the very beginning</del>
 - add tests 
 - **lidar motion compensention inside**
 - ICP using GPU 
@@ -208,7 +214,6 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - using Eigen::Vector instead of sensors::Vector3
 - use double instead of float (eigen::matrix)
 - add a time threshold for motion filter
-- **add gps factor in isam optimizer**
 - using kdtree for loop detection (m2dp search and matching)
 - mrvm output to a special format data file and can be transformed to pcd independently
 - mrvm output center of voxels

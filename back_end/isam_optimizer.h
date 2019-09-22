@@ -37,10 +37,10 @@
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 // stl
-#include <boost/optional.hpp>
 #include <memory>
 #include <utility>
 // local
+#include <boost/optional.hpp>
 #include "back_end/loop_detector.h"
 #include "back_end/view_graph.h"
 #include "builder/submap.h"
@@ -101,7 +101,6 @@ class IsamOptimizer {
 
   Eigen::Matrix4f tf_odom_lidar_ = Eigen::Matrix4f::Identity();
   Eigen::Matrix4f tf_tracking_gps_ = Eigen::Matrix4f::Identity();
-  boost::optional<Eigen::Vector3d> first_gps_;
 
   LoopDetector<PointT> loop_detector_;
   IsamOptimizerOptions options_;

@@ -37,8 +37,7 @@ namespace static_map {
 template <int DIM>
 class MapUtmMatcher {
  public:
-  MapUtmMatcher()
-      : init_utm_(Eigen::VectorNd<DIM>::Constant(-1.)), output_file_path_("") {}
+  MapUtmMatcher() : output_file_path_("") {}
   ~MapUtmMatcher() {}
 
   enum { kDimValue = DIM };
@@ -77,7 +76,6 @@ class MapUtmMatcher {
   std::vector<Eigen::VectorNd<DIM>> map_positions_;
   std::vector<Eigen::VectorNd<DIM>> map_directions_;
 
-  Eigen::VectorNd<DIM> init_utm_;
   std::string output_file_path_;
 };
 

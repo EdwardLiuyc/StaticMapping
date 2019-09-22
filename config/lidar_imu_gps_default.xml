@@ -94,7 +94,7 @@
         enable_ndt="false" 
         use_voxel_filter="true" 
         voxel_filter_resolution="0.2"
-        accepted_min_score="0.75" />
+        accepted_min_score="0.6" />
       <submap_options 
         frame_count="2"
         enable_inner_multiview_icp="false"
@@ -119,7 +119,7 @@
     </back_end_options>
     <output_mrvm_settings
       output_average="true"
-      prob_threshold="0.55" 
+      prob_threshold="0.57" 
       low_resolution="1." 
       high_resolution="0.1"
       hit_prob="0.55"

@@ -41,6 +41,7 @@
 #include <vector>
 
 // local headers
+#include <boost/optional.hpp>
 #include "back_end/isam_optimizer.h"
 #include "back_end/options.h"
 #include "builder/map_utm_matcher.h"
@@ -281,6 +282,7 @@ class MapBuilder {
   ShowPoseFunction show_pose_function_;
 
   // utm
+  boost::optional<Eigen::Vector3d> utm_init_offset_;
   Eigen::Matrix3d map_utm_rotation_ = Eigen::Matrix3d::Identity();
   Eigen::Vector3d map_utm_translation_ = Eigen::Vector3d::Zero();
   std::atomic<bool> submap_processing_done_;
