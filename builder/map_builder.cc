@@ -372,12 +372,10 @@ void MapBuilder::ScanMatchProcessing() {
     return true;
   };
 
-  bool last_match_is_good = true;
   bool first_in_accumulate = true;
   PointCloudPtr history_cloud = nullptr;
   while (true) {
     if (get_new_cloud(source_cloud)) {
-      // if the first point cloud has no odom related, drop it!
       auto source_time = sensors::ToLocalTime(source_cloud->header.stamp);
       if (!got_first_point_cloud_) {
         got_first_point_cloud_ = true;
@@ -1131,53 +1129,16 @@ void MapBuilder::CalculateCoordTransformToUtm() {
   if (!use_gps_) {
     return;
   }
-  const int submap_size = current_trajectory_->size();
-  if (submap_size <= 1) {
-    PRINT_WARNING("too few submaps to calculate the transfrom");
-    return;
-  }
 
-  for (int i = 0; i < submap_size - 1; ++i) {
-    auto current_submap = (*current_trajectory_)[i];
-    if (!current_submap->HasUtm()) {
-      continue;
-    }
-    auto next_submap = (*current_trajectory_)[i + 1];
-    Eigen::Matrix4d delta =
-        (current_submap->GlobalPose().inverse() * next_submap->GlobalPose())
-            .cast<double>();
-    Eigen::Vector3d rotation = common::RotationMatrixToEulerAngles(
-        Eigen::Matrix3d(delta.block(0, 0, 3, 3)));
-    double delta_yaw = std::fabs(rotation[2]) / M_PI * 180.;
-    auto& frames = current_submap->GetFrames();
-    // for instance:
-    // a submap has 4 frames, the delta yaw should not be more than 5 degrees
-    if (delta_yaw > 1. + frames.size()) {
-      continue;
-    }
-
-    const Eigen::Vector3d map_position =
-        current_submap->GlobalTranslation().cast<double>();
-    const Eigen::Vector3d map_direction =
-        Eigen::Vector3f(next_submap->GlobalTranslation() -
-                        current_submap->GlobalTranslation())
-            .cast<double>()
-            .normalized();
-    const Eigen::Vector3d utm_position = current_submap->GetRelatedUtm();
-
-    utm_matcher_.InsertPositionData(utm_position, map_position, map_direction);
-  }
-
-  utm_matcher_.SetOutputPath(options_.whole_options.export_file_path);
-  Eigen::Matrix4d result = utm_matcher_.RunMatch();
+  Eigen::Matrix4d result = isam_optimizer_->GetGpsCoordTransfrom();
   map_utm_rotation_ = result.block(0, 0, 3, 3);
   map_utm_translation_ = result.block(0, 3, 3, 1);
+  if (utm_init_offset_) {
+    map_utm_translation_ += utm_init_offset_.value();
+  }
   // output the result to file( txt or xml ).
   PRINT_INFO_FMT("utm translation: %.12lf, %.12lf", map_utm_translation_[0],
                  map_utm_translation_[1]);
-
-  utm_matcher_.OutputError(
-      result, options_.whole_options.export_file_path + "error.csv");
 
   // update the submap pose and frame pose
   Eigen::Matrix4d map_utm_transform = Eigen::Matrix4d::Identity();
