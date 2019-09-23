@@ -192,7 +192,7 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - **add imu integrating factor in backend**
 - improve motion filter
 - culling data structures like ImuMsg, NavSatMsg, etc.
-- do not need a utm matcher outside anymore, may deprecate it.
+- <del>do not need a utm matcher outside anymore, may deprecate it.</del>
 - <del>remove the utm offset at the very beginning</del>
 - add tests 
 - **lidar motion compensention inside**

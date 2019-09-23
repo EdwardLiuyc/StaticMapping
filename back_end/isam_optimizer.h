@@ -76,6 +76,8 @@ class IsamOptimizer {
 
   void RunFinalOptimazation();
 
+  Eigen::Matrix4d GetGpsCoordTransfrom();
+
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
  protected:
@@ -91,6 +93,7 @@ class IsamOptimizer {
   std::unique_ptr<gtsam::ISAM2> isam_;
   std::shared_ptr<gtsam::NonlinearFactorGraph> isam_factor_graph_;
   gtsam::Values initial_estimate_;
+  gtsam::Pose3 gps_coord_transform_;  // map origin in GPS coord
   gtsam::noiseModel::Base::shared_ptr prior_noise_model_;
   gtsam::noiseModel::Base::shared_ptr gps_noise_model_;
   gtsam::noiseModel::Base::shared_ptr frame_match_noise_model_;

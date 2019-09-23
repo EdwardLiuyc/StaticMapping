@@ -132,12 +132,11 @@ void IsamOptimizer<PointT>::AddVertex(
       calib_factor_inserted_ = true;
     }
     if (options_.use_gps) {
-      Pose3 gps_coord;
-      initial_estimate_.insert(GPS_COORD_KEY, gps_coord);
+      initial_estimate_.insert(GPS_COORD_KEY, gps_coord_transform_);
       isam_factor_graph_->addExpressionFactor(
           NM::Diagonal::Sigmas(
               (gtsam::Vector(6) << 0.2, 0.2, 1.57, 2, 2, 0.01).finished()),
-          gps_coord, Pose3_(GPS_COORD_KEY));
+          gps_coord_transform_, Pose3_(GPS_COORD_KEY));
     }
 
   } else {
@@ -195,7 +194,7 @@ void IsamOptimizer<PointT>::AddFrame(
       isam_factor_graph_->addExpressionFactor(
           gps_noise_model_, gtsam::Point3(gps),
           gtsam::transform_from(
-              gtsam::compose(Pose3_(GPS_COORD_KEY),
+              gtsam::compose(Pose3_(GPS_COORD_KEY),  // map origin in GPS coord
                              Pose3_(POSE_KEY(result.current_frame_index))),
               gtsam::Point3_(gtsam::Point3(0., 0., 0.))));
 
@@ -236,15 +235,6 @@ void IsamOptimizer<PointT>::RunFinalOptimazation() {
     frames[i]->SetGlobalPose(pose);
   }
 
-  if (options_.use_gps) {
-    const Eigen::Vector3d gps_origin_offset =
-        estimate_poses.at<gtsam::Pose3>(GPS_COORD_KEY)
-            .matrix()
-            .block(0, 3, 3, 1);
-    PRINT_DEBUG_FMT("utm offset: %lf, %lf", gps_origin_offset[0],
-                    gps_origin_offset[1]);
-  }
-
   view_graph_.SaveTextFile("pcd/graph.txt");
   view_graph_.SaveImage("pcd/graph.jpg");
 
@@ -258,6 +248,18 @@ void IsamOptimizer<PointT>::RunFinalOptimazation() {
     PRINT_INFO("odom calibration result (odom->lidar) : ");
     common::PrintTransform(tf_odom_lidar_);
   }
+}
+
+template <typename PointT>
+Eigen::Matrix4d IsamOptimizer<PointT>::GetGpsCoordTransfrom() {
+  if (options_.use_gps) {
+    gtsam::Values estimate_poses = isam_->calculateEstimate();
+    if (estimate_poses.exists<gtsam::Pose3>(GPS_COORD_KEY)) {
+      gps_coord_transform_ = estimate_poses.at<gtsam::Pose3>(GPS_COORD_KEY);
+      return gps_coord_transform_.matrix();
+    }
+  }
+  return Eigen::Matrix4d::Identity();
 }
 
 template <typename PointT>

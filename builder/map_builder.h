@@ -288,7 +288,6 @@ class MapBuilder {
   std::atomic<bool> submap_processing_done_;
   std::vector<Eigen::Vector4d> utm_path_;
   std::vector<Eigen::Vector3d> odom_path_;
-  MapUtmMatcher<3> utm_matcher_;
 
   // trajectories
   std::vector<Trajectory<PointType>::Ptr> trajectories_;
