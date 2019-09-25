@@ -20,19 +20,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BUILDER_SENSOR_FUSIONS_IMU_GPS_TRACKER_H_
-#define BUILDER_SENSOR_FUSIONS_IMU_GPS_TRACKER_H_
-
-#include <gtsam/inference/Symbol.h>
-#include <gtsam/navigation/CombinedImuFactor.h>
-#include <gtsam/navigation/GPSFactor.h>
-#include <gtsam/navigation/ImuFactor.h>
-#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/slam/PriorFactor.h>
-#include <gtsam/slam/dataset.h>
-#include <memory>
+#ifndef BUILDER_SENSOR_FUSIONS_IMU_GPS_EKF_H_
+#define BUILDER_SENSOR_FUSIONS_IMU_GPS_EKF_H_
 
 #include "builder/sensor_fusions/interface.h"
 #include "builder/sensors.h"
@@ -42,44 +31,20 @@
 namespace static_map {
 namespace sensor_fusions {
 
-// use gtsam LM to do the state estimation with imu factors and gps factors
-// can not do estimation in real-time
-// @todo(edward) maybe enhance this method later
-class ImuGpsTracker : public Interface {
+class ImuGpsEkf : public Interface {
  public:
-  explicit ImuGpsTracker(const double imu_gravity_time_constant,
-                         const double imu_frequency, SimpleTime time);
-  ~ImuGpsTracker();
+  explicit ImuGpsEkf(const double imu_gravity_time_constant,
+                     const double imu_frequency, SimpleTime time);
+  ~ImuGpsEkf();
 
   void AddImuData(const sensors::ImuMsg& imu_msg) final;
   void AddUtmData(const sensors::UtmMsg& utm_msg) final;
   void AddOdomData(const sensors::OdomMsg&) final {
     LOG(FATAL) << "Not supported in this tracker.";
   }
-
- private:
-  common::Mutex mutex_;
-
-  const double imu_gravity_time_constant_;
-  const double imu_period_;
-  SimpleTime time_;
-
-  SimpleTime last_imu_time_;
-  SimpleTime last_gps_time_;
-
-  std::unique_ptr<gtsam::PreintegratedImuMeasurements> imu_preintegrated_;
-  std::unique_ptr<gtsam::NonlinearFactorGraph> factor_graph_;
-  gtsam::Values initial_values_;
-  gtsam::NavState prev_state_;
-  gtsam::imuBias::ConstantBias prev_bias_;
-  gtsam::noiseModel::Diagonal::shared_ptr bias_noise_model_;
-  gtsam::noiseModel::Diagonal::shared_ptr velocity_noise_model_;
-  gtsam::noiseModel::Diagonal::shared_ptr pose_noise_model_;
-
-  int gps_count_ = 0;
 };
 
 }  // namespace sensor_fusions
 }  // namespace static_map
 
-#endif  // BUILDER_SENSOR_FUSIONS_IMU_GPS_TRACKER_H_
+#endif  // BUILDER_SENSOR_FUSIONS_IMU_GPS_EKF_H_

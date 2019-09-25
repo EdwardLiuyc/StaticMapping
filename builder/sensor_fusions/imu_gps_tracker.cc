@@ -35,7 +35,7 @@ ImuGpsTracker::ImuGpsTracker(const double imu_gravity_time_constant,
                              const double imu_frequency, SimpleTime time)
     : Interface(),
       imu_gravity_time_constant_(imu_gravity_time_constant),
-      imu_frequency_(imu_frequency),
+      imu_period_(1. / imu_frequency),
       time_(time),
       last_imu_time_(),
       factor_graph_(new gtsam::NonlinearFactorGraph),
@@ -58,29 +58,32 @@ ImuGpsTracker::ImuGpsTracker(const double imu_gravity_time_constant,
   factor_graph_->add(gtsam::PriorFactor<gtsam::imuBias::ConstantBias>(
       B(gps_count_), prior_imu_bias, bias_noise_model_));
 
-  auto param = gtsam::PreintegratedCombinedMeasurements::Params::MakeSharedD(
+  auto param = gtsam::PreintegratedCombinedMeasurements::Params::MakeSharedU(
       imu_gravity_time_constant);
   imu_preintegrated_ = common::make_unique<gtsam::PreintegratedImuMeasurements>(
       param, prior_imu_bias);
 }
 
 void ImuGpsTracker::AddImuData(const sensors::ImuMsg& imu_msg) {
-  common::MutexLocker locker(&mutex_);
+  // common::MutexLocker locker(&mutex_);
+  double delta_time = (imu_msg.header.stamp - last_imu_time_).toSec();
   if (last_imu_time_ != SimpleTime()) {
     CHECK_GT(imu_msg.header.stamp, last_imu_time_);
-    CHECK_NEAR(imu_frequency_,
-               1. / (imu_msg.header.stamp - last_imu_time_).toSec(), 1.);
+    if (std::fabs(imu_period_ - delta_time) >= imu_period_ * 0.1) {
+      PRINT_WARNING_FMT(
+          "Maybe missing imu message. delta_time: %lf, imu_period: %lf",
+          delta_time, imu_period_);
+    }
+  } else {
+    delta_time = imu_period_;
   }
   imu_preintegrated_->integrateMeasurement(
       imu_msg.linear_acceleration.ToEigenVector(),
-      imu_msg.angular_velocity.ToEigenVector(), 1. / imu_frequency_);
+      imu_msg.angular_velocity.ToEigenVector(), delta_time);
   last_imu_time_ = imu_msg.header.stamp;
 }
 
 void ImuGpsTracker::AddUtmData(const sensors::UtmMsg& utm_msg) {
-  if (gps_count_ == 0) {
-    first_utm_msg_ = utm_msg;
-  }
   gps_count_++;
 
   // step1. add imu factors
@@ -91,17 +94,14 @@ void ImuGpsTracker::AddUtmData(const sensors::UtmMsg& utm_msg) {
                               P(gps_count_), V(gps_count_), B(gps_count_ - 1),
                               *preint_imu);
   factor_graph_->add(imu_factor);
-  gtsam::imuBias::ConstantBias zero_bias(gtsam::Vector3(0, 0, 0),
-                                         gtsam::Vector3(0, 0, 0));
   factor_graph_->add(gtsam::BetweenFactor<gtsam::imuBias::ConstantBias>(
-      B(gps_count_ - 1), B(gps_count_), zero_bias, bias_noise_model_));
+      B(gps_count_ - 1), B(gps_count_),
+      gtsam::imuBias::ConstantBias() /* zero bias */, bias_noise_model_));
 
   // step2. add gps factor
-  gtsam::GPSFactor gps_factor(
-      P(gps_count_),
-      gtsam::Point3(utm_msg.x - first_utm_msg_.x, utm_msg.y - first_utm_msg_.y,
-                    utm_msg.z - first_utm_msg_.z),
-      gtsam::noiseModel::Isotropic::Sigma(3, 1.0));
+  gtsam::GPSFactor gps_factor(P(gps_count_),
+                              gtsam::Point3(utm_msg.x, utm_msg.y, utm_msg.z),
+                              gtsam::noiseModel::Isotropic::Sigma(3, 2.0));
   factor_graph_->add(gps_factor);
   const auto prop_state = imu_preintegrated_->predict(prev_state_, prev_bias_);
   initial_values_.insert(P(gps_count_), prop_state.pose());
@@ -119,6 +119,7 @@ void ImuGpsTracker::AddUtmData(const sensors::UtmMsg& utm_msg) {
 
   // step5. reset the preintegration object.
   imu_preintegrated_->resetIntegrationAndSetBias(prev_bias_);
+  prev_state_.position().print();
 }
 
 ImuGpsTracker::~ImuGpsTracker() {}
