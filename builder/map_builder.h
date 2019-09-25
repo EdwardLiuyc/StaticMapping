@@ -48,6 +48,7 @@
 #include "builder/msg_conversion.h"
 #include "builder/multi_resolution_voxel_map.h"
 #include "builder/pose_extrapolator.h"
+#include "builder/sensor_fusions/imu_gps_tracker.h"
 #include "builder/trajectory.h"
 #include "pre_processors/filter_factory.h"
 #include "registrators/registrator_interface.h"
@@ -80,6 +81,11 @@ struct Options {
   } motion_filter;
 
   int accumulate_cloud_num = 1;
+
+  struct {
+    bool enable = true;
+    bool use_average = true;
+  } motion_compensation_options;
 };
 
 }  // namespace front_end
@@ -237,7 +243,13 @@ class MapBuilder {
   // input data from sensors
   PointCloudPtr accumulated_point_cloud_;
   int accumulated_cloud_count_;
-  std::vector<PointCloudPtr> point_clouds_;
+  SimpleTime first_time_in_accmulated_cloud_;
+
+  struct InnerCloud {
+    float delta_time_in_cloud;
+    PointCloudPtr cloud;
+  };
+  std::vector<InnerCloud> point_clouds_;
   // odoms
   std::vector<sensors::OdomMsg::Ptr> odom_msgs_;
   sensors::OdomMsg init_odom_msg_;
@@ -255,7 +267,6 @@ class MapBuilder {
   bool use_gps_;
   std::atomic<bool> end_all_thread_;
   std::atomic<bool> end_managing_memory_;
-  float imu_update_peroid_ = 0.01;
 
   // ********************* pre processors *********************
   pre_processers::filter::Factory<PointType> filter_factory_;
@@ -267,6 +278,8 @@ class MapBuilder {
   bool scan_match_thread_running_ = false;
   bool got_first_point_cloud_ = false;
   uint32_t got_clouds_count_ = 0u;
+
+  // std::unique_ptr<sensor_fusions::ImuGpsTracker> imu_gps_fusion_;
 
   // ************************ back end ************************
   // submaps

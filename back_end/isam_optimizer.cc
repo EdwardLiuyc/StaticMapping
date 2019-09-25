@@ -67,7 +67,7 @@ IsamOptimizer<PointT>::IsamOptimizer(const IsamOptimizerOptions &options,
   prior_noise_model_ = NM::Diagonal::Sigmas(
       (gtsam::Vector(6) << 0.2, 0.2, 0.2, 0.01, 0.01, 0.01).finished());
   gps_noise_model_ =
-      NM::Diagonal::Sigmas((gtsam::Vector(3) << 0.1, 0.1, 0.2).finished());
+      NM::Diagonal::Sigmas((gtsam::Vector(3) << 0.2, 0.2, 1.5).finished());
   frame_match_noise_model_ = NM::Diagonal::Sigmas(
       (gtsam::Vector(6) << 0.05, 0.05, 0.1, 0.1, 0.1, 0.1).finished());
   loop_closure_noise_model_ = NM::Diagonal::Sigmas(

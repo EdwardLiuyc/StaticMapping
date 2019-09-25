@@ -153,6 +153,15 @@ MapBuilderOptions& MapBuilder::Initialise(const char* config_file_name) {
                       motion_filter_options.translation_range, float, float);
     GET_SINGLE_OPTION(front_end_node, "motion_filter", "angle_range",
                       motion_filter_options.angle_range, float, float);
+    GET_SINGLE_OPTION(front_end_node, "motion_filter", "time_range",
+                      motion_filter_options.time_range, float, float);
+
+    auto& motion_compensation_options =
+        options_.front_end_options.motion_compensation_options;
+    GET_SINGLE_OPTION(front_end_node, "motion_compensation_options", "enable",
+                      motion_compensation_options.enable, bool, bool);
+    GET_SINGLE_OPTION(front_end_node, "motion_compensation_options", "enable",
+                      motion_compensation_options.use_average, bool, bool);
 
     auto& imu_options = options_.front_end_options.imu_options;
     GET_SINGLE_OPTION(front_end_node, "imu_options", "use_imu",

@@ -192,10 +192,10 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - **add imu integrating factor in backend**
 - improve motion filter
 - culling data structures like ImuMsg, NavSatMsg, etc.
-- <del>do not need a utm matcher outside anymore, may deprecate it.</del>
-- <del>remove the utm offset at the very beginning</del>
 - add tests 
-- **lidar motion compensention inside**
+- **lidar motion compensation inside (front-end and after optimization)**
+- **lidar motion compensation inside ICP**
+- **BUG with 1st and last frame having no gps coord**
 - ICP using GPU 
 - stand-alone ICP without libpointmatcher
 - parallel PointCloudLib 
@@ -218,3 +218,5 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - mrvm output to a special format data file and can be transformed to pcd independently
 - mrvm output center of voxels
 - **add more config files and .sh files for other sensor-sets**
+- using ecef or some other coordinate system instead of utm
+- gravity alignment (in pose extrapolator)

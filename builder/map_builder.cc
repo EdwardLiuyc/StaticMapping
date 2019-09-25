@@ -104,8 +104,9 @@ int MapBuilder::InitialiseInside() {
   }
 
   use_imu_ = options_.front_end_options.imu_options.enabled;
-  CHECK_GT(options_.front_end_options.imu_options.frequency, 1.e-6);
-  imu_update_peroid_ = 1.f / options_.front_end_options.imu_options.frequency;
+  if (use_imu_) {
+    CHECK_GT(options_.front_end_options.imu_options.frequency, 1.e-6);
+  }
 
   PRINT_INFO("Init isam optimizer.");
   isam_optimizer_ = common::make_unique<back_end::IsamOptimizer<PointType>>(
@@ -190,7 +191,14 @@ void MapBuilder::InsertPointcloudMsg(const PointCloudPtr& point_cloud) {
   // accumulating clouds into one
   if (options_.front_end_options.accumulate_cloud_num > 1) {
     common::MutexLocker locker(&mutex_);
+    // "+=" will update the time stamp of accumulated_point_cloud_
+    // so, no need to manually copy the time stamp from pointcloud to
+    // accumulated_point_cloud_
     *accumulated_point_cloud_ += *point_cloud;
+    if (accumulated_cloud_count_ == 0) {
+      first_time_in_accmulated_cloud_ =
+          sensors::ToLocalTime(point_cloud->header.stamp);
+    }
     accumulated_cloud_count_++;
     if (accumulated_cloud_count_ <
         options_.front_end_options.accumulate_cloud_num) {
@@ -212,8 +220,12 @@ void MapBuilder::InsertPointcloudMsg(const PointCloudPtr& point_cloud) {
   accumulated_cloud_count_ = 0;
   accumulated_point_cloud_->clear();
 
+  // @todo(edward) it is less than whole delta_time
+  const float delta_time = (sensors::ToLocalTime(point_cloud->header.stamp) -
+                            first_time_in_accmulated_cloud_)
+                               .toSec();
   common::MutexLocker locker(&mutex_);
-  point_clouds_.push_back(filtered_cloud);
+  point_clouds_.emplace_back(InnerCloud{delta_time, filtered_cloud});
   // just for debug
   got_clouds_count_++;
   if (got_clouds_count_ % 100 == 0) {
@@ -251,6 +263,14 @@ void MapBuilder::InsertImuMsg(const sensors::ImuMsg::Ptr& imu_msg) {
   } else {
     extrapolator_->AddImuData(*imu_msg);
   }
+
+  // if (!imu_gps_fusion_) {
+  //   imu_gps_fusion_ = common::make_unique<sensor_fusions::ImuGpsTracker>(
+  //       options_.front_end_options.imu_options.gravity_constant,
+  //       options_.front_end_options.imu_options.frequency,
+  //       imu_msg->header.stamp);
+  // }
+  // imu_gps_fusion_->AddImuData(*imu_msg);
 }
 
 void MapBuilder::InsertOdomMsg(const sensors::OdomMsg::Ptr& odom_msg) {
@@ -311,6 +331,10 @@ void MapBuilder::InsertGpsMsg(const sensors::NavSatFixMsg::Ptr& gps_msg) {
   utm->y -= utm_init_offset_.value()[1];
   utm->z -= utm_init_offset_.value()[2];
 
+  // if (imu_gps_fusion_) {
+  //   imu_gps_fusion_->AddUtmData(*utm);
+  // }
+
   Eigen::Vector4d utm_point;
   utm_point[0] = utm->x;
   utm_point[1] = utm->y;
@@ -348,6 +372,74 @@ void MapBuilder::InsertFrameForSubmap(const PointCloudPtr& cloud_ptr,
   frames_.push_back(frame);
 }
 
+template <typename T>
+Eigen::Matrix<T, 4, 4> InterpolateTransform(const Eigen::Matrix<T, 4, 4>& t1,
+                                            const Eigen::Matrix<T, 4, 4>& t2,
+                                            const float factor) {
+  CHECK(factor >= 0. && factor <= 1.);
+  Eigen::Matrix<T, 4, 4> new_transform = Eigen::Matrix<T, 4, 4>::Identity();
+  Eigen::Quaternion<T> q_a(Eigen::Matrix<T, 3, 3>(t1.block(0, 0, 3, 3)));
+  Eigen::Quaternion<T> q_b(Eigen::Matrix<T, 3, 3>(t2.block(0, 0, 3, 3)));
+  new_transform.block(0, 0, 3, 3) = q_a.slerp(factor, q_b).toRotationMatrix();
+
+  Eigen::Matrix<T, 3, 1> detlta_translation =
+      (t2.block(0, 3, 3, 1) - t2.block(0, 3, 3, 1)) * factor;
+  new_transform.block(0, 3, 3, 1) = t1.block(0, 3, 3, 1) + detlta_translation;
+  return new_transform;
+}
+
+void MotionCompensation(const MapBuilder::PointCloudPtr& raw_cloud,
+                        const float delta_time,
+                        const Eigen::Matrix4f& delta_transform,
+                        MapBuilder::PointCloudType* const output_cloud) {
+  CHECK(raw_cloud);
+  CHECK(output_cloud);
+  CHECK_GT(delta_time, 1.e-6);
+  output_cloud->clear();
+  const size_t cloud_size = raw_cloud->size();
+  output_cloud->header = raw_cloud->header;
+  output_cloud->reserve(cloud_size);
+  for (size_t i = 0; i < cloud_size; ++i) {
+    const auto& point = raw_cloud->points[i];
+    float delta_factor = static_cast<float>(i) / static_cast<float>(cloud_size);
+    const Eigen::Matrix4f transform = InterpolateTransform(
+        Eigen::Matrix4f::Identity().eval(), delta_transform, delta_factor);
+    const Eigen::Vector3f new_point_start =
+        transform.block(0, 0, 3, 3) *
+            Eigen::Vector3f(point.x, point.y, point.z) +
+        transform.block(0, 3, 3, 1);
+
+    const Eigen::Vector3f new_point_current =
+        delta_transform.block(0, 0, 3, 3).inverse() *
+        (new_point_start - delta_transform.block(0, 3, 3, 1));
+    MapBuilder::PointType new_point;
+    new_point.x = new_point_current[0];
+    new_point.y = new_point_current[1];
+    new_point.z = new_point_current[2];
+    new_point.intensity = point.intensity;
+    output_cloud->points.push_back(new_point);
+  }
+}
+
+Eigen::Matrix4f AverageTransforms(
+    const std::vector<Eigen::Matrix4f>& transforms) {
+  CHECK(!transforms.empty());
+  Eigen::Vector3f angles(0, 0, 0);
+  Eigen::Vector3f translation(0, 0, 0);
+  for (Eigen::Matrix4f transform : transforms) {
+    translation += transform.block(0, 3, 3, 1);
+    angles += common::RotationMatrixToEulerAngles(
+        Eigen::Matrix3f(transform.block(0, 0, 3, 3)));
+  }
+  translation /= static_cast<float>(transforms.size());
+  angles /= static_cast<float>(transforms.size());
+  Eigen::Matrix4f result = Eigen::Matrix4f::Identity();
+  result.block(0, 0, 3, 3) = common::EulerAnglesToRotationMatrix(angles);
+  result.block(0, 3, 3, 1) = translation;
+
+  return result;
+}
+
 void MapBuilder::ScanMatchProcessing() {
   using Pose3d = PoseExtrapolator::RigidPose3d;
 
@@ -359,15 +451,18 @@ void MapBuilder::ScanMatchProcessing() {
   Pose3d final_transform = Pose3d::Identity();
   Pose3d accumulative_transform = Pose3d::Identity();
   SimpleTime last_source_time;
+  float source_cloud_delta_time = 0.;
 
   // get a new cloud from the cloud buffer
   // it is usually not the newest one but hasn't been calculated
-  const auto get_new_cloud = [&](PointCloudPtr& cloud) -> bool {
+  const auto get_new_cloud = [&](PointCloudPtr& cloud,
+                                 float* const delta_time) -> bool {
     common::MutexLocker locker(&mutex_);
     if (point_clouds_.empty()) {
       return false;
     }
-    cloud = point_clouds_[0];
+    cloud = point_clouds_[0].cloud;
+    *delta_time = point_clouds_[0].delta_time_in_cloud;
     point_clouds_.erase(point_clouds_.begin());
     return true;
   };
@@ -375,7 +470,7 @@ void MapBuilder::ScanMatchProcessing() {
   bool first_in_accumulate = true;
   PointCloudPtr history_cloud = nullptr;
   while (true) {
-    if (get_new_cloud(source_cloud)) {
+    if (get_new_cloud(source_cloud, &source_cloud_delta_time)) {
       auto source_time = sensors::ToLocalTime(source_cloud->header.stamp);
       if (!got_first_point_cloud_) {
         got_first_point_cloud_ = true;
@@ -406,28 +501,58 @@ void MapBuilder::ScanMatchProcessing() {
     common::NormalizeRotation(guess);
 
     // filter some registration if not moving
-    // const double guess_angles =
-    //     common::RotationMatrixToEulerAngles(common::Rotation(guess)).norm() *
-    //     180. / M_PI;
-    // const double guess_translation = common::Translation(guess).norm();
-    // if (guess_translation <
-    //         options_.front_end_options.motion_filter.translation_range &&
-    //     guess_angles < options_.front_end_options.motion_filter.angle_range
-    //     && sensors::ToLocalTime(source_cloud->header.stamp -
-    //                          target_cloud->header.stamp)
-    //             .toSec() <
-    //         options_.front_end_options.motion_filter.time_range ) {
-    //   source_cloud.reset();
-    //   continue;
-    // }
+    const double guess_angles =
+        common::RotationMatrixToEulerAngles(common::Rotation(guess)).norm() *
+        180. / M_PI;
+    const double guess_translation = common::Translation(guess).norm();
+    if (guess_translation <
+            options_.front_end_options.motion_filter.translation_range &&
+        guess_angles < options_.front_end_options.motion_filter.angle_range &&
+        sensors::ToLocalTime(source_cloud->header.stamp -
+                             target_cloud->header.stamp)
+                .toSec() <
+            options_.front_end_options.motion_filter.time_range) {
+      source_cloud.reset();
+      continue;
+    }
 
+    // motion compensation using guess
     scan_matcher_->setInputTarget(target_cloud);
-    scan_matcher_->setInputSource(source_cloud);
+    if (options_.front_end_options.motion_compensation_options.enable) {
+      PointCloudType compensated_source_cloud;
+      MotionCompensation(source_cloud, source_cloud_delta_time,
+                         guess.cast<float>(), &compensated_source_cloud);
+      scan_matcher_->setInputSource(compensated_source_cloud.makeShared());
+    } else {
+      scan_matcher_->setInputSource(source_cloud);
+    }
     Eigen::Matrix4f align_result = Eigen::Matrix4f::Identity();
     scan_matcher_->align(guess.cast<float>(), align_result);
-    accumulative_transform *= align_result.cast<double>();
+    // PRINT_DEBUG("guess vs result");
+    // std::cout << common::Translation(guess).transpose() << std::endl;
+    // std::cout << common::Translation(align_result).transpose() << std::endl;
+    // std::cout << common::Translation(
+    //                  (guess.inverse() * align_result.cast<double>()).eval())
+    //                  .transpose()
+    //           << std::endl;
+
+    if (options_.front_end_options.motion_compensation_options.enable) {
+      Eigen::Matrix4f average_transform = align_result;
+      if (options_.front_end_options.motion_compensation_options.use_average) {
+        std::vector<Eigen::Matrix4f> transforms;
+        transforms.push_back(align_result);
+        transforms.push_back(guess.cast<float>());
+        average_transform = AverageTransforms(transforms);
+      }
+      // motion compensation using align result
+      PointCloudType compensated_source_cloud;
+      MotionCompensation(source_cloud, source_cloud_delta_time,
+                         average_transform, &compensated_source_cloud);
+      *source_cloud = compensated_source_cloud;
+    }
 
     pose_source = pose_target * align_result.cast<double>();
+    accumulative_transform *= align_result.cast<double>();
     extrapolator_->AddPose(source_time, pose_source);
     const Eigen::Quaterniond gravity_alignment =
         extrapolator_->EstimateGravityOrientation(source_time);
@@ -439,12 +564,10 @@ void MapBuilder::ScanMatchProcessing() {
         (std::fabs(euler_angles[0]) + std::fabs(euler_angles[1]) +
          std::fabs(euler_angles[2])) *
         (180. / M_PI);
-    const float translation_range =
-        options_.front_end_options.motion_filter.translation_range;
-    const float angle_range =
-        options_.front_end_options.motion_filter.angle_range;
-    if (accu_translation >= translation_range ||
-        (angle_range > 1e-3 && accu_angles >= angle_range)) {
+    if (accu_translation >=
+            options_.front_end_options.motion_filter.translation_range ||
+        (options_.front_end_options.motion_filter.angle_range > 1e-3 &&
+         accu_angles >= options_.front_end_options.motion_filter.angle_range)) {
       // re-align if nessary
       if (!first_in_accumulate) {
         scan_matcher_->setInputSource(source_cloud);
@@ -455,11 +578,8 @@ void MapBuilder::ScanMatchProcessing() {
       }
 
       final_transform *= accumulative_transform;
-      // extrapolator_->AddPose(sensors::ToLocalTime(source_cloud->header.stamp),
-      //                        final_transform);
       InsertFrameForSubmap(source_cloud, final_transform.cast<float>(),
                            scan_matcher_->getFitnessScore());
-      pose_source = final_transform;
 
       accumulative_transform = Pose3d::Identity();
       history_cloud = source_cloud;
@@ -759,8 +879,8 @@ void MapBuilder::ConnectAllSubmap() {
   }
   // clear all source clouds
   for (auto& frame : point_clouds_) {
-    frame->points.clear();
-    frame->points.shrink_to_fit();
+    frame.cloud->points.clear();
+    frame.cloud->points.shrink_to_fit();
   }
   point_clouds_.clear();
   point_clouds_.shrink_to_fit();
@@ -964,13 +1084,13 @@ void MapBuilder::FinishAllComputations() {
         odom_path_cloud);
   }
   if (!utm_path_.empty()) {
-    Eigen::Vector4d init_point = utm_path_[0];
     pcl::PointCloud<pcl::PointXYZI> utm_path_cloud;
-    for (Eigen::Vector4d& path_point : utm_path_) {
+    utm_path_cloud.points.reserve(utm_path_.size());
+    for (const Eigen::Vector4d& path_point : utm_path_) {
       pcl::PointXYZI point;
-      point.x = path_point[0] - init_point[0];
-      point.y = path_point[1] - init_point[1];
-      point.z = path_point[2] - init_point[2];
+      point.x = path_point[0];
+      point.y = path_point[1];
+      point.z = path_point[2];
       point.intensity = path_point[3];
       utm_path_cloud.push_back(point);
     }
