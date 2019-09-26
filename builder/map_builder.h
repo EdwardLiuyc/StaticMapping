@@ -77,7 +77,7 @@ struct Options {
   struct {
     float translation_range = 0.35;
     float angle_range = 1.5;
-    float time_range = 0.5;
+    float time_range = 0.;
   } motion_filter;
 
   int accumulate_cloud_num = 1;
@@ -192,7 +192,6 @@ class MapBuilder {
   void SetTransformOdomToLidar(const Eigen::Matrix4f& t);
   /// @brief set static tf link from imu to lidar(cloud frame)
   void SetTransformImuToLidar(const Eigen::Matrix4f& t);
-
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
