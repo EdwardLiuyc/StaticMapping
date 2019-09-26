@@ -178,14 +178,21 @@ class MapBuilder {
   void EnableUsingOdom(bool flag);
   /// @brief if enable gps, will calculate the transform from map to utm
   void EnableUsingGps(bool flag);
+  /// @brief set static tf link from tracking frame to imu
+  void SetTrackingToImu(const Eigen::Matrix4f& t);
+  /// @brief set static tf link from tracking frame to odometry
+  void SetTrackingToOdom(const Eigen::Matrix4f& t);
+  /// @brief set static tf link from tracking frame to lidar
+  void SetTrackingToLidar(const Eigen::Matrix4f& t);
+  /// @brief set static tf link from tracking frame to gps
+  void SetTrackingToGps(const Eigen::Matrix4f& t);
+
+  /// @todo(edward) remove these two functions, using tracking frame instead
   /// @brief set static tf link from odom to lidar(cloud frame)
   void SetTransformOdomToLidar(const Eigen::Matrix4f& t);
   /// @brief set static tf link from imu to lidar(cloud frame)
   void SetTransformImuToLidar(const Eigen::Matrix4f& t);
 
-  void SetTrackingToImu(const Eigen::Matrix4f& t);
-  void SetTrackingToOdom(const Eigen::Matrix4f& t);
-  void SetTrackingToLidar(const Eigen::Matrix4f& t);
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
@@ -262,6 +269,8 @@ class MapBuilder {
   Eigen::Matrix4f tracking_to_imu_;
   Eigen::Matrix4f tracking_to_odom_;
   Eigen::Matrix4f tracking_to_lidar_;
+  // can not use the inversion of the transform
+  Eigen::Matrix4f tracking_to_gps_;
   bool use_imu_;
   bool use_odom_;
   bool use_gps_;

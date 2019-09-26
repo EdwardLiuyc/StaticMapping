@@ -195,7 +195,8 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - add tests 
 - **lidar motion compensation inside (front-end and after optimization)**
 - **lidar motion compensation inside ICP**
-- **BUG with 1st and last frame having no gps coord**
+- <del>BUG with 1st and last frame having no gps coord</del> (never happened ever)
+- <del>fixed gps tf connection with tracking frame in back-end</del>
 - ICP using GPU 
 - stand-alone ICP without libpointmatcher
 - parallel PointCloudLib 

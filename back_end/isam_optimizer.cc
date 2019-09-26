@@ -65,19 +65,30 @@ IsamOptimizer<PointT>::IsamOptimizer(const IsamOptimizerOptions &options,
   isam_ = common::make_unique<gtsam::ISAM2>(parameters);
 
   prior_noise_model_ = NM::Diagonal::Sigmas(
-      (gtsam::Vector(6) << 0.2, 0.2, 0.2, 0.01, 0.01, 0.01).finished());
+      (gtsam::Vector(6) << 0.25, 0.25, 0.25, 0.01, 0.01, 0.01).finished());
   gps_noise_model_ =
-      NM::Diagonal::Sigmas((gtsam::Vector(3) << 0.2, 0.2, 1.5).finished());
+      NM::Diagonal::Sigmas((gtsam::Vector(3) << 0.1, 0.1, 0.1).finished());
   frame_match_noise_model_ = NM::Diagonal::Sigmas(
-      (gtsam::Vector(6) << 0.05, 0.05, 0.1, 0.1, 0.1, 0.1).finished());
+      (gtsam::Vector(6) << 0.15, 0.15, 0.15, 0.15, 0.15, 0.15).finished());
   loop_closure_noise_model_ = NM::Diagonal::Sigmas(
-      (gtsam::Vector(6) << 0.05, 0.05, 0.1, 0.1, 0.1, 0.1).finished());
+      (gtsam::Vector(6) << 0.15, 0.15, 0.15, 0.15, 0.15, 0.15).finished());
   odom_tf_noise_model_ = NM::Diagonal::Sigmas(
       (gtsam::Vector(6) << 0.5, 0.5, 1.5, 0.1, 0.1, 0.1).finished());
   odom_noise_model_ = NM::Robust::Create(
       NM::mEstimator::Huber::Create(1),
       NM::Diagonal::Sigmas(
           (gtsam::Vector(6) << 0.2, 0.2, 0.2, 1.5, 1.5, 2).finished()));
+}
+
+template <typename PointT>
+void IsamOptimizer<PointT>::IsamUpdate(const int update_time) {
+  CHECK_GE(update_time, 1);
+  isam_->update(*isam_factor_graph_, initial_estimate_);
+  for (int i = 0; i < update_time; ++i) {
+    isam_->update();
+  }
+  isam_factor_graph_->resize(0);
+  initial_estimate_.clear();
 }
 
 template <typename PointT>
@@ -93,9 +104,7 @@ void IsamOptimizer<PointT>::AddLoopCloseEdge(
   frames[target_index]->AddConnectedSubmap(frames[source_index]->GetId());
 
   view_graph_.AddEdge(target_index, source_index, transform_tgt_to_src);
-  isam_->update(*isam_factor_graph_);
-  isam_->update();
-  isam_factor_graph_->resize(0);
+  IsamUpdate(2);
 
   gtsam::Values estimate_poses = isam_->calculateEstimate();
   const int frames_size = frames.size();
@@ -135,7 +144,7 @@ void IsamOptimizer<PointT>::AddVertex(
       initial_estimate_.insert(GPS_COORD_KEY, gps_coord_transform_);
       isam_factor_graph_->addExpressionFactor(
           NM::Diagonal::Sigmas(
-              (gtsam::Vector(6) << 0.2, 0.2, 1.57, 2, 2, 0.01).finished()),
+              (gtsam::Vector(6) << 0.2, 0.2, 1.57, 2, 2, 2.).finished()),
           gps_coord_transform_, Pose3_(GPS_COORD_KEY));
     }
 
@@ -148,11 +157,7 @@ void IsamOptimizer<PointT>::AddVertex(
     view_graph_.AddEdge(index - 1, index, transform_from_last_pose);
   }
 
-  isam_->update(*isam_factor_graph_, initial_estimate_);
-  isam_->update();
-
-  isam_factor_graph_->resize(0);
-  initial_estimate_.clear();
+  IsamUpdate();
 }
 
 template <typename PointT>
@@ -166,6 +171,9 @@ void IsamOptimizer<PointT>::AddFrame(
   // auto odom_noise_score = -std::log(match_score);
   PRINT_DEBUG_FMT("optimizer inserting a new frame, match score: %lf",
                   match_score);
+
+  AddVertex(result.current_frame_index, frame->GlobalPose(),
+            frame->TransformFromLast(), frame_match_noise_model_);
 
   if (options_.use_odom && frame->HasOdom()) {
     // the factor is connected to one vertex
@@ -184,24 +192,20 @@ void IsamOptimizer<PointT>::AddFrame(
         odom_noise_model_, Pose3(frame->GetRelatedOdom()), uncalibrated);
   }
 
-  AddVertex(result.current_frame_index, frame->GlobalPose(),
-            frame->TransformFromLast(), frame_match_noise_model_);
-
-  if (options_.use_gps && frame->HasUtm()) {
-    const Eigen::Vector3d gps = frame->GetRelatedUtm();
-    if (accumulated_gps_count_ % kGpsSkipNum == 0) {
-      // PRINT_INFO("add a gps constraint.");
+  if (options_.use_gps) {
+    if (frame->HasUtm()) {
       isam_factor_graph_->addExpressionFactor(
-          gps_noise_model_, gtsam::Point3(gps),
+          gps_noise_model_, gtsam::Point3(frame->GetRelatedUtm()),
           gtsam::transform_from(
               gtsam::compose(Pose3_(GPS_COORD_KEY),  // map origin in GPS coord
                              Pose3_(POSE_KEY(result.current_frame_index))),
-              gtsam::Point3_(gtsam::Point3(0., 0., 0.))));
-
-      isam_->update(*isam_factor_graph_, initial_estimate_);
-      isam_->update();
+              gtsam::Point3_(gtsam::Point3(
+                  tf_tracking_gps_.block(0, 3, 3, 1).cast<double>()))));
+      accumulated_gps_count_++;
+      IsamUpdate();
+    } else {
+      PRINT_WARNING("No Gps related.");
     }
-    accumulated_gps_count_++;
   }
 
   // try to close loop and add constraint
@@ -213,9 +217,13 @@ void IsamOptimizer<PointT>::AddFrame(
     }
     PRINT_INFO_FMT(BOLD "Add %d loop closure edges." NONE_FORMAT, edge_size);
   }
-  // @todo why esitimating twice ?
-  // isam_->calculateEstimate();
-  gtsam::Values estimate_poses = isam_->calculateEstimate();
+
+  gtsam::Values estimate_poses = isam_->calculateBestEstimate();
+  // if (accumulated_gps_count_ % kGpsSkipNum == 0) {
+  //   estimate_poses = isam_->calculateBestEstimate();
+  // } else {
+  //   estimate_poses = isam_->calculateEstimate();
+  // }
   Eigen::Matrix4f current_pose =
       estimate_poses.at<gtsam::Pose3>(POSE_KEY(frame_index))
           .matrix()
@@ -225,8 +233,8 @@ void IsamOptimizer<PointT>::AddFrame(
 }
 
 template <typename PointT>
-void IsamOptimizer<PointT>::RunFinalOptimazation() {
-  gtsam::Values estimate_poses = isam_->calculateEstimate();
+int IsamOptimizer<PointT>::RunFinalOptimazation() {
+  gtsam::Values estimate_poses = isam_->calculateBestEstimate();
   const auto &frames = loop_detector_.GetFrames();
   const int frames_size = frames.size();
   for (int i = 0; i < frames_size; ++i) {
@@ -239,7 +247,6 @@ void IsamOptimizer<PointT>::RunFinalOptimazation() {
   view_graph_.SaveImage("pcd/graph.jpg");
 
   if (options_.use_odom && calib_factor_inserted_) {
-    gtsam::Values estimate_poses = isam_->calculateEstimate();
     // update the calibration result
     tf_odom_lidar_ = estimate_poses.at<gtsam::Pose3>(ODOM_CALIB_KEY)
                          .matrix()
@@ -248,6 +255,8 @@ void IsamOptimizer<PointT>::RunFinalOptimazation() {
     PRINT_INFO("odom calibration result (odom->lidar) : ");
     common::PrintTransform(tf_odom_lidar_);
   }
+
+  return frames_size;
 }
 
 template <typename PointT>

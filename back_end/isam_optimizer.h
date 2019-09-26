@@ -74,7 +74,7 @@ class IsamOptimizer {
 
   Eigen::Matrix4f GetTransformTrackingToGps();
 
-  void RunFinalOptimazation();
+  int RunFinalOptimazation();
 
   Eigen::Matrix4d GetGpsCoordTransfrom();
 
@@ -88,6 +88,7 @@ class IsamOptimizer {
   void AddVertex(const int &index, const Eigen::Matrix4f &pose,
                  const Eigen::Matrix4f &transform_from_last_pose,
                  const gtsam::noiseModel::Base::shared_ptr &odom_noise);
+  void IsamUpdate(const int update_time = 1);
 
  private:
   std::unique_ptr<gtsam::ISAM2> isam_;
