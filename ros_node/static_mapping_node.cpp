@@ -49,8 +49,7 @@ using static_map::sensors::OdomMsg;
 void pointcloud_callback(const sensor_msgs::PointCloud2::ConstPtr& msg) {
   pcl::PCLPointCloud2 pcl_pc2;
   pcl_conversions::toPCL(*msg, pcl_pc2);
-  pcl::PointCloud<pcl::PointXYZI>::Ptr incoming_cloud(
-      new pcl::PointCloud<pcl::PointXYZI>);
+  MapBuilder::PointCloudPtr incoming_cloud(new MapBuilder::PointCloudType);
   pcl::fromPCLPointCloud2(pcl_pc2, *incoming_cloud);
 
   std::vector<int> inliers;  // no use, just for the function
@@ -220,6 +219,7 @@ int main(int argc, char** argv) {
 
   map_builder = std::make_shared<MapBuilder>();
 
+  // @todo(edward) merge these 2 situation into 1
   if (urdf_file.empty()) {
     tf::TransformListener listener;
     map_builder->SetTrackingToLidar(
@@ -236,6 +236,11 @@ int main(int argc, char** argv) {
           static_map_ros::LoopUpTransfrom(odom_frame_id, cloud_frame_id,
                                           listener)
               .cast<float>());
+    }
+    if (use_gps) {
+      map_builder->SetTrackingToGps(static_map_ros::LoopUpTransfrom(
+                                        tracking_frame, gps_frame_id, listener)
+                                        .cast<float>());
     }
   } else {
     tf2_ros::Buffer tf_buffer;
@@ -254,6 +259,11 @@ int main(int argc, char** argv) {
           static_map_ros::LoopUpTransfrom(odom_frame_id, cloud_frame_id,
                                           tf_buffer)
               .cast<float>());
+    }
+    if (use_gps) {
+      map_builder->SetTrackingToGps(static_map_ros::LoopUpTransfrom(
+                                        tracking_frame, gps_frame_id, tf_buffer)
+                                        .cast<float>());
     }
   }
 

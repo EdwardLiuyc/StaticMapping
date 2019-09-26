@@ -113,6 +113,7 @@ int MapBuilder::InitialiseInside() {
       options_.back_end_options.isam_optimizer_options,
       options_.back_end_options.loop_detector_setting);
   isam_optimizer_->SetTransformOdomToLidar(transform_odom_lidar_);
+  isam_optimizer_->SetTrackingToGps(tracking_to_gps_);
 
 #ifdef _USE_OPENCV_
   PRINT_INFO("Enable openCV.");
@@ -165,6 +166,12 @@ void MapBuilder::SetTrackingToImu(const Eigen::Matrix4f& t) {
   CHECK(t.block(0, 3, 2, 1).norm() < 1.e-6)
       << "The tracking frame should be just lying on the imu_link, otherwise "
          "the acceleration calculation should be wrong!";
+}
+
+void MapBuilder::SetTrackingToGps(const Eigen::Matrix4f& t) {
+  tracking_to_gps_ = t;
+  PRINT_INFO("Got tf : tracking -> gps ");
+  common::PrintTransform(t);
 }
 
 void MapBuilder::SetTrackingToOdom(const Eigen::Matrix4f& t) {
@@ -378,13 +385,12 @@ Eigen::Matrix<T, 4, 4> InterpolateTransform(const Eigen::Matrix<T, 4, 4>& t1,
                                             const float factor) {
   CHECK(factor >= 0. && factor <= 1.);
   Eigen::Matrix<T, 4, 4> new_transform = Eigen::Matrix<T, 4, 4>::Identity();
-  Eigen::Quaternion<T> q_a(Eigen::Matrix<T, 3, 3>(t1.block(0, 0, 3, 3)));
-  Eigen::Quaternion<T> q_b(Eigen::Matrix<T, 3, 3>(t2.block(0, 0, 3, 3)));
+  const Eigen::Quaternion<T> q_a(Eigen::Matrix<T, 3, 3>(t1.block(0, 0, 3, 3)));
+  const Eigen::Quaternion<T> q_b(Eigen::Matrix<T, 3, 3>(t2.block(0, 0, 3, 3)));
   new_transform.block(0, 0, 3, 3) = q_a.slerp(factor, q_b).toRotationMatrix();
-
-  Eigen::Matrix<T, 3, 1> detlta_translation =
-      (t2.block(0, 3, 3, 1) - t2.block(0, 3, 3, 1)) * factor;
-  new_transform.block(0, 3, 3, 1) = t1.block(0, 3, 3, 1) + detlta_translation;
+  new_transform.block(0, 3, 3, 1) =
+      t1.block(0, 3, 3, 1) +
+      (t2.block(0, 3, 3, 1) - t1.block(0, 3, 3, 1)) * factor;
   return new_transform;
 }
 
@@ -853,22 +859,25 @@ void MapBuilder::ConnectAllSubmap() {
   }
   PRINT_INFO("All submaps have been connected.");
 
-  isam_optimizer_->RunFinalOptimazation();
-  switch (options_.whole_options.odom_calib_mode) {
-    case kNoCalib:
-      PRINT_INFO("Do no calibration.");
-      break;
-    case kOnlineCalib:
-      PRINT_INFO("Update tf(odom->lidar) from online calibration.");
-      transform_odom_lidar_ = isam_optimizer_->GetTransformOdomToLidar();
-      break;
-    case kOfflineCalib:
-      PRINT_INFO("Update tf(odom->lidar) from offline calibration.");
-      OfflineCalibrationOdomToLidar();
-      break;
-    default:
-      PRINT_ERROR("Unknown Calibration Mode.");
-      break;
+  const int frames_count_optimized = isam_optimizer_->RunFinalOptimazation();
+  CHECK_EQ(frames_count_optimized, current_trajectory_->size());
+  if (use_odom_) {
+    switch (options_.whole_options.odom_calib_mode) {
+      case kNoCalib:
+        PRINT_INFO("Do no calibration.");
+        break;
+      case kOnlineCalib:
+        PRINT_INFO("Update tf(odom->lidar) from online calibration.");
+        transform_odom_lidar_ = isam_optimizer_->GetTransformOdomToLidar();
+        break;
+      case kOfflineCalib:
+        PRINT_INFO("Update tf(odom->lidar) from offline calibration.");
+        OfflineCalibrationOdomToLidar();
+        break;
+      default:
+        PRINT_ERROR("Unknown Calibration Mode.");
+        break;
+    }
   }
 
   // all frame connected
@@ -1056,7 +1065,7 @@ void MapBuilder::SubmapProcessing() {
 
     local_frames.clear();
     if (show_submap_function_) {
-      show_submap_function_(submap->Cloud());
+      show_submap_function_(submap->GetFrames()[0]->Cloud());
     }
     if (current_submap_index > 0) {
       submap_match_thread_pool.enqueue([=]() {
