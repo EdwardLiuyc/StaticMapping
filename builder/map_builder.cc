@@ -500,9 +500,6 @@ void MapBuilder::ScanMatchProcessing() {
       continue;
     }
     Pose3d pose_source = extrapolator_->ExtrapolatePose(source_time);
-
-    // common::PrintTransform(pose_source);
-
     Pose3d guess = pose_target.inverse() * pose_source;
     common::NormalizeRotation(guess);
 

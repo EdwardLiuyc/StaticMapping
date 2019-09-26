@@ -219,13 +219,8 @@ void IsamOptimizer<PointT>::AddFrame(
   }
 
   gtsam::Values estimate_poses = isam_->calculateBestEstimate();
-  // if (accumulated_gps_count_ % kGpsSkipNum == 0) {
-  //   estimate_poses = isam_->calculateBestEstimate();
-  // } else {
-  //   estimate_poses = isam_->calculateEstimate();
-  // }
   Eigen::Matrix4f current_pose =
-      estimate_poses.at<gtsam::Pose3>(POSE_KEY(frame_index))
+      estimate_poses.at<gtsam::Pose3>(POSE_KEY(result.current_frame_index))
           .matrix()
           .cast<float>();
   frame->SetGlobalPose(current_pose);
@@ -234,6 +229,7 @@ void IsamOptimizer<PointT>::AddFrame(
 
 template <typename PointT>
 int IsamOptimizer<PointT>::RunFinalOptimazation() {
+  IsamUpdate();
   gtsam::Values estimate_poses = isam_->calculateBestEstimate();
   const auto &frames = loop_detector_.GetFrames();
   const int frames_size = frames.size();

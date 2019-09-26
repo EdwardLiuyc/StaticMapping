@@ -79,6 +79,9 @@
         translation_range="1"
         angle_range="1.5"
         time_range="0." />
+      <motion_compensation_options 
+        enable="true" 
+        use_average="true" />
       <!-- imu type 
           0: normal type
           1: imu in ins(combined imu) -->
