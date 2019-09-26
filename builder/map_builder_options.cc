@@ -160,8 +160,9 @@ MapBuilderOptions& MapBuilder::Initialise(const char* config_file_name) {
         options_.front_end_options.motion_compensation_options;
     GET_SINGLE_OPTION(front_end_node, "motion_compensation_options", "enable",
                       motion_compensation_options.enable, bool, bool);
-    GET_SINGLE_OPTION(front_end_node, "motion_compensation_options", "enable",
-                      motion_compensation_options.use_average, bool, bool);
+    GET_SINGLE_OPTION(front_end_node, "motion_compensation_options",
+                      "use_average", motion_compensation_options.use_average,
+                      bool, bool);
 
     auto& imu_options = options_.front_end_options.imu_options;
     GET_SINGLE_OPTION(front_end_node, "imu_options", "use_imu",
