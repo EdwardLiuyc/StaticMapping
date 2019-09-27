@@ -19,7 +19,7 @@
         <param type="1" name="min_range"> 4.5 </param>
       </filter>
       <filter name="RandomSampler" >
-        <param type="1" name="sampling_rate"> 0.35 </param>
+        <param type="1" name="sampling_rate"> 0.45 </param>
       </filter>
       <!-- <filter name="StatisticRemoval" /> -->
       <!-- <filter name="RangeImage">
@@ -122,14 +122,15 @@
         nearest_history_pos_num="5" />
     </back_end_options>
     <output_mrvm_settings
-      output_average="false"
+      output_average="true"
+      output_rgb="true"
       prob_threshold="0.56" 
       low_resolution="1." 
       high_resolution="0.1"
       hit_prob="0.55"
       miss_prob="0.48"
       z_offset="1.2"
-      max_point_num_in_cell="4">
+      max_point_num_in_cell="10">
     </output_mrvm_settings>
   </static_mapping>
 </edward_liu>

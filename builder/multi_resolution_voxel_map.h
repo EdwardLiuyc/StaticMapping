@@ -63,6 +63,7 @@ constexpr int kFalse = 0;
 
 struct MrvmSettings {
   bool output_average = false;
+  bool output_rgb = false;
   float prob_threshold = 0.6f;
   float low_resolution = 1.f;  // not in use any more
   float high_resolution = 0.1f;
@@ -124,23 +125,13 @@ class MultiResolutionVoxelMap {
   void InsertPointCloud(const PointCloudPtr& cloud,
                         const Eigen::Vector3f& origin);
 
-  void OutputToPointCloud(float threshold, const PointCloudPtr& cloud);
+  void OutputToPointCloud(const float threshold, const PointCloudPtr& cloud);
 
-  void OutputToPointCloud(float threshold, const std::string& filename,
-                          bool compress = true) {
-    PointCloudPtr output_cloud(new PointCloudType);
-    OutputToPointCloud(threshold, output_cloud);
-    PRINT_INFO("Finished filtering output cloud, generating pcd file.");
-    if (!output_cloud->empty()) {
-      if (compress) {
-        pcl::io::savePCDFileBinaryCompressed(filename, *output_cloud);
-      } else {
-        pcl::io::savePCDFileBinary(filename, *output_cloud);
-      }
-    } else {
-      PRINT_WARNING("Cloud is empty. Do not output to file.");
-    }
-  }
+  void OutputToPointCloud(const float threshold,
+                          const pcl::PointCloud<pcl::PointXYZRGB>::Ptr& cloud);
+
+  void OutputToPointCloud(const float threshold, const std::string& filename,
+                          bool compress = true);
 
   // Setters for the inner parameters
   inline void SetHitProbability(float hit_prob) {
