@@ -78,21 +78,12 @@ class RandomSampler : public Interface<PointT> {
     cloud->points.reserve(size);
     // i += 4 to speed up
     // do the rand() only 1/4 times
-    for (int i = 0; i < size; i += 4) {
+    for (int i = 0; i < size; ++i) {
       if (distr(eng) <= int_sample_rate) {
         cloud->push_back(input->points[i]);
-        cloud->push_back(input->points[i + 1]);
-        cloud->push_back(input->points[i + 2]);
-        cloud->push_back(input->points[i + 3]);
         this->inliers_.push_back(i);
-        this->inliers_.push_back(i + 1);
-        this->inliers_.push_back(i + 2);
-        this->inliers_.push_back(i + 3);
       } else {
         this->outliers_.push_back(i);
-        this->outliers_.push_back(i + 1);
-        this->outliers_.push_back(i + 2);
-        this->outliers_.push_back(i + 3);
       }
     }
     this->inliers_.shrink_to_fit();

@@ -188,6 +188,10 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 4. **Fast Segmentation of 3D Pointcloud for Ground Vehicles**, M. Himmelsbach and Felix v. Hundelshausen and H.-J. Wuensche, IEEE Intelligent Vehicles Symposium, Proceedings, 2010
 
 # TODO
+- **supporting multi lidars**
+- **inserting frame cloud instead of submap cloud at the end**
+- save the frame clouds instead of submap clouds
+- <del>mrvm output rgb points</del>
 - filtering the cars directly at the input of the pointclouds
 - **add imu integrating factor in backend**
 - improve motion filter

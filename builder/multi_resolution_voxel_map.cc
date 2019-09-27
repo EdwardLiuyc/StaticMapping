@@ -99,7 +99,7 @@ void MultiResolutionVoxelMap<PointT>::InsertPointCloud(
 
 template <typename PointT>
 void MultiResolutionVoxelMap<PointT>::OutputToPointCloud(
-    float threshold, const PointCloudPtr& cloud) {
+    const float threshold, const PointCloudPtr& cloud) {
   if (!cloud) {
     PRINT_WARNING("cloud is nullptr. do nothing!");
   }
@@ -109,25 +109,23 @@ void MultiResolutionVoxelMap<PointT>::OutputToPointCloud(
   for (auto& high_res_voxel : high_resolution_voxels_) {
     if (high_res_voxel.second.probability >= prob_threshold) {
       CHECK(!high_res_voxel.second.points.empty());
-
       if (settings_.output_average) {
         PointT average_point;
         for (auto& point : high_res_voxel.second.points) {
           average_point.x += point.x;
           average_point.y += point.y;
           average_point.z += point.z;
-          average_point.intensity += point.intensity;
         }
         float size = high_res_voxel.second.points.size();
         average_point.x /= size;
         average_point.y /= size;
         average_point.z /= size;
-        average_point.intensity /= size;
-
+        average_point.intensity =
+            static_cast<int>(high_res_voxel.second.max_intensity);
         cloud->push_back(average_point);
+
       } else {
         for (auto& point : high_res_voxel.second.points) {
-          // FATAL_CHECK_POINT(point);
           point.intensity =
               static_cast<int>(high_res_voxel.second.max_intensity);
           cloud->points.push_back(point);
@@ -137,6 +135,77 @@ void MultiResolutionVoxelMap<PointT>::OutputToPointCloud(
   }
   cloud->points.shrink_to_fit();
 }
+
+template <typename PointT>
+void MultiResolutionVoxelMap<PointT>::OutputToPointCloud(
+    const float threshold,
+    const pcl::PointCloud<pcl::PointXYZRGB>::Ptr& cloud) {
+  if (!cloud) {
+    PRINT_WARNING("cloud is nullptr. do nothing!");
+  }
+  cloud->clear();
+  cloud->points.reserve(high_resolution_voxels_.size());
+  const Probability prob_threshold = threshold * kTableSize;
+  for (auto& high_res_voxel : high_resolution_voxels_) {
+    if (high_res_voxel.second.probability >= prob_threshold) {
+      CHECK(!high_res_voxel.second.points.empty());
+      const uint8_t rgb = high_res_voxel.second.max_intensity;
+      if (settings_.output_average) {
+        pcl::PointXYZRGB average_point;
+        for (auto& point : high_res_voxel.second.points) {
+          average_point.x += point.x;
+          average_point.y += point.y;
+          average_point.z += point.z;
+        }
+        float size = high_res_voxel.second.points.size();
+        average_point.x /= size;
+        average_point.y /= size;
+        average_point.z /= size;
+        average_point.r = average_point.g = average_point.b = rgb;
+        cloud->push_back(average_point);
+
+      } else {
+        for (auto& point : high_res_voxel.second.points) {
+          pcl::PointXYZRGB rgb_point;
+          rgb_point.x = point.x;
+          rgb_point.y = point.y;
+          rgb_point.z = point.z;
+          rgb_point.r = rgb_point.g = rgb_point.b = rgb;
+          cloud->points.push_back(rgb_point);
+        }
+      }
+    }
+  }
+  cloud->points.shrink_to_fit();
+}
+
+#define OUTPUT_TO_FILE(output_cloud)                                   \
+  OutputToPointCloud(threshold, output_cloud);                         \
+  PRINT_INFO("Finished filtering output cloud, generating pcd file."); \
+  if (!output_cloud->empty()) {                                        \
+    if (compress) {                                                    \
+      pcl::io::savePCDFileBinaryCompressed(filename, *output_cloud);   \
+    } else {                                                           \
+      pcl::io::savePCDFileBinary(filename, *output_cloud);             \
+    }                                                                  \
+  } else {                                                             \
+    PRINT_WARNING("Cloud is empty. Do not output to file.");           \
+  }
+
+template <typename PointT>
+void MultiResolutionVoxelMap<PointT>::OutputToPointCloud(
+    const float threshold, const std::string& filename, bool compress) {
+  if (settings_.output_rgb) {
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr output_cloud(
+        new pcl::PointCloud<pcl::PointXYZRGB>);
+    OUTPUT_TO_FILE(output_cloud);
+  } else {
+    PointCloudPtr output_cloud(new PointCloudType);
+    OUTPUT_TO_FILE(output_cloud);
+  }
+}
+
+#undef OUTPUT_TO_FILE
 
 template class MultiResolutionVoxelMap<pcl::PointXYZI>;
 
