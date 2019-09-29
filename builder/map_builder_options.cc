@@ -28,8 +28,8 @@ namespace static_map {
 void CheckOptions(const MapBuilderOptions& options) {
   CHECK_GE(options.back_end_options.submap_options.frame_count, 2)
       << "A submap must constain at least 2 frames" << std::endl;
-  CHECK(!options.back_end_options.loop_detector_setting.use_gps ||
-        !options.back_end_options.loop_detector_setting.use_descriptor)
+  CHECK(options.back_end_options.loop_detector_setting.use_gps ||
+        options.back_end_options.loop_detector_setting.use_descriptor)
       << "You should selete at least one way to do loop detect: use gps or "
          "descriptor or both.";
   CHECK_GE(options.front_end_options.accumulate_cloud_num, 1);
@@ -233,6 +233,9 @@ MapBuilderOptions& MapBuilder::Initialise(const char* config_file_name) {
                       loop_detector_setting.use_gps, bool, bool);
     GET_SINGLE_OPTION(back_end_node, "loop_detector_setting", "use_descriptor",
                       loop_detector_setting.use_descriptor, bool, bool);
+    GET_SINGLE_OPTION(back_end_node, "loop_detector_setting",
+                      "output_matched_cloud",
+                      loop_detector_setting.output_matched_cloud, bool, bool);
     GET_SINGLE_OPTION(back_end_node, "loop_detector_setting",
                       "trying_detect_loop_count",
                       loop_detector_setting.trying_detect_loop_count, int, int);

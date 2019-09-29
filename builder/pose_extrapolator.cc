@@ -118,11 +118,11 @@ void PoseExtrapolator::AddOdometryData(const sensors::OdomMsg& odometry_data) {
   const sensors::OdomMsg& odometry_data_oldest = odometry_data_.front();
   const sensors::OdomMsg& odometry_data_newest = odometry_data_.back();
   const double odometry_time_delta =
-      (odometry_data_oldest.header.stamp - odometry_data_newest.header.stamp)
+      (odometry_data_newest.header.stamp - odometry_data_oldest.header.stamp)
           .toSec();
   const RigidPose3d odometry_pose_delta =
-      odometry_data_newest.PoseInMatrix().inverse() *
-      odometry_data_oldest.PoseInMatrix();
+      odometry_data_oldest.PoseInMatrix().inverse() *
+      odometry_data_newest.PoseInMatrix();
   angular_velocity_from_odometry_ =
       common::QuaternionToEulers(Rotation(odometry_pose_delta)) /
       odometry_time_delta;
@@ -140,6 +140,7 @@ void PoseExtrapolator::AddOdometryData(const sensors::OdomMsg& odometry_data) {
   linear_velocity_from_odometry_ =
       orientation_at_newest_odometry_time *
       linear_velocity_in_tracking_frame_at_newest_odometry_time;
+  std::cout << linear_velocity_from_odometry_.transpose() << std::endl;
 }
 
 PoseExtrapolator::RigidPose3d PoseExtrapolator::ExtrapolatePose(

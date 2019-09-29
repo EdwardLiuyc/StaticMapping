@@ -236,6 +236,10 @@ int main(int argc, char** argv) {
           static_map_ros::LoopUpTransfrom(odom_frame_id, cloud_frame_id,
                                           listener)
               .cast<float>());
+      map_builder->SetTrackingToOdom(
+          static_map_ros::LoopUpTransfrom(tracking_frame, odom_frame_id,
+                                          listener)
+              .cast<float>());
     }
     if (use_gps) {
       map_builder->SetTrackingToGps(static_map_ros::LoopUpTransfrom(
@@ -257,6 +261,10 @@ int main(int argc, char** argv) {
     if (use_odom) {
       map_builder->SetTransformOdomToLidar(
           static_map_ros::LoopUpTransfrom(odom_frame_id, cloud_frame_id,
+                                          tf_buffer)
+              .cast<float>());
+      map_builder->SetTrackingToOdom(
+          static_map_ros::LoopUpTransfrom(tracking_frame, odom_frame_id,
                                           tf_buffer)
               .cast<float>());
     }

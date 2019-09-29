@@ -42,6 +42,7 @@ namespace back_end {
 struct LoopDetectorSettings {
   bool use_gps = false;
   bool use_descriptor = false;
+  bool output_matched_cloud = false;
   int loop_ignore_threshold = 15;
   int trying_detect_loop_count = 1;
   int nearest_history_pos_num = 4;
@@ -105,7 +106,7 @@ class LoopDetector {
 
  private:
   std::vector<std::shared_ptr<Submap<PointT>>> all_frames_;
-  std::vector<Eigen::Vector3d> all_frames_odom_;
+  std::vector<Eigen::Vector3d> all_frames_translation_;
 
   int loop_detection_;
   int accumulate_loop_detected_count_;

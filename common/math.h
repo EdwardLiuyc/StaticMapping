@@ -181,10 +181,12 @@ Translation(const TRANSFORM(T) & t) {
 template <typename T>
 void PrintTransform(const TRANSFORM(T) & t) {
   TRANSFORM_6D(T) vec_6d = TransformToVector6(t);
+  const double factor = 180. / M_PI;
   std::cout << "  translation : (" << vec_6d[0] << ", " << vec_6d[1] << ", "
             << vec_6d[2] << ")\n"
-            << "  rotation    : (" << vec_6d[3] << ", " << vec_6d[4] << ", "
-            << vec_6d[5] << ")" << std::endl;
+            << "  rotation    : (" << vec_6d[3] * factor << ", "
+            << vec_6d[4] * factor << ", " << vec_6d[5] * factor << ")"
+            << std::endl;
 }
 
 template <int N>

@@ -52,11 +52,10 @@ using registrator::NdtWithGicp;
 
 constexpr int kOdomMsgMaxSize = 10000;
 constexpr int kSubmapResSize = 100;
-// usually, our longtitude is about 121E, in UTM "51R" zone
-constexpr int kUtmZone = 51;
 
 MapBuilder::MapBuilder()
-    : accumulated_point_cloud_(new PointCloudType),
+    : data_collector_(DataCollectorOptions()),
+      accumulated_point_cloud_(new PointCloudType),
       accumulated_cloud_count_(0),
       use_imu_(false),
       use_gps_(false),
@@ -176,7 +175,7 @@ void MapBuilder::SetTrackingToGps(const Eigen::Matrix4f& t) {
 
 void MapBuilder::SetTrackingToOdom(const Eigen::Matrix4f& t) {
   tracking_to_odom_ = t;
-  PRINT_INFO("Got tf : tracking -> imu ");
+  PRINT_INFO("Got tf : tracking -> odometry ");
   common::PrintTransform(t);
 }
 
@@ -212,7 +211,6 @@ void MapBuilder::InsertPointcloudMsg(const PointCloudPtr& point_cloud) {
       return;
     }
   } else {
-    accumulated_point_cloud_.reset();
     accumulated_point_cloud_ = point_cloud;
   }
   // filtering cloud
@@ -285,10 +283,27 @@ void MapBuilder::InsertOdomMsg(const sensors::OdomMsg::Ptr& odom_msg) {
     return;
   }
 
-  // transform to tracking frame
-  const Eigen::Matrix4d tracking_frame_odom =
-      odom_msg->PoseInMatrix() * tracking_to_odom_.inverse().cast<double>();
-  odom_msg->SetPose(tracking_frame_odom);
+  {
+    common::MutexLocker locker(&mutex_);
+    // odom_msgs_ are just for generating path file now
+    if (odom_msgs_.empty()) {
+      init_odom_msg_ = *odom_msg;
+    }
+    const Eigen::Matrix4d init_pose = init_odom_msg_.PoseInMatrix();
+    Eigen::Matrix4d relative_pose = init_pose.inverse() *
+                                    odom_msg->PoseInMatrix() *
+                                    tracking_to_odom_.inverse().cast<double>();
+    odom_msg->SetPose(relative_pose);
+    odom_msgs_.push_back(odom_msg);
+
+    // for output pcd
+    Eigen::Vector3d odom_path_point;
+    odom_path_point << odom_msg->pose.pose.position.x,
+        odom_msg->pose.pose.position.y, odom_msg->pose.pose.position.z;
+    odom_path_.push_back(odom_path_point);
+  }
+
+  common::PrintTransform(odom_msg->PoseInMatrix());
 
   static bool warned = false;
   if (extrapolator_ == nullptr) {
@@ -300,61 +315,13 @@ void MapBuilder::InsertOdomMsg(const sensors::OdomMsg::Ptr& odom_msg) {
     return;
   }
   extrapolator_->AddOdometryData(*odom_msg);
-
-  common::MutexLocker locker(&mutex_);
-  // odom_msgs_ are just for generating path file now
-  if (odom_msgs_.empty()) {
-    init_odom_msg_ = *odom_msg;
-  }
-  Eigen::Matrix4d init_pose = init_odom_msg_.PoseInMatrix();
-  Eigen::Matrix4d relative_pose =
-      init_pose.inverse() * odom_msg->PoseInMatrix();
-  odom_msg->SetPose(relative_pose);
-  odom_msgs_.push_back(odom_msg);
-
-  // for output pcd
-  Eigen::Vector3d odom_path_point;
-  odom_path_point << odom_msg->pose.pose.position.x,
-      odom_msg->pose.pose.position.y, odom_msg->pose.pose.position.z;
-  odom_path_.push_back(odom_path_point);
 }
 
 void MapBuilder::InsertGpsMsg(const sensors::NavSatFixMsg::Ptr& gps_msg) {
   if (!use_gps_ || end_all_thread_.load()) {
     return;
   }
-  sensors::UtmMsg::Ptr utm(new sensors::UtmMsg);
-  utm::LatLonToUTMXY(gps_msg->latitude, gps_msg->longtitude, kUtmZone, utm->x,
-                     utm->y);
-  utm->z = gps_msg->altitude;
-
-  if (!utm_init_offset_) {
-    if (gps_msg->status.status != sensors::STATUS_FIX) {
-      return;
-    }
-    utm_init_offset_ = Eigen::Vector3d(utm->x, utm->y, utm->z);
-  }
-  utm->x -= utm_init_offset_.value()[0];
-  utm->y -= utm_init_offset_.value()[1];
-  utm->z -= utm_init_offset_.value()[2];
-
-  // if (imu_gps_fusion_) {
-  //   imu_gps_fusion_->AddUtmData(*utm);
-  // }
-
-  Eigen::Vector4d utm_point;
-  utm_point[0] = utm->x;
-  utm_point[1] = utm->y;
-  utm_point[2] = utm->z;
-  utm_point[3] = static_cast<double>(gps_msg->status.status);
-  common::MutexLocker locker(&mutex_);
-  utm_path_.push_back(utm_point);
-  if (gps_msg->status.status != sensors::STATUS_FIX) {
-    return;
-  }
-
-  utm->header = gps_msg->header;
-  utm_msgs_.push_back(utm);
+  data_collector_.AddSensorData(*gps_msg);
 }
 
 void MapBuilder::AddNewTrajectory() {
@@ -502,6 +469,8 @@ void MapBuilder::ScanMatchProcessing() {
     Pose3d pose_source = extrapolator_->ExtrapolatePose(source_time);
     Pose3d guess = pose_target.inverse() * pose_source;
     common::NormalizeRotation(guess);
+
+    // common::PrintTransform(guess);
 
     // filter some registration if not moving
     const double guess_angles =
@@ -688,61 +657,6 @@ bool MapBuilder::GetOdomAtTime(const SimpleTime& time, sensors::OdomMsg* odom,
   return true;
 }
 
-bool MapBuilder::GetUtmAtTime(const SimpleTime& time, sensors::UtmMsg* utm,
-                              double threshold_in_sec) {
-  CHECK(utm);
-  if (threshold_in_sec < 1.e-6) {
-    threshold_in_sec = 1.e-6;
-  }
-  sensors::UtmMsg::Ptr former_data;
-  sensors::UtmMsg::Ptr latter_data;
-  {
-    common::MutexLocker locker(&mutex_);
-    // size == 0
-    if (utm_msgs_.empty()) {
-      PRINT_WARNING("no utm data.");
-      return false;
-    }
-    // size == 1
-    if (utm_msgs_.size() == 1) {
-      if (std::fabs(time.toSec() - utm_msgs_[0]->header.stamp.toSec()) <=
-          threshold_in_sec) {
-        *utm = *utm_msgs_[0];
-        return true;
-      } else {
-        return false;
-      }
-    }
-    // size >= 2
-    if (time < utm_msgs_.front()->header.stamp ||
-        time > utm_msgs_.back()->header.stamp) {
-      PRINT_WARNING("too old or too new.");
-      return false;
-    }
-
-    // binary search for the time period for the target time
-    auto indices = TimeStampBinarySearch(utm_msgs_, time);
-    former_data = utm_msgs_.at(indices.first);
-    latter_data = utm_msgs_.at(indices.second);
-  }
-
-  CHECK(time >= former_data->header.stamp && time <= latter_data->header.stamp);
-  if (latter_data->header.stamp.toSec() - former_data->header.stamp.toSec() >
-      1.) {
-    return false;
-  }
-
-  float factor =
-      (time - former_data->header.stamp).toSec() /
-      (latter_data->header.stamp - former_data->header.stamp).toSec();
-  CHECK(factor >= 0. && factor <= 1.);
-
-  utm->x = former_data->x + factor * (latter_data->x - former_data->x);
-  utm->y = former_data->y + factor * (latter_data->y - former_data->y);
-  utm->z = former_data->z + factor * (latter_data->z - former_data->z);
-  return true;
-}
-
 void MapBuilder::SubmapPairMatch(const int source_index,
                                  const int target_index) {
   std::shared_ptr<Submap<PointType>> target_submap, source_submap;
@@ -856,8 +770,7 @@ void MapBuilder::ConnectAllSubmap() {
   }
   PRINT_INFO("All submaps have been connected.");
 
-  const int frames_count_optimized = isam_optimizer_->RunFinalOptimazation();
-  CHECK_EQ(frames_count_optimized, current_trajectory_->size());
+  isam_optimizer_->RunFinalOptimazation();
   if (use_odom_) {
     switch (options_.whole_options.odom_calib_mode) {
       case kNoCalib:
@@ -967,6 +880,34 @@ void MapBuilder::OutputPath() {
     path_text_file << path_content;
     path_text_file.close();
   }
+
+  // output some file
+  if (!odom_path_.empty()) {
+    pcl::PointCloud<pcl::PointXYZ> odom_path_cloud;
+    for (Eigen::Vector3d& odom_path_point : odom_path_) {
+      odom_path_cloud.push_back(pcl::PointXYZ(
+          odom_path_point[0], odom_path_point[1], odom_path_point[2]));
+    }
+    PRINT_INFO("Generated ODOM path file.");
+    pcl::io::savePCDFileBinaryCompressed(
+        options_.whole_options.export_file_path + "odom_path.pcd",
+        odom_path_cloud);
+  }
+  if (!utm_path_.empty()) {
+    pcl::PointCloud<pcl::PointXYZI> utm_path_cloud;
+    utm_path_cloud.points.reserve(utm_path_.size());
+    for (const Eigen::Vector4d& path_point : utm_path_) {
+      pcl::PointXYZI point;
+      point.x = path_point[0];
+      point.y = path_point[1];
+      point.z = path_point[2];
+      point.intensity = path_point[3];
+      utm_path_cloud.push_back(point);
+    }
+    pcl::io::savePCDFileBinaryCompressed(
+        options_.whole_options.export_file_path + "utm_path.pcd",
+        utm_path_cloud);
+  }
 }
 
 void MapBuilder::SubmapMemoryManaging() {
@@ -1048,9 +989,17 @@ void MapBuilder::SubmapProcessing() {
     submap->CalculateDescriptor();
 
     if (use_gps_) {
-      sensors::UtmMsg utm;
-      if (GetUtmAtTime(submap->GetTimeStamp(), &utm)) {
-        submap->SetRelatedUtm(UtmPosition(utm.x, utm.y, utm.z));
+      const auto time = submap->GetTimeStamp();
+      // start_clock();
+      auto utm = data_collector_.InterpolateUtm(time, 0.005, true);
+      // end_clock(__FILE__, __FUNCTION__, __LINE__);
+      if (utm) {
+        submap->SetRelatedUtm(*utm);
+        Eigen::Vector4d utm_point;
+        utm_point.head<3>() = *utm;
+        utm_point[3] = 0.;
+        common::MutexLocker locker(&mutex_);
+        utm_path_.push_back(utm_point);
       }
     }
     if (use_odom_) {
@@ -1077,33 +1026,6 @@ void MapBuilder::SubmapProcessing() {
 void MapBuilder::FinishAllComputations() {
   PRINT_INFO("Finishing Remaining Computations...");
   end_all_thread_ = true;
-  // output some file
-  if (!odom_path_.empty()) {
-    pcl::PointCloud<pcl::PointXYZ> odom_path_cloud;
-    for (Eigen::Vector3d& odom_path_point : odom_path_) {
-      odom_path_cloud.push_back(pcl::PointXYZ(
-          odom_path_point[0], odom_path_point[1], odom_path_point[2]));
-    }
-    PRINT_INFO("Generated ODOM path file.");
-    pcl::io::savePCDFileBinaryCompressed(
-        options_.whole_options.export_file_path + "odom_path.pcd",
-        odom_path_cloud);
-  }
-  if (!utm_path_.empty()) {
-    pcl::PointCloud<pcl::PointXYZI> utm_path_cloud;
-    utm_path_cloud.points.reserve(utm_path_.size());
-    for (const Eigen::Vector4d& path_point : utm_path_) {
-      pcl::PointXYZI point;
-      point.x = path_point[0];
-      point.y = path_point[1];
-      point.z = path_point[2];
-      point.intensity = path_point[3];
-      utm_path_cloud.push_back(point);
-    }
-    pcl::io::savePCDFileBinaryCompressed(
-        options_.whole_options.export_file_path + "utm_path.pcd",
-        utm_path_cloud);
-  }
 
   size_t remaining_pointcloud_count = point_clouds_.size();
   int delay = 0;
@@ -1259,9 +1181,8 @@ void MapBuilder::CalculateCoordTransformToUtm() {
   Eigen::Matrix4d result = isam_optimizer_->GetGpsCoordTransfrom();
   map_utm_rotation_ = result.block(0, 0, 3, 3);
   map_utm_translation_ = result.block(0, 3, 3, 1);
-  if (utm_init_offset_) {
-    map_utm_translation_ += utm_init_offset_.value();
-  }
+  const Eigen::Vector3d utm_offset = data_collector_.GetUtmOffset();
+  map_utm_translation_ += utm_offset;
   // output the result to file( txt or xml ).
   PRINT_INFO_FMT("utm translation: %.12lf, %.12lf", map_utm_translation_[0],
                  map_utm_translation_[1]);
