@@ -107,7 +107,7 @@ sudo make install
 - **CUDA**: We have made some attempts in fasting the kdtree in ICP by creating the kdtree on GPU, but the GPU Kdtree is not fast enough(just 1.5~2 times faster than libnabo). Notice that if you use CUDA, your g++ version should be lower than 6.0 because the nvcc does not support the 6.0 or high version g++.  
 - **cuda_utils**: 
 - **TBB**: We have used concurrency containers in TBB for many multi-thread situations, if you turn off this options, the process will use stl containers such as std::vector instead and many multi-thread algorithm will degenerate into single-thread. So, Using TBB is **strongly recommended**;  
-- **OpenCV**: All the matrices in code is in Eigen way, Opencv is only for generating the jpg file of pose gragh. It is a debug function so you can change this option as you wish.
+- **OpenCV**: All the matrices in code is in Eigen way, Opencv is only for generating the jpg file of pose gragh. It is a debug function so you can change this option as you wish. (todo: will use png instead and remove the dependency of opencv)
 
 ## compiling
 ```bash
@@ -117,7 +117,8 @@ make -j8
 sudo make install
 ```
 
-## BUG
+# BUG  
+- **mapping with odom is not tested! please do not use it!!!!**
 - DO NOT use g++ 7.x, unknow bug with Eigen
 
 # How to use?
@@ -190,11 +191,13 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 # TODO
 - **supporting multi lidars**
 - **inserting frame cloud instead of submap cloud at the end**
+- **remove the imu dependency of pose extrapolator**
+- save submap binary data into a special format file not just pointcloud into .pcd
+- gps factor static bias
+- add a data collector for all sensor data's management
 - save the frame clouds instead of submap clouds
-- <del>mrvm output rgb points</del>
 - filtering the cars directly at the input of the pointclouds
 - **add imu integrating factor in backend**
-- improve motion filter
 - culling data structures like ImuMsg, NavSatMsg, etc.
 - add tests 
 - **fix motion compensation when motion filtering happens** 
@@ -211,15 +214,18 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - get odom message from a cheap GPS and IMU intergration  
 - fix bug in imu pre-integration (now the imu is just for INS but not normal IMU)
 - add support for different kind of GPS (INS&RTK&cheap gps)
+- - have tried imu&fps filter use gtsam, but it can not be done in real-time
+- - will try ekf or some other ways
 - read GPS noise(and other sensors' noise) from config files
 - add support for different kind of IMU and ODOM
 - add support for more kind of pointclouds
 - add a Pose3d struct for simple operation of matrix4f or just use gtsam::pose3d
 - using Eigen::Vector instead of sensors::Vector3
 - use double instead of float (eigen::matrix)
-- using kdtree for loop detection (m2dp search and matching)
 - mrvm output to a special format data file and can be transformed to pcd independently
-- mrvm output center of voxels
 - **add more config files and .sh files for other sensor-sets**
 - using ecef or some other coordinate system instead of utm
 - gravity alignment (in pose extrapolator)
+- make setup more easy
+- output to .las file
+- remove opencv dependency (using png instead)

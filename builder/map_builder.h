@@ -44,6 +44,7 @@
 #include <boost/optional.hpp>
 #include "back_end/isam_optimizer.h"
 #include "back_end/options.h"
+#include "builder/data_collector.h"
 #include "builder/map_utm_matcher.h"
 #include "builder/msg_conversion.h"
 #include "builder/multi_resolution_voxel_map.h"
@@ -245,6 +246,7 @@ class MapBuilder {
  private:
   common::Mutex mutex_;
   // ********************* data & options *********************
+  DataCollector<PointType> data_collector_;
   MapBuilderOptions options_;
   // input data from sensors
   PointCloudPtr accumulated_point_cloud_;
@@ -259,8 +261,6 @@ class MapBuilder {
   // odoms
   std::vector<sensors::OdomMsg::Ptr> odom_msgs_;
   sensors::OdomMsg init_odom_msg_;
-  // gps
-  std::vector<sensors::UtmMsg::Ptr> utm_msgs_;
   // we assume that there is only one lidar
   // even if we have several lidars, we still use the fused cloud only
   Eigen::Matrix4f transform_odom_lidar_;
@@ -303,7 +303,6 @@ class MapBuilder {
   ShowPoseFunction show_pose_function_;
 
   // utm
-  boost::optional<Eigen::Vector3d> utm_init_offset_;
   Eigen::Matrix3d map_utm_rotation_ = Eigen::Matrix3d::Identity();
   Eigen::Vector3d map_utm_translation_ = Eigen::Vector3d::Zero();
   std::atomic<bool> submap_processing_done_;

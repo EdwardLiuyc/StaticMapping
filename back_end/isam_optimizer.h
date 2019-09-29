@@ -43,6 +43,7 @@
 #include <boost/optional.hpp>
 #include "back_end/loop_detector.h"
 #include "back_end/view_graph.h"
+#include "builder/sensors.h"
 #include "builder/submap.h"
 
 namespace static_map {
@@ -63,18 +64,19 @@ class IsamOptimizer {
   IsamOptimizer(const IsamOptimizer &) = delete;
   IsamOptimizer &operator=(const IsamOptimizer &) = delete;
 
+  /// @brief add a new vertex
   void AddFrame(const std::shared_ptr<Submap<PointT>> &frame,
                 const double match_score);
+  /// @brief for imu factor in optimization
+  void AddImuData(const sensors::ImuMsg &imu_msg);
   /// @brief set static tf link from odom to lidar(cloud frame)
   void SetTransformOdomToLidar(const Eigen::Matrix4f &t);
   /// @brief get the odom->lidar tf after calibration
   Eigen::Matrix4f GetTransformOdomToLidar();
-
+  /// @brief tf connection tracking_frame -> gps
   void SetTrackingToGps(const Eigen::Matrix4f &t);
 
-  Eigen::Matrix4f GetTransformTrackingToGps();
-
-  int RunFinalOptimazation();
+  void RunFinalOptimazation();
 
   Eigen::Matrix4d GetGpsCoordTransfrom();
 
@@ -89,6 +91,8 @@ class IsamOptimizer {
                  const Eigen::Matrix4f &transform_from_last_pose,
                  const gtsam::noiseModel::Base::shared_ptr &odom_noise);
   void IsamUpdate(const int update_time = 1);
+
+  gtsam::Values UpdateAllPose();
 
  private:
   std::unique_ptr<gtsam::ISAM2> isam_;

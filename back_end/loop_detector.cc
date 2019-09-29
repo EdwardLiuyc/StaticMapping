@@ -38,16 +38,15 @@ typename LoopDetector<PointT>::DetectResult LoopDetector<PointT>::AddFrame(
     const std::shared_ptr<Submap<PointT>>& frame, bool do_loop_detect) {
   all_frames_.push_back(frame);
   if (settings_.use_gps) {
-    if (frame->HasOdom()) {
-      Eigen::Vector3d translation = frame->GetRelatedOdom().block(0, 3, 3, 1);
-      all_frames_odom_.push_back(translation.cast<double>());
+    if (frame->HasUtm()) {
+      all_frames_translation_.push_back(frame->GetRelatedUtm());
     } else {
-      all_frames_odom_.push_back(
+      all_frames_translation_.push_back(
           Eigen::Vector3d::Constant(std::numeric_limits<double>::max()));
     }
   } else {
     Eigen::Vector3f translation = frame->GlobalTranslation();
-    all_frames_odom_.push_back(translation.cast<double>());
+    all_frames_translation_.push_back(translation.cast<double>());
   }
 
   int32_t current_index = all_frames_.size() - 1;
@@ -67,8 +66,8 @@ typename LoopDetector<PointT>::DetectResult LoopDetector<PointT>::AddFrame(
   std::vector<int> indices_in_distance;
   indices_in_distance.reserve(10);
 
-  Eigen::Vector2f cur_trans_2d =
-      all_frames_odom_[current_index].topRows(2).cast<float>();
+  Eigen::Vector2d cur_trans_2d =
+      all_frames_translation_[current_index].topRows(2);
   double min_distance = std::numeric_limits<double>::max();
   int closest_index = -1;
 
@@ -79,8 +78,7 @@ typename LoopDetector<PointT>::DetectResult LoopDetector<PointT>::AddFrame(
     end_index = common::Clamp(search_window_end_, 0, max_index);
   }
   for (int i = start_index; i < end_index; ++i) {
-    Eigen::Vector2f frame_trans_2d =
-        all_frames_odom_[i].topRows(2).cast<float>();
+    Eigen::Vector2d frame_trans_2d = all_frames_translation_[i].topRows(2);
     double distance = (cur_trans_2d - frame_trans_2d).norm();
     if (distance <= settings_.max_close_loop_distance) {
       indices_in_distance.push_back(i);
@@ -266,12 +264,24 @@ bool LoopDetector<PointT>::CloseLoop(const int target_id, const int source_id,
                                all_frames_[source_id]->GlobalPose();
   init_guess(2, 3) = 0.f;
 
-  if (all_frames_[target_id]->HasOdom() && all_frames_[source_id]->HasOdom()) {
-    Eigen::Matrix4d odom_guess =
-        all_frames_[target_id]->GetRelatedOdom().inverse() *
-        all_frames_[source_id]->GetRelatedOdom();
-    init_guess =
-        tf_odom_lidar_.inverse() * odom_guess.cast<float>() * tf_odom_lidar_;
+  // usually, the odom is not accuracy
+  // so, do not use odom to update the guess
+  // if (all_frames_[target_id]->HasOdom() && all_frames_[source_id]->HasOdom())
+  // {
+  //   Eigen::Matrix4d odom_guess =
+  //       all_frames_[target_id]->GetRelatedOdom().inverse() *
+  //       all_frames_[source_id]->GetRelatedOdom();
+  //   init_guess =
+  //       tf_odom_lidar_.inverse() * odom_guess.cast<float>() * tf_odom_lidar_;
+  // }
+
+  if (settings_.use_gps) {
+    // PRINT_DEBUG("init guess update: ");
+    // std::cout << common::Translation(init_guess).transpose() << " -> ";
+    init_guess.block(0, 3, 3, 1) = (all_frames_translation_[source_id] -
+                                    all_frames_translation_[target_id])
+                                       .cast<float>();
+    // std::cout << common::Translation(init_guess).transpose() << std::endl;
   }
 
   registrator::IcpUsingPointMatcher<PointT> scan_matcher;
@@ -288,21 +298,25 @@ bool LoopDetector<PointT>::CloseLoop(const int target_id, const int source_id,
     *score = -std::log(match_score);
     PRINT_INFO_FMT("++++ Got good match from source %d to target %d ++++",
                    source_id, target_id);
-    // for debug ****
-    // std::cout << "\nlast: " << source_id << std::endl
-    //           << all_frames_.at(source_id)->GlobalPose()
-    //           << "\nfirst: " << target_id << std::endl
-    //           << all_frames_.at(target_id)->GlobalPose() << std::endl;
-    // PRINT_DEBUG_FMT("match score: %lf, score: %lf", match_score, *score);
-    // typename pcl::PointCloud<PointT>::Ptr matched_cloud(
-    //     new typename pcl::PointCloud<PointT>);
-    // pcl::transformPointCloud(*all_frames_.at(source_id)->Cloud(),
-    //                          *matched_cloud, *result);
-    // *matched_cloud += *all_frames_.at(target_id)->Cloud();
-    // pcl::io::savePCDFile("pcd/matched_" + std::to_string(target_id) + "_" +
-    //                          std::to_string(source_id) + ".pcd",
-    //                      *matched_cloud);
-    // ****************
+
+    if (settings_.output_matched_cloud) {
+      // for debug ****
+      std::cout << "\nlast: " << source_id << std::endl
+                << all_frames_.at(source_id)->GlobalPose()
+                << "\nfirst: " << target_id << std::endl
+                << all_frames_.at(target_id)->GlobalPose() << std::endl;
+      PRINT_DEBUG_FMT("match score: %lf, score: %lf", match_score, *score);
+      typename pcl::PointCloud<PointT>::Ptr matched_cloud(
+          new typename pcl::PointCloud<PointT>);
+      pcl::transformPointCloud(*all_frames_.at(source_id)->Cloud(),
+                               *matched_cloud, *result);
+      *matched_cloud += *all_frames_.at(target_id)->Cloud();
+      pcl::io::savePCDFile("pcd/matched_" + std::to_string(target_id) + "_" +
+                               std::to_string(source_id) + ".pcd",
+                           *matched_cloud);
+      // ****************
+    }
+
     return true;
   }
 

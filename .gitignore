@@ -9,3 +9,4 @@ pkgs/*
 *.cam
 doc/html/*
 doc/latex/*
+*mondeo*
