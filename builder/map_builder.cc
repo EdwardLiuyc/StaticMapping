@@ -186,9 +186,12 @@ void MapBuilder::SetTrackingToLidar(const Eigen::Matrix4f& t) {
 }
 
 void MapBuilder::InsertPointcloudMsg(const PointCloudPtr& point_cloud) {
-  if (end_all_thread_.load() || extrapolator_ == nullptr ||
-      sensors::ToLocalTime(point_cloud->header.stamp) <
-          extrapolator_->GetLastPoseTime()) {
+  if (end_all_thread_.load() || extrapolator_ == nullptr) {
+    return;
+  }
+  if (sensors::ToLocalTime(point_cloud->header.stamp) <
+      extrapolator_->GetLastPoseTime()) {
+    PRINT_WARNING("skip cloud.");
     return;
   }
 
@@ -219,6 +222,8 @@ void MapBuilder::InsertPointcloudMsg(const PointCloudPtr& point_cloud) {
 
   // registrator::IcpFast<PointType> matcher;
   // matcher.setInputTarget(point_cloud);
+
+  // data_collector_.AddSensorData(point_cloud);
 
   point_cloud->points.clear();
   point_cloud->points.shrink_to_fit();
@@ -260,6 +265,7 @@ void MapBuilder::InsertImuMsg(const sensors::ImuMsg::Ptr& imu_msg) {
   imu_msg->angular_velocity.x = new_angular_velocity[0];
   imu_msg->angular_velocity.y = new_angular_velocity[1];
   imu_msg->angular_velocity.z = new_angular_velocity[2];
+  data_collector_.AddSensorData(*imu_msg);
 
   if (!extrapolator_) {
     extrapolator_ = PoseExtrapolator::InitializeWithImu(
@@ -268,14 +274,6 @@ void MapBuilder::InsertImuMsg(const sensors::ImuMsg::Ptr& imu_msg) {
   } else {
     extrapolator_->AddImuData(*imu_msg);
   }
-
-  // if (!imu_gps_fusion_) {
-  //   imu_gps_fusion_ = common::make_unique<sensor_fusions::ImuGpsTracker>(
-  //       options_.front_end_options.imu_options.gravity_constant,
-  //       options_.front_end_options.imu_options.frequency,
-  //       imu_msg->header.stamp);
-  // }
-  // imu_gps_fusion_->AddImuData(*imu_msg);
 }
 
 void MapBuilder::InsertOdomMsg(const sensors::OdomMsg::Ptr& odom_msg) {
@@ -295,26 +293,21 @@ void MapBuilder::InsertOdomMsg(const sensors::OdomMsg::Ptr& odom_msg) {
                                     tracking_to_odom_.inverse().cast<double>();
     odom_msg->SetPose(relative_pose);
     odom_msgs_.push_back(odom_msg);
-
-    // for output pcd
-    Eigen::Vector3d odom_path_point;
-    odom_path_point << odom_msg->pose.pose.position.x,
-        odom_msg->pose.pose.position.y, odom_msg->pose.pose.position.z;
-    odom_path_.push_back(odom_path_point);
   }
+  data_collector_.AddSensorData(*odom_msg);
 
-  common::PrintTransform(odom_msg->PoseInMatrix());
+  // common::PrintTransform(odom_msg->PoseInMatrix());
 
-  static bool warned = false;
-  if (extrapolator_ == nullptr) {
-    // Until we've initialized the extrapolator we cannot add odometry data.
-    if (!warned) {
-      PRINT_WARNING("Extrapolator not yet initialized.");
-      warned = true;
-    }
-    return;
-  }
-  extrapolator_->AddOdometryData(*odom_msg);
+  // static bool warned = false;
+  // if (extrapolator_ == nullptr) {
+  //   // Until we've initialized the extrapolator we cannot add odometry data.
+  //   if (!warned) {
+  //     PRINT_WARNING("Extrapolator not yet initialized.");
+  //     warned = true;
+  //   }
+  //   return;
+  // }
+  // extrapolator_->AddOdometryData(*odom_msg);
 }
 
 void MapBuilder::InsertGpsMsg(const sensors::NavSatFixMsg::Ptr& gps_msg) {
@@ -346,21 +339,6 @@ void MapBuilder::InsertFrameForSubmap(const PointCloudPtr& cloud_ptr,
   frames_.push_back(frame);
 }
 
-template <typename T>
-Eigen::Matrix<T, 4, 4> InterpolateTransform(const Eigen::Matrix<T, 4, 4>& t1,
-                                            const Eigen::Matrix<T, 4, 4>& t2,
-                                            const float factor) {
-  CHECK(factor >= 0. && factor <= 1.);
-  Eigen::Matrix<T, 4, 4> new_transform = Eigen::Matrix<T, 4, 4>::Identity();
-  const Eigen::Quaternion<T> q_a(Eigen::Matrix<T, 3, 3>(t1.block(0, 0, 3, 3)));
-  const Eigen::Quaternion<T> q_b(Eigen::Matrix<T, 3, 3>(t2.block(0, 0, 3, 3)));
-  new_transform.block(0, 0, 3, 3) = q_a.slerp(factor, q_b).toRotationMatrix();
-  new_transform.block(0, 3, 3, 1) =
-      t1.block(0, 3, 3, 1) +
-      (t2.block(0, 3, 3, 1) - t1.block(0, 3, 3, 1)) * factor;
-  return new_transform;
-}
-
 void MotionCompensation(const MapBuilder::PointCloudPtr& raw_cloud,
                         const float delta_time,
                         const Eigen::Matrix4f& delta_transform,
@@ -375,7 +353,7 @@ void MotionCompensation(const MapBuilder::PointCloudPtr& raw_cloud,
   for (size_t i = 0; i < cloud_size; ++i) {
     const auto& point = raw_cloud->points[i];
     float delta_factor = static_cast<float>(i) / static_cast<float>(cloud_size);
-    const Eigen::Matrix4f transform = InterpolateTransform(
+    const Eigen::Matrix4f transform = common::InterpolateTransform(
         Eigen::Matrix4f::Identity().eval(), delta_transform, delta_factor);
     const Eigen::Vector3f new_point_start =
         transform.block(0, 0, 3, 3) *
@@ -568,95 +546,6 @@ void MapBuilder::ScanMatchProcessing() {
   PRINT_INFO("point cloud thread exit.");
 }
 
-sensors::OdomMsg InterpolateOdom(
-    const sensors::OdomMsg& a,  ///< The first isometry.
-    const sensors::OdomMsg& b,  ///< The second isometry.
-    const SimpleTime& time      ///< The interpolation target time.
-) {
-  sensors::OdomMsg data;
-  data.header.stamp = time;
-
-  float factor = (time - a.header.stamp).toSec() /
-                 (b.header.stamp - a.header.stamp).toSec();
-  CHECK(factor >= 0. && factor <= 1.);
-  Eigen::Matrix4d a_pose = a.PoseInMatrix();
-  Eigen::Matrix4d b_pose = b.PoseInMatrix();
-  Eigen::Matrix4d target_pose = Eigen::Matrix4d::Identity();
-
-  Eigen::Vector3d delta_translation =
-      (b_pose.block(0, 3, 3, 1) - a_pose.block(0, 3, 3, 1)) * factor;
-  target_pose.block(0, 3, 3, 1) = a_pose.block(0, 3, 3, 1) + delta_translation;
-
-  Eigen::Quaterniond q_a = a.RotationInMatrix();
-  Eigen::Quaterniond q_b = b.RotationInMatrix();
-  Eigen::Quaterniond q_delta = q_a.slerp(factor, q_b);
-  target_pose.block(0, 0, 3, 3) = q_delta.toRotationMatrix();
-
-  data.SetPose(target_pose);
-  return data;
-}
-
-template <typename MsgTypePtr>
-std::pair<int, int> TimeStampBinarySearch(const std::vector<MsgTypePtr>& msgs,
-                                          const SimpleTime& time) {
-  int mid;
-  int start = 0;
-  int end = msgs.size() - 1;
-  while (end - start > 1) {
-    mid = start + (end - start) / 2;
-    if (time < msgs.at(mid)->header.stamp) {
-      end = mid;
-    } else {
-      start = mid;
-    }
-  }
-  return std::make_pair(start, end);
-}
-
-bool MapBuilder::GetOdomAtTime(const SimpleTime& time, sensors::OdomMsg* odom,
-                               double threshold_in_sec) {
-  CHECK(odom);
-  if (threshold_in_sec < 1.e-6) {
-    threshold_in_sec = 1.e-6;
-  }
-  sensors::OdomMsg::Ptr former_data;
-  sensors::OdomMsg::Ptr latter_data;
-  {
-    common::MutexLocker locker(&mutex_);
-    // size == 0
-    if (odom_msgs_.empty()) {
-      PRINT_WARNING("no odom data.");
-      return false;
-    }
-    // size == 1
-    if (odom_msgs_.size() == 1) {
-      if (std::fabs(time.toSec() - odom_msgs_[0]->header.stamp.toSec()) <=
-          threshold_in_sec) {
-        *odom = *odom_msgs_[0];
-        return true;
-      } else {
-        return false;
-      }
-    }
-    // size >= 2
-    if (time < odom_msgs_.front()->header.stamp ||
-        time > odom_msgs_.back()->header.stamp) {
-      PRINT_WARNING("too old or too new.");
-      return false;
-    }
-
-    // binary search for the time period for the target time
-    auto indices = TimeStampBinarySearch(odom_msgs_, time);
-    former_data = odom_msgs_[indices.first];
-    latter_data = odom_msgs_[indices.second];
-  }
-
-  CHECK(time >= former_data->header.stamp && time <= latter_data->header.stamp);
-  // interpolate the data for more accurate odom data
-  *odom = InterpolateOdom(*former_data, *latter_data, time);
-  return true;
-}
-
 void MapBuilder::SubmapPairMatch(const int source_index,
                                  const int target_index) {
   std::shared_ptr<Submap<PointType>> target_submap, source_submap;
@@ -842,6 +731,7 @@ void MapBuilder::ConnectAllSubmap() {
 }
 
 void MapBuilder::OutputPath() {
+  PRINT_INFO("generating path files ...");
   int path_point_index = 0;
   std::ofstream path_text_file(options_.whole_options.export_file_path +
                                "path.csv");
@@ -849,7 +739,32 @@ void MapBuilder::OutputPath() {
   bool write_to_text = path_text_file.is_open();
   pcl::PointCloud<pcl::_PointXYZI>::Ptr path_cloud(
       new pcl::PointCloud<pcl::_PointXYZI>);
+  pcl::PointCloud<pcl::PointXYZI> utm_path_cloud;
+  pcl::PointCloud<pcl::PointXYZI> odom_path_cloud;
+  utm_path_cloud.points.reserve(current_trajectory_->size());
   for (auto& submap : *current_trajectory_) {
+    // utm path
+    if (submap->HasUtm()) {
+      pcl::PointXYZI utm_point;
+      const Eigen::Vector3d utm = submap->GetRelatedUtm();
+      utm_point.x = utm[0];
+      utm_point.y = utm[1];
+      utm_point.z = utm[2];
+      utm_point.intensity = 0.;
+      utm_path_cloud.push_back(utm_point);
+    }
+    // odom path
+    if (submap->HasOdom()) {
+      pcl::PointXYZI odom_point;
+      const Eigen::Vector3d odom =
+          common::Translation(submap->GetRelatedOdom());
+      odom_point.x = odom[0];
+      odom_point.y = odom[1];
+      odom_point.z = odom[2];
+      odom_point.intensity = 0.;
+      odom_path_cloud.push_back(odom_point);
+    }
+    // map path
     for (auto& frame : submap->GetFrames()) {
       pcl::_PointXYZI path_point;
       Eigen::Matrix4d pose = frame->GlobalPose().cast<double>();
@@ -876,38 +791,25 @@ void MapBuilder::OutputPath() {
     pcl::io::savePCDFileBinaryCompressed(
         options_.whole_options.export_file_path + "path.pcd", *path_cloud);
   }
+  if (!utm_path_cloud.points.empty()) {
+    pcl::io::savePCDFileBinaryCompressed(
+        options_.whole_options.export_file_path + "utm_path.pcd",
+        utm_path_cloud);
+  }
+  if (!odom_path_cloud.points.empty()) {
+    pcl::io::savePCDFileBinaryCompressed(
+        options_.whole_options.export_file_path + "odom_path.pcd",
+        odom_path_cloud);
+  }
   if (write_to_text) {
     path_text_file << path_content;
     path_text_file.close();
   }
 
-  // output some file
-  if (!odom_path_.empty()) {
-    pcl::PointCloud<pcl::PointXYZ> odom_path_cloud;
-    for (Eigen::Vector3d& odom_path_point : odom_path_) {
-      odom_path_cloud.push_back(pcl::PointXYZ(
-          odom_path_point[0], odom_path_point[1], odom_path_point[2]));
-    }
-    PRINT_INFO("Generated ODOM path file.");
-    pcl::io::savePCDFileBinaryCompressed(
-        options_.whole_options.export_file_path + "odom_path.pcd",
-        odom_path_cloud);
-  }
-  if (!utm_path_.empty()) {
-    pcl::PointCloud<pcl::PointXYZI> utm_path_cloud;
-    utm_path_cloud.points.reserve(utm_path_.size());
-    for (const Eigen::Vector4d& path_point : utm_path_) {
-      pcl::PointXYZI point;
-      point.x = path_point[0];
-      point.y = path_point[1];
-      point.z = path_point[2];
-      point.intensity = path_point[3];
-      utm_path_cloud.push_back(point);
-    }
-    pcl::io::savePCDFileBinaryCompressed(
-        options_.whole_options.export_file_path + "utm_path.pcd",
-        utm_path_cloud);
-  }
+  data_collector_.RawGpsDataToFile(options_.whole_options.export_file_path +
+                                   "original_utm.pcd");
+  data_collector_.RawOdomDataToFile(options_.whole_options.export_file_path +
+                                    "original_odom.pcd");
 }
 
 void MapBuilder::SubmapMemoryManaging() {
@@ -982,30 +884,23 @@ void MapBuilder::SubmapProcessing() {
     // create a submap and init with the configs
     PRINT_DEBUG_FMT("Add a new submap : %d", current_submap_index);
 
-    for (auto& frame : local_frames) {
+    for (const auto& frame : local_frames) {
       submap->InsertFrame(frame);
     }
     CHECK(submap->Full());
     submap->CalculateDescriptor();
 
+    const auto time = submap->GetTimeStamp();
     if (use_gps_) {
-      const auto time = submap->GetTimeStamp();
-      // start_clock();
-      auto utm = data_collector_.InterpolateUtm(time, 0.005, true);
-      // end_clock(__FILE__, __FUNCTION__, __LINE__);
+      const auto utm = data_collector_.InterpolateUtm(time, 0.005, true);
       if (utm) {
         submap->SetRelatedUtm(*utm);
-        Eigen::Vector4d utm_point;
-        utm_point.head<3>() = *utm;
-        utm_point[3] = 0.;
-        common::MutexLocker locker(&mutex_);
-        utm_path_.push_back(utm_point);
       }
     }
     if (use_odom_) {
-      sensors::OdomMsg odom;
-      if (GetOdomAtTime(submap->GetTimeStamp(), &odom)) {
-        submap->SetRelatedOdom(odom.PoseInMatrix().cast<double>());
+      const auto odom = data_collector_.InterpolateOdom(time, 0.005, true);
+      if (odom) {
+        submap->SetRelatedOdom(*odom);
       }
     }
 
@@ -1178,26 +1073,25 @@ void MapBuilder::CalculateCoordTransformToUtm() {
     return;
   }
 
-  Eigen::Matrix4d result = isam_optimizer_->GetGpsCoordTransfrom();
-  map_utm_rotation_ = result.block(0, 0, 3, 3);
-  map_utm_translation_ = result.block(0, 3, 3, 1);
-  const Eigen::Vector3d utm_offset = data_collector_.GetUtmOffset();
-  map_utm_translation_ += utm_offset;
+  const Eigen::Matrix4d result = isam_optimizer_->GetGpsCoordTransfrom();
+  const Eigen::Matrix3d map_utm_rotation = common::Rotation(result);
+  const Eigen::Vector3d map_utm_translation =
+      common::Translation(result) + data_collector_.GetUtmOffset();
   // output the result to file( txt or xml ).
-  PRINT_INFO_FMT("utm translation: %.12lf, %.12lf", map_utm_translation_[0],
-                 map_utm_translation_[1]);
+  PRINT_INFO_FMT("utm translation: %.12lf, %.12lf", map_utm_translation[0],
+                 map_utm_translation[1]);
 
   // update the submap pose and frame pose
   Eigen::Matrix4d map_utm_transform = Eigen::Matrix4d::Identity();
-  map_utm_transform.block<3, 3>(0, 0) = map_utm_rotation_;
+  map_utm_transform.block<3, 3>(0, 0) = map_utm_rotation;
   for (auto& submap : *current_trajectory_) {
     Eigen::Matrix4d new_submap_pose =
         map_utm_transform * submap->GlobalPose().cast<double>();
     submap->SetGlobalPose(new_submap_pose.cast<float>());
     submap->UpdateInnerFramePose();
   }
-  current_trajectory_->SetUtmOffset(map_utm_translation_[0],
-                                    map_utm_translation_[1]);
+  current_trajectory_->SetUtmOffset(map_utm_translation[0],
+                                    map_utm_translation[1]);
 }
 
 void MapBuilder::DownSamplePointcloud(const PointCloudPtr& source,

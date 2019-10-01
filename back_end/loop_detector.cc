@@ -263,36 +263,19 @@ bool LoopDetector<PointT>::CloseLoop(const int target_id, const int source_id,
   Eigen::Matrix4f init_guess = all_frames_[target_id]->GlobalPose().inverse() *
                                all_frames_[source_id]->GlobalPose();
   init_guess(2, 3) = 0.f;
-
-  // usually, the odom is not accuracy
-  // so, do not use odom to update the guess
-  // if (all_frames_[target_id]->HasOdom() && all_frames_[source_id]->HasOdom())
-  // {
-  //   Eigen::Matrix4d odom_guess =
-  //       all_frames_[target_id]->GetRelatedOdom().inverse() *
-  //       all_frames_[source_id]->GetRelatedOdom();
-  //   init_guess =
-  //       tf_odom_lidar_.inverse() * odom_guess.cast<float>() * tf_odom_lidar_;
-  // }
-
   if (settings_.use_gps) {
-    // PRINT_DEBUG("init guess update: ");
-    // std::cout << common::Translation(init_guess).transpose() << " -> ";
+    // if use gps, update the translation part of guess
     init_guess.block(0, 3, 3, 1) = (all_frames_translation_[source_id] -
                                     all_frames_translation_[target_id])
                                        .cast<float>();
-    // std::cout << common::Translation(init_guess).transpose() << std::endl;
   }
 
   registrator::IcpUsingPointMatcher<PointT> scan_matcher;
-
-  scan_matcher.setInputSource(all_frames_.at(source_id)->Cloud());
-  scan_matcher.setInputTarget(all_frames_.at(target_id)->Cloud());
-
+  scan_matcher.setInputSource(all_frames_[source_id]->Cloud());
+  scan_matcher.setInputTarget(all_frames_[target_id]->Cloud());
   scan_matcher.align(init_guess, *result);
   const double match_score = scan_matcher.getFitnessScore();
-  // @todo add a parameter for this threshold
-  if (match_score > 0.75) {
+  if (match_score > settings_.accept_scan_match_score) {
     // match score = exp(-score)
     // so, score = -log_e(match_score)
     *score = -std::log(match_score);
@@ -300,7 +283,7 @@ bool LoopDetector<PointT>::CloseLoop(const int target_id, const int source_id,
                    source_id, target_id);
 
     if (settings_.output_matched_cloud) {
-      // for debug ****
+      // for debug
       std::cout << "\nlast: " << source_id << std::endl
                 << all_frames_.at(source_id)->GlobalPose()
                 << "\nfirst: " << target_id << std::endl
@@ -314,13 +297,9 @@ bool LoopDetector<PointT>::CloseLoop(const int target_id, const int source_id,
       pcl::io::savePCDFile("pcd/matched_" + std::to_string(target_id) + "_" +
                                std::to_string(source_id) + ".pcd",
                            *matched_cloud);
-      // ****************
     }
-
     return true;
   }
-
-  // PRINT_INFO("drop the match.");
   return false;
 }
 

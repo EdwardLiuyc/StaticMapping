@@ -149,7 +149,13 @@ void MultiResolutionVoxelMap<PointT>::OutputToPointCloud(
   for (auto& high_res_voxel : high_resolution_voxels_) {
     if (high_res_voxel.second.probability >= prob_threshold) {
       CHECK(!high_res_voxel.second.points.empty());
-      const uint8_t rgb = high_res_voxel.second.max_intensity;
+      // scale the intensity
+      uint32_t intensity = high_res_voxel.second.max_intensity;
+      intensity *= 2;
+      if (intensity > 255) {
+        intensity = 255;
+      }
+      const uint8_t rgb = intensity;
       if (settings_.output_average) {
         pcl::PointXYZRGB average_point;
         for (auto& point : high_res_voxel.second.points) {

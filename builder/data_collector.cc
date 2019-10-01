@@ -27,7 +27,10 @@
 #include "builder/utm.h"
 #include "common/macro_defines.h"
 #include "common/make_unique.h"
+#include "common/math.h"
 #include "glog/logging.h"
+
+#include "pcl/io/pcd_io.h"
 
 namespace static_map {
 
@@ -48,17 +51,41 @@ std::pair<int, int> TimeStampBinarySearch(
       start = mid;
     }
   }
+  CHECK_EQ(end - start, 1);
   return std::make_pair(start, end);
 }
 
 template <typename PointT>
 DataCollector<PointT>::DataCollector(const DataCollectorOptions& options)
-    : options_(options) {
+    : options_(options), accumulated_point_cloud_(nullptr) {
   // reserve the vectors for less memory copy when push_back
   constexpr size_t reserve_size = 2000;
   imu_data_.reserve(reserve_size);
   gps_data_.reserve(reserve_size);
   cloud_data_.reserve(reserve_size);
+  utm_path_cloud_.points.reserve(reserve_size);
+  odom_path_cloud_.points.reserve(reserve_size);
+}
+
+template <typename PointT>
+DataCollector<PointT>::~DataCollector() {}
+
+template <typename PointT>
+void DataCollector<PointT>::RawGpsDataToFile(
+    const std::string& filename) const {
+  if (!utm_path_cloud_.empty()) {
+    PRINT_INFO_FMT("output raw gps data into file: %s", filename.c_str());
+    pcl::io::savePCDFileBinaryCompressed(filename, utm_path_cloud_);
+  }
+}
+
+template <typename PointT>
+void DataCollector<PointT>::RawOdomDataToFile(
+    const std::string& filename) const {
+  if (!odom_path_cloud_.empty()) {
+    PRINT_INFO_FMT("output raw odom data into file: %s", filename.c_str());
+    pcl::io::savePCDFileBinaryCompressed(filename, odom_path_cloud_);
+  }
 }
 
 template <typename PointT>
@@ -68,13 +95,14 @@ void DataCollector<PointT>::AddSensorData(const sensors::ImuMsg& imu_msg) {
   imu_data.acceleration = imu_msg.linear_acceleration.ToEigenVector();
   imu_data.angular_velocity = imu_msg.angular_velocity.ToEigenVector();
 
-  common::MutexLocker locker(&mutex_);
+  Locker locker(mutex_[kImuData]);
   imu_data_.push_back(imu_data);
 }
 
 template <typename PointT>
 void DataCollector<PointT>::AddSensorData(
     const sensors::NavSatFixMsg& navsat_msg) {
+  Locker locker(mutex_[kGpsData]);
   GpsData data;
   // save all data and its status
   data.status_fixed = (navsat_msg.status.status == sensors::STATUS_FIX);
@@ -92,35 +120,103 @@ void DataCollector<PointT>::AddSensorData(
     utm_init_offset_ = data.utm_postion;
   }
   data.utm_postion -= utm_init_offset_.value();
-
-  common::MutexLocker locker(&mutex_);
   if (!gps_data_.empty()) {
     CHECK(data.time > gps_data_.back().time);
   }
   gps_data_.push_back(data);
+
+  pcl::PointXYZI path_point;
+  path_point.x = data.utm_postion[0];
+  path_point.y = data.utm_postion[1];
+  path_point.z = data.utm_postion[2];
+  path_point.intensity = sensors::STATUS_FIX;
+  utm_path_cloud_.push_back(path_point);
 }
 
 template <typename PointT>
 void DataCollector<PointT>::AddSensorData(const PointCloudPtr& cloud) {
   PointCloudData data;
-  data.time = sensors::ToLocalTime(cloud->header.stamp);
-  data.cloud = cloud;
+  // accumulating clouds into one
+  Locker locker(mutex_[kPointCloudData]);
+  if (options_.accumulate_cloud_num > 1) {
+    // "+=" will update the time stamp of accumulated_point_cloud_
+    // so, no need to manually copy the time stamp from pointcloud to
+    // accumulated_point_cloud_
+    if (accumulated_cloud_count_ == 0) {
+      accumulated_point_cloud_.reset(new PointCloudType);
+      first_time_in_accmulated_cloud_ =
+          sensors::ToLocalTime(cloud->header.stamp);
+    }
+    *accumulated_point_cloud_ += *cloud;
+    accumulated_cloud_count_++;
+    if (accumulated_cloud_count_ < options_.accumulate_cloud_num) {
+      return;
+    }
+  } else {
+    accumulated_point_cloud_.reset();
+    accumulated_point_cloud_ = cloud;
+  }
 
-  common::MutexLocker locker(&mutex_);
+  // insert new data
+  data.cloud = accumulated_point_cloud_;
+  data.time = sensors::ToLocalTime(data.cloud->header.stamp);
+  if (first_time_in_accmulated_cloud_ != SimpleTime()) {
+    data.delta_time_in_cloud = (sensors::ToLocalTime(cloud->header.stamp) -
+                                first_time_in_accmulated_cloud_)
+                                   .toSec();
+  } else {
+    data.delta_time_in_cloud = 0.f;
+  }
   cloud_data_.push_back(data);
+
+  first_time_in_accmulated_cloud_ = sensors::ToLocalTime(cloud->header.stamp);
+
+  // filtering cloud
+  // PointCloudPtr filtered_cloud(new PointCloudType);
+  // DownSamplePointcloud(accumulated_point_cloud_, filtered_cloud);
+
+  cloud->points.clear();
+  cloud->points.shrink_to_fit();
+  accumulated_cloud_count_ = 0;
+
+  // just for debug
+  got_clouds_count_++;
+  if (got_clouds_count_ % 100u == 0) {
+    PRINT_INFO_FMT("Got %u clouds already.", got_clouds_count_);
+  }
+}
+
+template <typename PointT>
+void DataCollector<PointT>::AddSensorData(const sensors::OdomMsg& odom_msg) {
+  Locker locker(mutex_[kOdometryData]);
+  OdometryData data;
+  data.time = odom_msg.header.stamp;
+  data.pose = odom_msg.PoseInMatrix();
+  if (!odom_init_offset_) {
+    odom_init_offset_ = data.pose;
+  }
+  const Eigen::Matrix4d relative_pose =
+      odom_init_offset_.value().inverse() * data.pose;
+  data.pose = relative_pose;
+  odom_data_.push_back(data);
+
+  const Eigen::Vector3d translation = common::Translation(data.pose);
+  pcl::PointXYZI odom_point;
+  odom_point.x = translation[0];
+  odom_point.y = translation[1];
+  odom_point.z = translation[2];
+  odom_point.intensity = 0.;
+  odom_path_cloud_.push_back(odom_point);
 }
 
 template <typename PointT>
 std::unique_ptr<Eigen::Vector3d> DataCollector<PointT>::InterpolateUtm(
     const SimpleTime& time, double time_threshold, bool trim_data) {
-  if (time_threshold < 1.e-6) {
-    time_threshold = 1.e-6;
-  }
-
+  CHECK_LE(time_threshold, 0.5);
   GpsData former_data;
   GpsData latter_data;
   {
-    common::MutexLocker locker(&mutex_);
+    Locker locker(mutex_[kGpsData]);
     if (gps_data_.empty()) {
       // size == 0
       PRINT_WARNING("no utm data.");
@@ -150,17 +246,75 @@ std::unique_ptr<Eigen::Vector3d> DataCollector<PointT>::InterpolateUtm(
     }
   }
 
+  const double delta_time = (latter_data.time - former_data.time).toSec();
+  CHECK_GT(delta_time, 1.e-6);
+  if (delta_time > 1.) {
+    PRINT_WARNING("some thing wrong with the search");
+    return nullptr;
+  }
+
   CHECK(time >= former_data.time && time <= latter_data.time);
   if (!former_data.status_fixed || !latter_data.status_fixed) {
     PRINT_WARNING("no fixed gps data at this time.");
     return nullptr;
   }
-  const double factor = (time - former_data.time).toSec() /
-                        (latter_data.time - former_data.time).toSec();
+  const double factor = (time - former_data.time).toSec() / delta_time;
   CHECK(factor >= 0. && factor <= 1.);
   const Eigen::Vector3d delta =
       factor * (latter_data.utm_postion - former_data.utm_postion);
   return common::make_unique<Eigen::Vector3d>(former_data.utm_postion + delta);
+}
+
+template <typename PointT>
+std::unique_ptr<Eigen::Matrix4d> DataCollector<PointT>::InterpolateOdom(
+    const SimpleTime& time, double time_threshold, bool trim_data) {
+  CHECK_LE(time_threshold, 0.5);
+  OdometryData former_data;
+  OdometryData latter_data;
+  {
+    Locker locker(mutex_[kOdometryData]);
+    if (odom_data_.empty()) {
+      // size == 0
+      PRINT_WARNING("no odom data.");
+      return nullptr;
+    } else if (odom_data_.size() == 1) {
+      // size == 1
+      if (std::fabs(time.toSec() - odom_data_[0].time.toSec()) <=
+          time_threshold) {
+        return common::make_unique<Eigen::Matrix4d>(odom_data_[0].pose);
+      } else {
+        PRINT_WARNING("the only data is not good.");
+        return nullptr;
+      }
+    } else if (time < odom_data_.front().time ||
+               time > odom_data_.back().time) {
+      // size >= 2
+      PRINT_WARNING("too old or too new.");
+      return nullptr;
+    }
+
+    // binary search for the time period for the target time
+    auto indices = TimeStampBinarySearch(odom_data_, time);
+    former_data = odom_data_[indices.first];
+    latter_data = odom_data_[indices.second];
+    if (trim_data) {
+      odom_data_.erase(odom_data_.begin(), odom_data_.begin() + indices.first);
+    }
+  }
+
+  const double delta_time = (latter_data.time - former_data.time).toSec();
+  CHECK_GT(delta_time, 1.e-6);
+  if (delta_time > 1.) {
+    PRINT_WARNING("some thing wrong with the search");
+    return nullptr;
+  }
+  CHECK(time >= former_data.time && time <= latter_data.time);
+  const double factor = (time - former_data.time).toSec() / delta_time;
+  CHECK(factor >= 0. && factor <= 1.);
+  // interpolate the data for more accurate odom data
+  const Eigen::Matrix4d pose =
+      common::InterpolateTransform(former_data.pose, latter_data.pose, factor);
+  return common::make_unique<Eigen::Matrix4d>(pose);
 }
 
 template <typename PointT>
@@ -187,7 +341,6 @@ void DataCollector<PointT>::TrimSensorData(const SensorDataType type,
 }
 
 #define TRIM_DATA(data_vector)              \
-  common::MutexLocker locker(&mutex_);      \
   const int data_size = data_vector.size(); \
   if (data_size <= 2) {                     \
     return;                                 \
@@ -202,11 +355,13 @@ void DataCollector<PointT>::TrimSensorData(const SensorDataType type,
 
 template <typename PointT>
 void DataCollector<PointT>::TrimGpsData(const SimpleTime& time) {
+  Locker locker(mutex_[kGpsData]);
   TRIM_DATA(gps_data_);
 }
 
 template <typename PointT>
 void DataCollector<PointT>::TrimImuData(const SimpleTime& time) {
+  Locker locker(mutex_[kImuData]);
   TRIM_DATA(imu_data_);
 }
 

@@ -54,8 +54,8 @@ namespace static_map {
  */
 class SimpleTime {
  public:
-  SimpleTime() : secs(0), nsecs(0), u_judge_range(1000) {}
-  SimpleTime(uint32_t s, uint32_t n) : secs(s), nsecs(n), u_judge_range(1000) {}
+  SimpleTime() : secs(0), nsecs(0), u_judge_range(1) {}
+  SimpleTime(uint32_t s, uint32_t n) : secs(s), nsecs(n), u_judge_range(1) {}
 
   ~SimpleTime() {}
 
