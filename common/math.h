@@ -189,6 +189,21 @@ void PrintTransform(const TRANSFORM(T) & t) {
             << std::endl;
 }
 
+template <typename T>
+Eigen::Matrix<T, 4, 4> InterpolateTransform(const Eigen::Matrix<T, 4, 4>& t1,
+                                            const Eigen::Matrix<T, 4, 4>& t2,
+                                            const float factor) {
+  CHECK(factor >= 0. && factor <= 1.);
+  Eigen::Matrix<T, 4, 4> new_transform = Eigen::Matrix<T, 4, 4>::Identity();
+  const Eigen::Quaternion<T> q_a(Eigen::Matrix<T, 3, 3>(t1.block(0, 0, 3, 3)));
+  const Eigen::Quaternion<T> q_b(Eigen::Matrix<T, 3, 3>(t2.block(0, 0, 3, 3)));
+  new_transform.block(0, 0, 3, 3) = q_a.slerp(factor, q_b).toRotationMatrix();
+  new_transform.block(0, 3, 3, 1) =
+      t1.block(0, 3, 3, 1) +
+      (t2.block(0, 3, 3, 1) - t1.block(0, 3, 3, 1)) * factor;
+  return new_transform;
+}
+
 template <int N>
 double DistanceToLine(const Eigen::Matrix<double, N, 1>& point,
                       const Eigen::Matrix<double, N, 1>& origin,

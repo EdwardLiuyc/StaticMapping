@@ -25,6 +25,7 @@
 
 #include <functional>
 #include <memory>
+#include <string>
 #include <vector>
 
 #include "builder/sensors.h"
@@ -41,7 +42,13 @@ struct DataCollectorOptions {
   int accumulate_cloud_num = 1;
 };
 
-enum SensorDataType { kImuData, kPointCloudData, kGpsData, kDataTypeCount };
+enum SensorDataType {
+  kImuData,
+  kPointCloudData,
+  kGpsData,
+  kOdometryData,
+  kDataTypeCount
+};
 
 template <typename PointT>
 class DataCollector {
@@ -49,9 +56,10 @@ class DataCollector {
   using PointCloudType = typename pcl::PointCloud<PointT>;
   using PointCloudPtr = typename PointCloudType::Ptr;
   using PointCloudConstPtr = typename PointCloudType::ConstPtr;
+  using Locker = std::lock_guard<std::mutex>;
 
   explicit DataCollector(const DataCollectorOptions& options);
-  ~DataCollector() {}
+  ~DataCollector();
 
   DataCollector(const DataCollector&) = delete;
   DataCollector& operator=(const DataCollector&) = delete;
@@ -75,34 +83,63 @@ class DataCollector {
     Eigen::Vector3d lat_lon_alt;
   };
 
+  struct OdometryData {
+    SimpleTime time;
+    Eigen::Matrix4d pose;
+    // Eigen::Vector3d linear_velocity;
+    // Eigen::Vector3d angular_velocity;
+
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  };
+
   /// @brief collect imu data
   void AddSensorData(const sensors::ImuMsg& imu_msg);
   /// @brief collect gps data
   void AddSensorData(const sensors::NavSatFixMsg& navsat_msg);
   /// @brief collect point cloud data
   void AddSensorData(const PointCloudPtr& cloud);
+  /// @brief collect odom data
+  void AddSensorData(const sensors::OdomMsg& odom_msg);
   /// @brief get utm at 'time' using linear interpolation
   std::unique_ptr<Eigen::Vector3d> InterpolateUtm(const SimpleTime& time,
                                                   double time_threshold = 0.005,
                                                   bool trim_data = false);
+  std::unique_ptr<Eigen::Matrix4d> InterpolateOdom(
+      const SimpleTime& time, double time_threshold = 0.005,
+      bool trim_data = false);
   /// @brief delete specific type of data before time
   void TrimSensorData(const SensorDataType type, const SimpleTime& time);
   /// @brief get init utm offset for all utm coords
   Eigen::Vector3d GetUtmOffset() const;
+  /// @brief output utm path to .pcd file for review
+  void RawGpsDataToFile(const std::string& filename) const;
+  void RawOdomDataToFile(const std::string& filename) const;
 
  protected:
   void TrimGpsData(const SimpleTime& time);
   void TrimImuData(const SimpleTime& time);
 
  private:
-  common::Mutex mutex_;
+  /// every kind of data has its own mutex
+  /// avoiding resource competition between different kind of data
+  std::mutex mutex_[kDataTypeCount];
   const DataCollectorOptions options_;
 
   std::vector<PointCloudData> cloud_data_;
   std::vector<ImuData> imu_data_;
-
   std::vector<GpsData> gps_data_;
+  std::vector<OdometryData> odom_data_;
+
   boost::optional<Eigen::Vector3d> utm_init_offset_;
+  boost::optional<Eigen::Matrix4d> odom_init_offset_;
+
+  pcl::PointCloud<pcl::PointXYZI> utm_path_cloud_;
+  pcl::PointCloud<pcl::PointXYZI> odom_path_cloud_;
+
+  PointCloudPtr accumulated_point_cloud_;
+  uint32_t accumulated_cloud_count_ = 0;
+  uint32_t got_clouds_count_ = 0;
+  SimpleTime first_time_in_accmulated_cloud_;
 };
 
 }  // namespace static_map

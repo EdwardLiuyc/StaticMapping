@@ -131,7 +131,7 @@ void PoseExtrapolator::AddOdometryData(const sensors::OdomMsg& odometry_data) {
   }
   const Eigen::Vector3d
       linear_velocity_in_tracking_frame_at_newest_odometry_time =
-          odometry_pose_delta.block(0, 3, 3, 1) / odometry_time_delta;
+          common::Translation(odometry_pose_delta) / odometry_time_delta;
   const Eigen::Quaterniond orientation_at_newest_odometry_time =
       Eigen::Quaterniond(
           Eigen::Matrix3d(timed_pose_queue_.back().pose.block(0, 3, 3, 1))) *

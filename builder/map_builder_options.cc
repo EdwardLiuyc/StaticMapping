@@ -251,6 +251,9 @@ MapBuilderOptions& MapBuilder::Initialise(const char* config_file_name) {
     GET_SINGLE_OPTION(back_end_node, "loop_detector_setting",
                       "m2dp_match_score",
                       loop_detector_setting.m2dp_match_score, float, float);
+    GET_SINGLE_OPTION(
+        back_end_node, "loop_detector_setting", "accept_scan_match_score",
+        loop_detector_setting.accept_scan_match_score, float, float);
   }
 
   auto& map_package_options = options_.map_package_options;

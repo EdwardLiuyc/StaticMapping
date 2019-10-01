@@ -46,8 +46,9 @@ struct LoopDetectorSettings {
   int loop_ignore_threshold = 15;
   int trying_detect_loop_count = 1;
   int nearest_history_pos_num = 4;
-  float max_close_loop_distance = 25.;
-  float m2dp_match_score = 0.99;
+  float max_close_loop_distance = 25.f;
+  float m2dp_match_score = 0.99f;
+  float accept_scan_match_score = 0.75f;
 };
 
 template <typename PointT>

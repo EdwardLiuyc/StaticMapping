@@ -24,6 +24,7 @@
 #include <cstring>
 #include <stack>
 
+#include "common/macro_defines.h"
 #include "common/simple_time.h"
 
 namespace static_map {

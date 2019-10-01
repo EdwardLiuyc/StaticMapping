@@ -303,10 +303,7 @@ class MapBuilder {
   ShowPoseFunction show_pose_function_;
 
   // utm
-  Eigen::Matrix3d map_utm_rotation_ = Eigen::Matrix3d::Identity();
-  Eigen::Vector3d map_utm_translation_ = Eigen::Vector3d::Zero();
   std::atomic<bool> submap_processing_done_;
-  std::vector<Eigen::Vector4d> utm_path_;
   std::vector<Eigen::Vector3d> odom_path_;
 
   // trajectories
