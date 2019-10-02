@@ -30,6 +30,7 @@
 
 #include "builder/sensors.h"
 #include "common/mutex.h"
+#include "pre_processors/filter_factory.h"
 
 #include "pcl/point_cloud.h"
 #include "pcl/point_types.h"
@@ -58,7 +59,8 @@ class DataCollector {
   using PointCloudConstPtr = typename PointCloudType::ConstPtr;
   using Locker = std::lock_guard<std::mutex>;
 
-  explicit DataCollector(const DataCollectorOptions& options);
+  DataCollector(const DataCollectorOptions& options,
+                pre_processers::filter::Factory<PointT>* const filter);
   ~DataCollector();
 
   DataCollector(const DataCollector&) = delete;
@@ -111,9 +113,14 @@ class DataCollector {
   void TrimSensorData(const SensorDataType type, const SimpleTime& time);
   /// @brief get init utm offset for all utm coords
   Eigen::Vector3d GetUtmOffset() const;
+  /// @brief get
+  PointCloudPtr GetNewCloud(float* const delta_time);
   /// @brief output utm path to .pcd file for review
   void RawGpsDataToFile(const std::string& filename) const;
   void RawOdomDataToFile(const std::string& filename) const;
+
+  size_t GetRemainingCloudSize();
+  void ClearAllCloud();
 
  protected:
   void TrimGpsData(const SimpleTime& time);
@@ -126,6 +133,7 @@ class DataCollector {
   const DataCollectorOptions options_;
 
   std::vector<PointCloudData> cloud_data_;
+  pre_processers::filter::Factory<PointT>* filter_factory_;
   std::vector<ImuData> imu_data_;
   std::vector<GpsData> gps_data_;
   std::vector<OdometryData> odom_data_;
@@ -136,7 +144,7 @@ class DataCollector {
   pcl::PointCloud<pcl::PointXYZI> utm_path_cloud_;
   pcl::PointCloud<pcl::PointXYZI> odom_path_cloud_;
 
-  PointCloudPtr accumulated_point_cloud_;
+  PointCloudPtr accumulated_point_cloud_ = nullptr;
   uint32_t accumulated_cloud_count_ = 0;
   uint32_t got_clouds_count_ = 0;
   SimpleTime first_time_in_accmulated_cloud_;

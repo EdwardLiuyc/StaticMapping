@@ -20,7 +20,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#pragma once
+#ifndef PRE_PROCESSORS_FILTER_GROUND_REMOVAL2_H_
+#define PRE_PROCESSORS_FILTER_GROUND_REMOVAL2_H_
 
 #include <limits>
 #include <memory>
@@ -502,3 +503,5 @@ class GroundRemoval2 : public Interface<PointT> {
 }  // namespace filter
 }  // namespace pre_processers
 }  // namespace static_map
+
+#endif  // PRE_PROCESSORS_FILTER_GROUND_REMOVAL2_H_

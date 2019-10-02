@@ -72,13 +72,11 @@ IsamOptimizer<PointT>::IsamOptimizer(const IsamOptimizerOptions &options,
   isam_ = common::make_unique<gtsam::ISAM2>(parameters);
 
   prior_noise_model_ = NM::Isotropic::Sigma(6, 1.e-3);
-  gps_noise_model_ = NM::Isotropic::Sigma(3, 0.1);
+  gps_noise_model_ = NM::Isotropic::Sigma(3, 0.15);
   frame_match_noise_model_ = NM::Diagonal::Sigmas(
       (gtsam::Vector(6) << 0.15, 0.15, 0.1, 0.15, 0.15, 0.15).finished());
-  loop_closure_noise_model_ = NM::Robust::Create(
-      NM::mEstimator::Huber::Create(5.),
-      NM::Diagonal::Sigmas(
-          (gtsam::Vector(6) << 0.1, 0.1, 0.1, 0.15, 0.15, 0.15).finished()));
+  loop_closure_noise_model_ = NM::Diagonal::Sigmas(
+      (gtsam::Vector(6) << 0.15, 0.15, 0.1, 0.15, 0.15, 0.15).finished());
   odom_tf_noise_model_ = NM::Diagonal::Sigmas(
       (gtsam::Vector(6) << 0.5, 0.5, 1.5, 0.1, 0.1, 0.1).finished());
   odom_noise_model_ = NM::Robust::Create(
@@ -233,6 +231,13 @@ void IsamOptimizer<PointT>::AddFrame(
   }
 
   IsamUpdate();
+  // gtsam::Values estimate_poses = isam_->calculateEstimate();
+  // Eigen::Matrix4f current_pose =
+  //     estimate_poses.at<gtsam::Pose3>(POSE_KEY(frame_index))
+  //         .matrix()
+  //         .cast<float>();
+  // frame->SetGlobalPose(current_pose);
+  // view_graph_.AddVertex(frame_index, current_pose);
   if (options_.use_gps &&
       accumulated_gps_count_ % kGpsSkipNum == kGpsSkipNum - 1) {
     UpdateAllPose();

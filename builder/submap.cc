@@ -141,8 +141,6 @@ std::shared_ptr<Frame<PointType>> Submap<PointType>::GetFrame(
 template <typename PointType>
 void Submap<PointType>::SetMatchedTransformedToNext(const Eigen::Matrix4f& t) {
   CHECK(!got_matched_transform_to_next_.load());
-  got_matched_transform_to_next_ = true;
-
   boost::upgrade_lock<ReadWriteMutex> locker(mutex_);
   {
     WriteMutexLocker write_locker(locker);
@@ -152,6 +150,7 @@ void Submap<PointType>::SetMatchedTransformedToNext(const Eigen::Matrix4f& t) {
     CHECK(!save_filename_.empty());
     ToPcdFile(save_path_ + save_filename_);
   }
+  got_matched_transform_to_next_ = true;
 }
 
 template <typename PointType>

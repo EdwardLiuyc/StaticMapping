@@ -23,6 +23,8 @@
 #ifndef PRE_PROCESSORS_XML_INTERFACE_H_
 #define PRE_PROCESSORS_XML_INTERFACE_H_
 
+#include <iomanip>
+#include <iostream>
 #include <map>
 #include <string>
 

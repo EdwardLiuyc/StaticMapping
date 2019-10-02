@@ -200,10 +200,6 @@ class MapBuilder {
   /// @brief inner initialise the mapbuilder with options for both
   /// front and and back end
   int InitialiseInside();
-  /// @brief it is the first step of inserting pointcloud
-  /// filtering the pointcloud using several filters set in config file
-  void DownSamplePointcloud(const PointCloudPtr& source,
-                            const PointCloudPtr& output);
   /// @brief get the pose of odometry at the given time
   /// @return true if succeed, otherwise, return false
   bool GetOdomAtTime(const SimpleTime& stamp, sensors::OdomMsg* odom,
@@ -246,18 +242,8 @@ class MapBuilder {
  private:
   common::Mutex mutex_;
   // ********************* data & options *********************
-  DataCollector<PointType> data_collector_;
+  std::unique_ptr<DataCollector<PointType>> data_collector_;
   MapBuilderOptions options_;
-  // input data from sensors
-  PointCloudPtr accumulated_point_cloud_;
-  int accumulated_cloud_count_;
-  SimpleTime first_time_in_accmulated_cloud_;
-
-  struct InnerCloud {
-    float delta_time_in_cloud;
-    PointCloudPtr cloud;
-  };
-  std::vector<InnerCloud> point_clouds_;
   // odoms
   std::vector<sensors::OdomMsg::Ptr> odom_msgs_;
   sensors::OdomMsg init_odom_msg_;
@@ -285,7 +271,6 @@ class MapBuilder {
   std::vector<std::shared_ptr<Frame<PointType>>> frames_;
   bool scan_match_thread_running_ = false;
   bool got_first_point_cloud_ = false;
-  uint32_t got_clouds_count_ = 0u;
 
   // std::unique_ptr<sensor_fusions::ImuGpsTracker> imu_gps_fusion_;
 
