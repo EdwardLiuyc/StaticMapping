@@ -56,8 +56,10 @@ std::pair<int, int> TimeStampBinarySearch(
 }
 
 template <typename PointT>
-DataCollector<PointT>::DataCollector(const DataCollectorOptions& options)
-    : options_(options), accumulated_point_cloud_(nullptr) {
+DataCollector<PointT>::DataCollector(
+    const DataCollectorOptions& options,
+    pre_processers::filter::Factory<PointT>* const filter)
+    : options_(options), filter_factory_(filter) {
   // reserve the vectors for less memory copy when push_back
   constexpr size_t reserve_size = 2000;
   imu_data_.reserve(reserve_size);
@@ -157,9 +159,14 @@ void DataCollector<PointT>::AddSensorData(const PointCloudPtr& cloud) {
     accumulated_point_cloud_ = cloud;
   }
 
+  // filtering cloud
+  PointCloudPtr filtered_cloud(new PointCloudType);
+  filter_factory_->SetInputCloud(accumulated_point_cloud_);
+  filter_factory_->Filter(filtered_cloud);
+
   // insert new data
-  data.cloud = accumulated_point_cloud_;
-  data.time = sensors::ToLocalTime(data.cloud->header.stamp);
+  data.cloud = filtered_cloud;
+  data.time = sensors::ToLocalTime(filtered_cloud->header.stamp);
   if (first_time_in_accmulated_cloud_ != SimpleTime()) {
     data.delta_time_in_cloud = (sensors::ToLocalTime(cloud->header.stamp) -
                                 first_time_in_accmulated_cloud_)
@@ -168,12 +175,7 @@ void DataCollector<PointT>::AddSensorData(const PointCloudPtr& cloud) {
     data.delta_time_in_cloud = 0.f;
   }
   cloud_data_.push_back(data);
-
   first_time_in_accmulated_cloud_ = sensors::ToLocalTime(cloud->header.stamp);
-
-  // filtering cloud
-  // PointCloudPtr filtered_cloud(new PointCloudType);
-  // DownSamplePointcloud(accumulated_point_cloud_, filtered_cloud);
 
   cloud->points.clear();
   cloud->points.shrink_to_fit();
@@ -184,6 +186,26 @@ void DataCollector<PointT>::AddSensorData(const PointCloudPtr& cloud) {
   if (got_clouds_count_ % 100u == 0) {
     PRINT_INFO_FMT("Got %u clouds already.", got_clouds_count_);
   }
+}
+
+template <typename PointT>
+typename DataCollector<PointT>::PointCloudPtr
+DataCollector<PointT>::GetNewCloud(float* const delta_time) {
+  Locker locker(mutex_[kPointCloudData]);
+  if (cloud_data_.empty()) {
+    return nullptr;
+  }
+
+  PointCloudPtr cloud = cloud_data_[0].cloud;
+  *delta_time = cloud_data_[0].delta_time_in_cloud;
+  cloud_data_.erase(cloud_data_.begin());
+  return cloud;
+}
+
+template <typename PointT>
+size_t DataCollector<PointT>::GetRemainingCloudSize() {
+  Locker locker(mutex_[kPointCloudData]);
+  return cloud_data_.size();
 }
 
 template <typename PointT>
@@ -338,6 +360,18 @@ void DataCollector<PointT>::TrimSensorData(const SensorDataType type,
       PRINT_ERROR("unknown type of sensor data.");
       break;
   }
+}
+
+template <typename PointT>
+void DataCollector<PointT>::ClearAllCloud() {
+  Locker locker(mutex_[kPointCloudData]);
+  // clear all source clouds
+  for (auto& frame : cloud_data_) {
+    frame.cloud->points.clear();
+    frame.cloud->points.shrink_to_fit();
+  }
+  cloud_data_.clear();
+  cloud_data_.shrink_to_fit();
 }
 
 #define TRIM_DATA(data_vector)              \

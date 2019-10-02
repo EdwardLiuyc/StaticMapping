@@ -33,6 +33,9 @@ namespace static_map {
 /*
  * @class MapUtmMatcher
  * @brief matcher for matcher path and utm path (for bost 2d and 3d)
+ *
+ * @notice this class is in no use anymore since the map&utm matching
+ * has been done in isam_optimizer
  */
 template <int DIM>
 class MapUtmMatcher {

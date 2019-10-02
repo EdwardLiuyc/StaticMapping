@@ -54,16 +54,12 @@ constexpr int kOdomMsgMaxSize = 10000;
 constexpr int kSubmapResSize = 100;
 
 MapBuilder::MapBuilder()
-    : data_collector_(DataCollectorOptions()),
-      accumulated_point_cloud_(new PointCloudType),
-      accumulated_cloud_count_(0),
-      use_imu_(false),
+    : use_imu_(false),
       use_gps_(false),
       end_all_thread_(false),
       end_managing_memory_(false),
-      submap_processing_done_(false) {
-  point_clouds_.reserve(200);
-}
+      submap_processing_done_(false) {}
+
 MapBuilder::~MapBuilder() {}
 
 int MapBuilder::InitialiseInside() {
@@ -113,6 +109,9 @@ int MapBuilder::InitialiseInside() {
       options_.back_end_options.loop_detector_setting);
   isam_optimizer_->SetTransformOdomToLidar(transform_odom_lidar_);
   isam_optimizer_->SetTrackingToGps(tracking_to_gps_);
+
+  data_collector_ = common::make_unique<DataCollector<PointType>>(
+      DataCollectorOptions(), &filter_factory_);
 
 #ifdef _USE_OPENCV_
   PRINT_INFO("Enable openCV.");
@@ -194,53 +193,9 @@ void MapBuilder::InsertPointcloudMsg(const PointCloudPtr& point_cloud) {
     PRINT_WARNING("skip cloud.");
     return;
   }
-
   // transform to tracking frame
   pcl::transformPointCloud(*point_cloud, *point_cloud, tracking_to_lidar_);
-  // accumulating clouds into one
-  if (options_.front_end_options.accumulate_cloud_num > 1) {
-    common::MutexLocker locker(&mutex_);
-    // "+=" will update the time stamp of accumulated_point_cloud_
-    // so, no need to manually copy the time stamp from pointcloud to
-    // accumulated_point_cloud_
-    *accumulated_point_cloud_ += *point_cloud;
-    if (accumulated_cloud_count_ == 0) {
-      first_time_in_accmulated_cloud_ =
-          sensors::ToLocalTime(point_cloud->header.stamp);
-    }
-    accumulated_cloud_count_++;
-    if (accumulated_cloud_count_ <
-        options_.front_end_options.accumulate_cloud_num) {
-      return;
-    }
-  } else {
-    accumulated_point_cloud_ = point_cloud;
-  }
-  // filtering cloud
-  PointCloudPtr filtered_cloud(new PointCloudType);
-  DownSamplePointcloud(accumulated_point_cloud_, filtered_cloud);
-
-  // registrator::IcpFast<PointType> matcher;
-  // matcher.setInputTarget(point_cloud);
-
-  // data_collector_.AddSensorData(point_cloud);
-
-  point_cloud->points.clear();
-  point_cloud->points.shrink_to_fit();
-  accumulated_cloud_count_ = 0;
-  accumulated_point_cloud_->clear();
-
-  // @todo(edward) it is less than whole delta_time
-  const float delta_time = (sensors::ToLocalTime(point_cloud->header.stamp) -
-                            first_time_in_accmulated_cloud_)
-                               .toSec();
-  common::MutexLocker locker(&mutex_);
-  point_clouds_.emplace_back(InnerCloud{delta_time, filtered_cloud});
-  // just for debug
-  got_clouds_count_++;
-  if (got_clouds_count_ % 100 == 0) {
-    PRINT_INFO_FMT("Got %u clouds already.", got_clouds_count_);
-  }
+  data_collector_->AddSensorData(point_cloud);
 }
 
 void MapBuilder::InsertImuMsg(const sensors::ImuMsg::Ptr& imu_msg) {
@@ -265,7 +220,7 @@ void MapBuilder::InsertImuMsg(const sensors::ImuMsg::Ptr& imu_msg) {
   imu_msg->angular_velocity.x = new_angular_velocity[0];
   imu_msg->angular_velocity.y = new_angular_velocity[1];
   imu_msg->angular_velocity.z = new_angular_velocity[2];
-  data_collector_.AddSensorData(*imu_msg);
+  data_collector_->AddSensorData(*imu_msg);
 
   if (!extrapolator_) {
     extrapolator_ = PoseExtrapolator::InitializeWithImu(
@@ -294,7 +249,7 @@ void MapBuilder::InsertOdomMsg(const sensors::OdomMsg::Ptr& odom_msg) {
     odom_msg->SetPose(relative_pose);
     odom_msgs_.push_back(odom_msg);
   }
-  data_collector_.AddSensorData(*odom_msg);
+  data_collector_->AddSensorData(*odom_msg);
 
   // common::PrintTransform(odom_msg->PoseInMatrix());
 
@@ -314,7 +269,7 @@ void MapBuilder::InsertGpsMsg(const sensors::NavSatFixMsg::Ptr& gps_msg) {
   if (!use_gps_ || end_all_thread_.load()) {
     return;
   }
-  data_collector_.AddSensorData(*gps_msg);
+  data_collector_->AddSensorData(*gps_msg);
 }
 
 void MapBuilder::AddNewTrajectory() {
@@ -404,25 +359,11 @@ void MapBuilder::ScanMatchProcessing() {
   SimpleTime last_source_time;
   float source_cloud_delta_time = 0.;
 
-  // get a new cloud from the cloud buffer
-  // it is usually not the newest one but hasn't been calculated
-  const auto get_new_cloud = [&](PointCloudPtr& cloud,
-                                 float* const delta_time) -> bool {
-    common::MutexLocker locker(&mutex_);
-    if (point_clouds_.empty()) {
-      return false;
-    }
-    cloud = point_clouds_[0].cloud;
-    *delta_time = point_clouds_[0].delta_time_in_cloud;
-    point_clouds_.erase(point_clouds_.begin());
-    return true;
-  };
-
   bool first_in_accumulate = true;
   PointCloudPtr history_cloud = nullptr;
   while (true) {
-    if (get_new_cloud(source_cloud, &source_cloud_delta_time)) {
-      auto source_time = sensors::ToLocalTime(source_cloud->header.stamp);
+    source_cloud = data_collector_->GetNewCloud(&source_cloud_delta_time);
+    if (source_cloud != nullptr) {
       if (!got_first_point_cloud_) {
         got_first_point_cloud_ = true;
         target_cloud = source_cloud;
@@ -451,20 +392,20 @@ void MapBuilder::ScanMatchProcessing() {
     // common::PrintTransform(guess);
 
     // filter some registration if not moving
-    const double guess_angles =
-        common::RotationMatrixToEulerAngles(common::Rotation(guess)).norm() *
-        180. / M_PI;
-    const double guess_translation = common::Translation(guess).norm();
-    if (guess_translation <
-            options_.front_end_options.motion_filter.translation_range &&
-        guess_angles < options_.front_end_options.motion_filter.angle_range &&
-        sensors::ToLocalTime(source_cloud->header.stamp -
-                             target_cloud->header.stamp)
-                .toSec() <
-            options_.front_end_options.motion_filter.time_range) {
-      source_cloud.reset();
-      continue;
-    }
+    // const double guess_angles =
+    //     common::RotationMatrixToEulerAngles(common::Rotation(guess)).norm() *
+    //     180. / M_PI;
+    // const double guess_translation = common::Translation(guess).norm();
+    // if (guess_translation <
+    //         options_.front_end_options.motion_filter.translation_range &&
+    //     guess_angles < options_.front_end_options.motion_filter.angle_range
+    //     && sensors::ToLocalTime(source_cloud->header.stamp -
+    //                          target_cloud->header.stamp)
+    //             .toSec() <
+    //         options_.front_end_options.motion_filter.time_range) {
+    //   source_cloud.reset();
+    //   continue;
+    // }
 
     // motion compensation using guess
     scan_matcher_->setInputTarget(target_cloud);
@@ -685,13 +626,7 @@ void MapBuilder::ConnectAllSubmap() {
   for (auto& submap : *current_trajectory_) {
     submap->UpdateInnerFramePose();
   }
-  // clear all source clouds
-  for (auto& frame : point_clouds_) {
-    frame.cloud->points.clear();
-    frame.cloud->points.shrink_to_fit();
-  }
-  point_clouds_.clear();
-  point_clouds_.shrink_to_fit();
+  data_collector_->ClearAllCloud();
 
   // calculate the coord transform from the map th utm
   CalculateCoordTransformToUtm();
@@ -806,10 +741,10 @@ void MapBuilder::OutputPath() {
     path_text_file.close();
   }
 
-  data_collector_.RawGpsDataToFile(options_.whole_options.export_file_path +
-                                   "original_utm.pcd");
-  data_collector_.RawOdomDataToFile(options_.whole_options.export_file_path +
-                                    "original_odom.pcd");
+  data_collector_->RawGpsDataToFile(options_.whole_options.export_file_path +
+                                    "original_utm.pcd");
+  data_collector_->RawOdomDataToFile(options_.whole_options.export_file_path +
+                                     "original_odom.pcd");
 }
 
 void MapBuilder::SubmapMemoryManaging() {
@@ -892,15 +827,26 @@ void MapBuilder::SubmapProcessing() {
 
     const auto time = submap->GetTimeStamp();
     if (use_gps_) {
-      const auto utm = data_collector_.InterpolateUtm(time, 0.005, true);
+      const auto utm = data_collector_->InterpolateUtm(time, 0.005, true);
       if (utm) {
         submap->SetRelatedUtm(*utm);
       }
     }
     if (use_odom_) {
-      const auto odom = data_collector_.InterpolateOdom(time, 0.005, true);
+      const auto odom = data_collector_->InterpolateOdom(time, 0.005, true);
       if (odom) {
         submap->SetRelatedOdom(*odom);
+      }
+    }
+
+    if (current_submap_index != 0) {
+      const auto previous_time =
+          current_trajectory_->at(current_submap_index - 1)->GetTimeStamp();
+      const double delta_time = (time - previous_time).toSec();
+      if (delta_time < 0.3) {
+        PRINT_INFO_FMT("time: %lf", delta_time);
+      } else {
+        PRINT_ERROR_FMT("time: %lf", delta_time);
       }
     }
 
@@ -922,7 +868,7 @@ void MapBuilder::FinishAllComputations() {
   PRINT_INFO("Finishing Remaining Computations...");
   end_all_thread_ = true;
 
-  size_t remaining_pointcloud_count = point_clouds_.size();
+  size_t remaining_pointcloud_count = data_collector_->GetRemainingCloudSize();
   int delay = 0;
   SimpleTime delay_time = SimpleTime::from_sec(0.1);
   if (scan_match_thread_) {
@@ -932,7 +878,8 @@ void MapBuilder::FinishAllComputations() {
       if (delay >= 20) {
         std::ostringstream progress_info;
         progress_info << "Remaining Point Cloud : "
-                      << (1. - static_cast<double>(point_clouds_.size()) /
+                      << (1. - static_cast<double>(
+                                   data_collector_->GetRemainingCloudSize()) /
                                    remaining_pointcloud_count) *
                              100.
                       << "% ...";
@@ -1076,7 +1023,7 @@ void MapBuilder::CalculateCoordTransformToUtm() {
   const Eigen::Matrix4d result = isam_optimizer_->GetGpsCoordTransfrom();
   const Eigen::Matrix3d map_utm_rotation = common::Rotation(result);
   const Eigen::Vector3d map_utm_translation =
-      common::Translation(result) + data_collector_.GetUtmOffset();
+      common::Translation(result) + data_collector_->GetUtmOffset();
   // output the result to file( txt or xml ).
   PRINT_INFO_FMT("utm translation: %.12lf, %.12lf", map_utm_translation[0],
                  map_utm_translation[1]);
@@ -1092,12 +1039,6 @@ void MapBuilder::CalculateCoordTransformToUtm() {
   }
   current_trajectory_->SetUtmOffset(map_utm_translation[0],
                                     map_utm_translation[1]);
-}
-
-void MapBuilder::DownSamplePointcloud(const PointCloudPtr& source,
-                                      const PointCloudPtr& output) {
-  filter_factory_.SetInputCloud(source);
-  filter_factory_.Filter(output);
 }
 
 void MapBuilder::SetShowMapFunction(const MapBuilder::ShowMapFunction& func) {

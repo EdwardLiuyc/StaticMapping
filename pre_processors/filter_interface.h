@@ -20,7 +20,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#pragma once
+#ifndef PRE_PROCESSORS_FILTER_INTERFACE_H_
+#define PRE_PROCESSORS_FILTER_INTERFACE_H_
 
 #include <memory>
 #include <string>
@@ -98,3 +99,5 @@ class Interface : public ProcesserInterface<PointT> {
   using PointCloudType = pcl::PointCloud<PointT>;                  \
   using PointCloudPtr = typename Interface<PointT>::PointCloudPtr; \
   using PointCloudConstPtr = typename PointCloudType::ConstPtr;
+
+#endif  // PRE_PROCESSORS_FILTER_INTERFACE_H_

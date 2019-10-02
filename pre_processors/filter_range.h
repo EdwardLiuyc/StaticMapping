@@ -20,7 +20,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#pragma once
+#ifndef PRE_PROCESSORS_FILTER_RANGE_H_
+#define PRE_PROCESSORS_FILTER_RANGE_H_
 
 #include <memory>
 
@@ -106,3 +107,5 @@ class Range : public Interface<PointT> {
 }  // namespace filter
 }  // namespace pre_processers
 }  // namespace static_map
+
+#endif  // PRE_PROCESSORS_FILTER_RANGE_H_
