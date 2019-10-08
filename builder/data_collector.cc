@@ -168,10 +168,9 @@ void DataCollector<PointT>::AddSensorData(const PointCloudPtr& cloud) {
     accumulated_point_cloud_.reset();
     accumulated_point_cloud_ = cloud;
   }
-  start_clock();
+
   *copied_accumulated_point_cloud_ = *accumulated_point_cloud_;
   copied_first_time_ = first_time_in_accmulated_cloud_;
-  end_clock(__FILE__, __FUNCTION_, __LINE__);
   accumulate_cloud_available_ = true;
   cloud->points.clear();
   cloud->points.shrink_to_fit();
