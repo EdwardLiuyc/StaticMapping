@@ -23,6 +23,7 @@
 #ifndef BUILDER_DATA_COLLECTOR_H_
 #define BUILDER_DATA_COLLECTOR_H_
 
+#include <atomic>
 #include <functional>
 #include <memory>
 #include <string>
@@ -117,6 +118,7 @@ class DataCollector {
   PointCloudPtr GetNewCloud(float* const delta_time);
   /// @brief output utm path to .pcd file for review
   void RawGpsDataToFile(const std::string& filename) const;
+  /// @brief output odom path to .pcd file for review
   void RawOdomDataToFile(const std::string& filename) const;
 
   size_t GetRemainingCloudSize();
@@ -126,6 +128,8 @@ class DataCollector {
   void TrimGpsData(const SimpleTime& time);
   void TrimImuData(const SimpleTime& time);
 
+  void CloudPreProcessing();
+
  private:
   /// every kind of data has its own mutex
   /// avoiding resource competition between different kind of data
@@ -133,6 +137,9 @@ class DataCollector {
   const DataCollectorOptions options_;
 
   std::vector<PointCloudData> cloud_data_;
+  std::atomic_bool accumulate_cloud_available_;
+  bool kill_cloud_preprocessing_thread_ = false;
+  std::thread cloud_processing_thread_;
   pre_processers::filter::Factory<PointT>* filter_factory_;
   std::vector<ImuData> imu_data_;
   std::vector<GpsData> gps_data_;
@@ -145,9 +152,11 @@ class DataCollector {
   pcl::PointCloud<pcl::PointXYZI> odom_path_cloud_;
 
   PointCloudPtr accumulated_point_cloud_ = nullptr;
-  uint32_t accumulated_cloud_count_ = 0;
+  PointCloudPtr copied_accumulated_point_cloud_;
+  std::atomic_uint accumulated_cloud_count_;
   uint32_t got_clouds_count_ = 0;
   SimpleTime first_time_in_accmulated_cloud_;
+  SimpleTime copied_first_time_;
 };
 
 }  // namespace static_map

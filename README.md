@@ -189,14 +189,13 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 4. **Fast Segmentation of 3D Pointcloud for Ground Vehicles**, M. Himmelsbach and Felix v. Hundelshausen and H.-J. Wuensche, IEEE Intelligent Vehicles Symposium, Proceedings, 2010
 
 # TODO
-- **move filters into data collector**
+- **move the filter out the callback for pointcloud**
 - **read bag on its own**
-- **supporting multi lidars**
+- **supporting multi-lidars**
 - **inserting frame cloud instead of submap cloud at the end**
 - **remove the imu dependency of pose extrapolator**
 - save submap binary data into a special format file not just pointcloud into .pcd
 - gps factor static bias
-- add a data collector for all sensor data's management
 - save the frame clouds instead of submap clouds
 - filtering the cars directly at the input of the pointclouds
 - **add imu integrating factor in backend**
@@ -209,7 +208,6 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - stand-alone ICP without libpointmatcher
 - parallel PointCloudLib 
 - finish multi-trajectory map builder
-- improve MRVM 
 - use ground detection to label the pointcloud 
 - use some machine learning or deep learning method to add semantic labels
 - use a docker to release the environment

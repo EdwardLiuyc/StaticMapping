@@ -15,7 +15,7 @@
         0 : int
         1 : float  -->
       <filter name="Range" >
-        <param type="1" name="max_range"> 75. </param>
+        <param type="1" name="max_range"> 80. </param>
         <param type="1" name="min_range"> 4.5 </param>
       </filter>
       <filter name="RandomSampler" >
@@ -78,10 +78,7 @@
       <motion_filter 
         translation_range="1"
         angle_range="1.5"
-        time_range="0." />
-      <motion_compensation_options 
-        enable="true" 
-        use_average="true" />
+        time_range="0.25" />
       <!-- imu type 
           0: normal type
           1: imu in ins(combined imu) -->
@@ -90,6 +87,9 @@
         imu_frequency="200."
         type="0"
         gravity_constant="9.8" />
+      <motion_compensation_options 
+        enable="true"
+        use_average="true" />
     </front_end_options>
     <back_end_options>
       <!-- type just the same as front end -->
@@ -98,7 +98,7 @@
         enable_ndt="false" 
         use_voxel_filter="true" 
         voxel_filter_resolution="0.2"
-        accepted_min_score="0.6" />
+        accepted_min_score="0.65" />
       <submap_options 
         frame_count="2"
         enable_inner_multiview_icp="false"
@@ -113,8 +113,9 @@
         use_odom="false"
         use_gps="true" />
       <loop_detector_setting 
-        use_gps="false"
+        use_gps="true"
         use_descriptor="true"
+        output_matched_cloud="false"
         loop_ignore_threshold="15"
         trying_detect_loop_count="1"
         max_close_loop_distance="15."
@@ -122,7 +123,7 @@
         nearest_history_pos_num="5" />
     </back_end_options>
     <output_mrvm_settings
-      output_average="true"
+      output_average="false"
       output_rgb="true"
       prob_threshold="0.56" 
       low_resolution="1." 
