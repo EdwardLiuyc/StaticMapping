@@ -59,7 +59,13 @@ template <typename PointT>
 DataCollector<PointT>::DataCollector(
     const DataCollectorOptions& options,
     pre_processers::filter::Factory<PointT>* const filter)
-    : options_(options), filter_factory_(filter) {
+    : options_(options),
+      accumulate_cloud_available_(false),
+      cloud_processing_thread_(
+          std::bind(&DataCollector<PointT>::CloudPreProcessing, this)),
+      filter_factory_(filter),
+      copied_accumulated_point_cloud_(new PointCloudType),
+      accumulated_cloud_count_(0) {
   // reserve the vectors for less memory copy when push_back
   constexpr size_t reserve_size = 2000;
   imu_data_.reserve(reserve_size);
@@ -70,7 +76,12 @@ DataCollector<PointT>::DataCollector(
 }
 
 template <typename PointT>
-DataCollector<PointT>::~DataCollector() {}
+DataCollector<PointT>::~DataCollector() {
+  kill_cloud_preprocessing_thread_ = true;
+  if (cloud_processing_thread_.joinable()) {
+    cloud_processing_thread_.join();
+  }
+}
 
 template <typename PointT>
 void DataCollector<PointT>::RawGpsDataToFile(
@@ -137,13 +148,12 @@ void DataCollector<PointT>::AddSensorData(
 
 template <typename PointT>
 void DataCollector<PointT>::AddSensorData(const PointCloudPtr& cloud) {
-  PointCloudData data;
   // accumulating clouds into one
-  Locker locker(mutex_[kPointCloudData]);
   if (options_.accumulate_cloud_num > 1) {
     // "+=" will update the time stamp of accumulated_point_cloud_
     // so, no need to manually copy the time stamp from pointcloud to
     // accumulated_point_cloud_
+    Locker locker(mutex_[kPointCloudData]);
     if (accumulated_cloud_count_ == 0) {
       accumulated_point_cloud_.reset(new PointCloudType);
       first_time_in_accmulated_cloud_ =
@@ -158,33 +168,52 @@ void DataCollector<PointT>::AddSensorData(const PointCloudPtr& cloud) {
     accumulated_point_cloud_.reset();
     accumulated_point_cloud_ = cloud;
   }
-
-  // filtering cloud
-  PointCloudPtr filtered_cloud(new PointCloudType);
-  filter_factory_->SetInputCloud(accumulated_point_cloud_);
-  filter_factory_->Filter(filtered_cloud);
-
-  // insert new data
-  data.cloud = filtered_cloud;
-  data.time = sensors::ToLocalTime(filtered_cloud->header.stamp);
-  if (first_time_in_accmulated_cloud_ != SimpleTime()) {
-    data.delta_time_in_cloud = (sensors::ToLocalTime(cloud->header.stamp) -
-                                first_time_in_accmulated_cloud_)
-                                   .toSec();
-  } else {
-    data.delta_time_in_cloud = 0.f;
-  }
-  cloud_data_.push_back(data);
-  first_time_in_accmulated_cloud_ = sensors::ToLocalTime(cloud->header.stamp);
-
+  start_clock();
+  *copied_accumulated_point_cloud_ = *accumulated_point_cloud_;
+  copied_first_time_ = first_time_in_accmulated_cloud_;
+  end_clock(__FILE__, __FUNCTION_, __LINE__);
+  accumulate_cloud_available_ = true;
   cloud->points.clear();
   cloud->points.shrink_to_fit();
   accumulated_cloud_count_ = 0;
+}
 
-  // just for debug
-  got_clouds_count_++;
-  if (got_clouds_count_ % 100u == 0) {
-    PRINT_INFO_FMT("Got %u clouds already.", got_clouds_count_);
+template <typename PointT>
+void DataCollector<PointT>::CloudPreProcessing() {
+  while (true) {
+    if (kill_cloud_preprocessing_thread_) {
+      break;
+    }
+    if (!accumulate_cloud_available_.load()) {
+      SimpleTime::from_sec(0.005).sleep();
+      continue;
+    }
+    accumulate_cloud_available_ = false;
+
+    PointCloudData data;
+    // filtering cloud
+    PointCloudPtr filtered_cloud(new PointCloudType);
+    filter_factory_->SetInputCloud(copied_accumulated_point_cloud_);
+    filter_factory_->Filter(filtered_cloud);
+    // insert new data
+    Locker locker(mutex_[kPointCloudData]);
+    data.cloud = filtered_cloud;
+    data.time =
+        sensors::ToLocalTime(copied_accumulated_point_cloud_->header.stamp);
+    if (copied_first_time_ != SimpleTime()) {
+      data.delta_time_in_cloud = (data.time - copied_first_time_).toSec();
+    } else {
+      data.delta_time_in_cloud = 0.f;
+    }
+    cloud_data_.push_back(data);
+
+    // just for debug
+    got_clouds_count_++;
+    if (got_clouds_count_ % 100u == 0) {
+      const auto remaining_size = cloud_data_.size();
+      PRINT_INFO_FMT("Got %u clouds already. Remaining cloud size: %lu",
+                     got_clouds_count_, remaining_size);
+    }
   }
 }
 

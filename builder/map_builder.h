@@ -261,6 +261,7 @@ class MapBuilder {
   bool use_gps_;
   std::atomic<bool> end_all_thread_;
   std::atomic<bool> end_managing_memory_;
+  std::atomic<bool> submap_processing_done_;
 
   // ********************* pre processors *********************
   pre_processers::filter::Factory<PointType> filter_factory_;
@@ -272,24 +273,16 @@ class MapBuilder {
   bool scan_match_thread_running_ = false;
   bool got_first_point_cloud_ = false;
 
-  // std::unique_ptr<sensor_fusions::ImuGpsTracker> imu_gps_fusion_;
-
   // ************************ back end ************************
   // submaps
   std::unique_ptr<std::thread> submap_thread_;
   std::unique_ptr<registrator::Interface<PointType>> submap_marcher_ = nullptr;
-  // optimizer
-  // finally, we decide to use isam to do the back-end optimizing
   std::unique_ptr<back_end::IsamOptimizer<PointType>> isam_optimizer_;
 
   // show the result in RVIZ(ros) or other platform
   ShowMapFunction show_map_function_;
   ShowSubmapFunction show_submap_function_;
   ShowPoseFunction show_pose_function_;
-
-  // utm
-  std::atomic<bool> submap_processing_done_;
-  std::vector<Eigen::Vector3d> odom_path_;
 
   // trajectories
   std::vector<Trajectory<PointType>::Ptr> trajectories_;

@@ -290,15 +290,12 @@ int main(int argc, char** argv) {
   map_builder->SetShowMapFunction(show_function);
   map_builder->SetShowPoseFunction(show_pose_function);
   map_builder->SetShowSubmapFunction(show_submap_function);
-  ros::Rate loop_rate(1000);
-  while (ros::ok()) {
-    ros::spinOnce();
-    loop_rate.sleep();
-  }
+
+  ::ros::spin();
 
   map_builder->FinishAllComputations();
-  while (ros::ok()) {
-    static_map::SimpleTime::from_sec(1.).sleep();
-  }
+  // while (ros::ok()) {
+  //   static_map::SimpleTime::from_sec(1.).sleep();
+  // }
   return 0;
 }

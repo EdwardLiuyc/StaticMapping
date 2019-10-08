@@ -110,8 +110,11 @@ int MapBuilder::InitialiseInside() {
   isam_optimizer_->SetTransformOdomToLidar(transform_odom_lidar_);
   isam_optimizer_->SetTrackingToGps(tracking_to_gps_);
 
+  DataCollectorOptions data_collector_options;
+  data_collector_options.accumulate_cloud_num =
+      options_.front_end_options.accumulate_cloud_num;
   data_collector_ = common::make_unique<DataCollector<PointType>>(
-      DataCollectorOptions(), &filter_factory_);
+      data_collector_options, &filter_factory_);
 
 #ifdef _USE_OPENCV_
   PRINT_INFO("Enable openCV.");
@@ -839,16 +842,16 @@ void MapBuilder::SubmapProcessing() {
       }
     }
 
-    if (current_submap_index != 0) {
-      const auto previous_time =
-          current_trajectory_->at(current_submap_index - 1)->GetTimeStamp();
-      const double delta_time = (time - previous_time).toSec();
-      if (delta_time < 0.3) {
-        PRINT_INFO_FMT("time: %lf", delta_time);
-      } else {
-        PRINT_ERROR_FMT("time: %lf", delta_time);
-      }
-    }
+    // if (current_submap_index != 0) {
+    //   const auto previous_time =
+    //       current_trajectory_->at(current_submap_index - 1)->GetTimeStamp();
+    //   const double delta_time = (time - previous_time).toSec();
+    //   if (delta_time < 0.3) {
+    //     PRINT_INFO_FMT("time: %lf", delta_time);
+    //   } else {
+    //     PRINT_ERROR_FMT("time: %lf", delta_time);
+    //   }
+    // }
 
     local_frames.clear();
     if (show_submap_function_) {
