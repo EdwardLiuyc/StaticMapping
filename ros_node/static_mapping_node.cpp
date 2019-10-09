@@ -294,8 +294,5 @@ int main(int argc, char** argv) {
   ::ros::spin();
 
   map_builder->FinishAllComputations();
-  // while (ros::ok()) {
-  //   static_map::SimpleTime::from_sec(1.).sleep();
-  // }
   return 0;
 }

@@ -495,7 +495,7 @@ void MapBuilder::SubmapPairMatch(const int source_index,
   std::shared_ptr<Submap<PointType>> target_submap, source_submap;
   target_submap = current_trajectory_->at(target_index);
   source_submap = current_trajectory_->at(source_index);
-  target_submap->ClearCloudInFrames();
+  // target_submap->ClearCloudInFrames();
 
   // init back end(submap to submap matcher)
   std::shared_ptr<registrator::Interface<PointType>> matcher;
@@ -629,7 +629,6 @@ void MapBuilder::ConnectAllSubmap() {
   for (auto& submap : *current_trajectory_) {
     submap->UpdateInnerFramePose();
   }
-  data_collector_->ClearAllCloud();
 
   // calculate the coord transform from the map th utm
   CalculateCoordTransformToUtm();
@@ -647,24 +646,26 @@ void MapBuilder::ConnectAllSubmap() {
     PointCloudPtr output_cloud(new PointCloudType);
     const int submaps_size = current_trajectory_->size();
     for (auto& submap : *current_trajectory_) {
-      output_cloud->clear();
-      pcl::transformPointCloud(*(submap->Cloud()), *output_cloud,
-                               submap->GlobalPose());
-
       PRINT_DEBUG_FMT("submap index: %d / %d", submap->GetId().submap_index,
                       submaps_size - 1);
-      Eigen::Vector3d translation = submap->GlobalTranslation().cast<double>();
-
       start_clock();
-      map.InsertPointCloud(output_cloud, translation.cast<float>());
+      for (auto& frame : submap->GetFrames()) {
+        output_cloud->clear();
+        pcl::transformPointCloud(*(frame->Cloud()), *output_cloud,
+                                 frame->GlobalPose());
+        map.InsertPointCloud(output_cloud, frame->GlobalTranslation());
+      }
       end_clock(__FILE__, __FUNCTION__, __LINE__);
       submap->ClearCloud();
+      submap->ClearCloudInFrames();
     }
     PRINT_INFO("creating the whole static map ...");
     map.OutputToPointCloud(
         options_.output_mrvm_settings.prob_threshold,
         options_.whole_options.export_file_path + "static_map.pcd");
   }
+
+  data_collector_->ClearAllCloud();
   end_managing_memory_ = true;
 }
 
