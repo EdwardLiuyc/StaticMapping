@@ -189,10 +189,9 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 4. **Fast Segmentation of 3D Pointcloud for Ground Vehicles**, M. Himmelsbach and Felix v. Hundelshausen and H.-J. Wuensche, IEEE Intelligent Vehicles Symposium, Proceedings, 2010
 
 # TODO
-- **move the filter out the callback for pointcloud**
+- **BUG: error of first submap's pose**
 - **read bag on its own**
 - **supporting multi-lidars**
-- **inserting frame cloud instead of submap cloud at the end**
 - **remove the imu dependency of pose extrapolator**
 - save submap binary data into a special format file not just pointcloud into .pcd
 - gps factor static bias
