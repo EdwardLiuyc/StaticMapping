@@ -95,6 +95,7 @@ find_package(catkin COMPONENTS
   tf_conversions
   pcl_conversions
   urdf
+  rosbag
   REQUIRED
 )
 include_directories(${catkin_INCLUDE_DIRS})
@@ -193,7 +194,8 @@ endif()
 add_executable(static_mapping_node 
   ros_node/static_mapping_node.cpp
   ros_node/urdf_reader.cc
-  ros_node/tf_bridge.cc)
+  ros_node/tf_bridge.cc
+  ros_node/playable_bag.cc)
 target_link_libraries(static_mapping_node ${TARGET_LIB_NAME} ${require_libs})
 
 add_executable(join_maps_node ros_node/join_maps_node.cpp)
