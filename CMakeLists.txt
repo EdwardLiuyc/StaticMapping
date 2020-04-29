@@ -75,6 +75,13 @@ list(APPEND require_libs icp)
 
 #### pcl ####
 find_package(PCL REQUIRED QUIET)
+if(${PCL_VERSION} VERSION_GREATER "1.8.0" OR 
+   ${PCL_VERSION} VERSION_EQUAL "1.8.0")
+  message(STATUS "pcl version ${PCL_VERSION}")
+  ## it is a trick to remove annoying warning in pcl-1.8 like this
+  ## warning: ‘pcl::SAC_SAMPLE_SIZE’ ... [-Wdeprecated-declarations]
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -isystem /usr/include/pcl-1.8") 
+endif()
 include_directories(${PCL_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})
 link_libraries(${PCL_LIBRARIES})
@@ -171,6 +178,17 @@ add_library(${TARGET_LIB_NAME}
   ${common_srcs} ${registrators_srcs} 
   ${backend_srcs} ${desp_srcs})
 target_link_libraries(${TARGET_LIB_NAME} ${OpenCV_LIBRARIES})
+
+if($ENV{ROS_DISTRO} STREQUAL "melodic")
+  message(STATUS "Using ROS melodic")
+  add_definitions(-DURDFDOM_HEADERS_HAS_SHARED_PTR_DEFS=1)
+  # Do stuff specific to Kinetic
+elseif($ENV{ROS_DISTRO} STREQUAL "kinetic")
+  message(STATUS "Using ROS kinetic")
+else()
+  message(STATUS "Unknown ROS distro:")
+  message(STATUS $ENV{ROS_DISTRO})
+endif()
 
 add_executable(static_mapping_node 
   ros_node/static_mapping_node.cpp
