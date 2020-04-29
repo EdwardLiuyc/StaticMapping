@@ -30,7 +30,7 @@
 #include "pcl/point_cloud.h"
 #include "pcl/point_types.h"
 // local
-#include "builder/map_utm_matcher.h"
+#include "back_end/map_utm_matcher.h"
 #include "common/macro_defines.h"
 #include "cost_functions/utm_map_match.h"
 

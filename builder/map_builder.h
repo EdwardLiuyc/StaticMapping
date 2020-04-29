@@ -45,7 +45,6 @@
 #include "back_end/isam_optimizer.h"
 #include "back_end/options.h"
 #include "builder/data_collector.h"
-#include "builder/map_utm_matcher.h"
 #include "builder/msg_conversion.h"
 #include "builder/multi_resolution_voxel_map.h"
 #include "builder/pose_extrapolator.h"

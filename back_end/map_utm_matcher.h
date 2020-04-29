@@ -20,8 +20,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BUILDER_MAP_UTM_MATCHER_H_
-#define BUILDER_MAP_UTM_MATCHER_H_
+#ifndef BACK_END_MAP_UTM_MATCHER_H_
+#define BACK_END_MAP_UTM_MATCHER_H_
 
 #include <string>
 #include <vector>
@@ -84,4 +84,4 @@ class MapUtmMatcher {
 
 }  // namespace static_map
 
-#endif  // BUILDER_MAP_UTM_MATCHER_H_
+#endif  // BACK_END_MAP_UTM_MATCHER_H_

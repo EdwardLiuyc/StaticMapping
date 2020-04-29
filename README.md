@@ -190,6 +190,11 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 
 # TODO
 - **BUG: error of first submap's pose**
+- **Loop Close factor should be rubust**
+- **mapping using kitti data**
+- **using docker to build and run**
+- **use enu instead of utm**
+- solve all nls problem using gtsam
 - **read bag on its own**
 - **supporting multi-lidars**
 - **remove the imu dependency of pose extrapolator**

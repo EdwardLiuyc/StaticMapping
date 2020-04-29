@@ -142,7 +142,7 @@ void DataCollector<PointT>::AddSensorData(
   path_point.x = data.utm_postion[0];
   path_point.y = data.utm_postion[1];
   path_point.z = data.utm_postion[2];
-  path_point.intensity = sensors::STATUS_FIX;
+  path_point.intensity = navsat_msg.status.status;
   utm_path_cloud_.push_back(path_point);
 }
 
