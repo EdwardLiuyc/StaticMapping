@@ -23,17 +23,47 @@ RUN useradd -m docker && \
     usermod -aG sudo docker && \
     echo '%sudo ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers && \
     cp /root/.bashrc /home/docker/ && \
-    mkdir /home/docker/data && \
+    mkdir -p /home/docker/src/StaticMapping && \
     chown -R --from=root docker /home/docker
 
 # Use C.UTF-8 locale to avoid issues with ASCII encoding
 ENV LC_ALL=C.UTF-8
 ENV LANG=C.UTF-8
 
-WORKDIR /home/docker/data
+WORKDIR /home/docker/src
 ENV HOME /home/docker
 ENV USER docker
 USER docker
 ENV PATH /home/docker/.local/bin:$PATH
 # Avoid first use of sudo warning. c.f. https://askubuntu.com/a/22614/781671
 RUN touch $HOME/.sudo_as_admin_successful
+
+## build dependencies
+## libnabo 
+RUN git clone https://github.com/ethz-asl/libnabo.git && \
+  cd libnabo && \
+  git checkout tags/1.0.7 && \
+  mkdir build && cd build && \
+  cmake .. && make -j && \
+  sudo make install && cd ..
+
+## libpointmatcher 
+RUN git clone https://github.com/ethz-asl/libpointmatcher.git && \
+  cd libpointmatcher && \
+  git checkout tags/1.3.1 && \
+  mkdir build && cd build && \
+  cmake .. && make -j && \
+  sudo make install && cd ..
+
+RUN git clone https://bitbucket.org/gtborg/gtsam.git && \
+  cd gtsam && \
+  git checkout tags/4.0.0-alpha2 && \
+  mkdir build && cd build && \
+  cmake -DGTSAM_USE_SYSTEM_EIGEN=ON .. && \
+  make -j && \
+  sudo make install 
+
+RUN sudo apt -y install ros-melodic-tf* \
+  ros-melodic-pcl* \
+  ros-melodic-opencv* \
+  ros-melodic-urdf

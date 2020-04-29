@@ -1,0 +1,137 @@
+<?xml version="1.0"?>
+<edward_liu>
+  <static_mapping>
+    <whole_options 
+      export_file_path="pcd/"
+      map_package_path="pkgs/test/" />
+    <map_package_options
+      enable="false"
+      border_offset="100"
+      piece_width="500."
+      cloud_file_prefix="part_"
+      descript_filename="map_package.xml" />
+    <filters>
+      <!-- type: 
+        0 : int
+        1 : float  -->
+      <filter name="Range" >
+        <param type="1" name="max_range"> 80. </param>
+        <param type="1" name="min_range"> 4.5 </param>
+      </filter>
+      <filter name="RandomSampler" >
+        <param type="1" name="sampling_rate"> 0.45 </param>
+      </filter>
+      <!-- <filter name="StatisticRemoval" /> -->
+      <!-- <filter name="RangeImage">
+        <param type="1" name="offset_x"> -1. </param>
+        <param type="1" name="offset_y"> 0. </param>
+        <param type="1" name="offset_z"> -1. </param>
+        <param type="1" name="top_angle"> 30. </param>
+        <param type="1" name="btm_angle"> -20. </param>
+        <param type="0" name="vertical_line_num"> 60 </param>
+      </filter> -->
+      <!-- <filter name="GroundRemoval2" >
+        <param type="1" name="r_min"> 0.1 </param>
+        <param type="1" name="start_ground_height"> -1.8 </param>
+        <param type="1" name="long_line_threshold"> 10 </param>
+        <param type="1" name="max_slope"> 0.12 </param>
+        <param type="1" name="max_error"> 0.1 </param>
+        <param type="1" name="max_dist_to_line"> 0.10 </param>
+        <param type="1" name="max_start_height"> 0.6 </param>
+        <param type="0" name="thread_num"> 4 </param>
+      </filter> -->
+    </filters>
+    <front_end_options accumulate_cloud_num="151">
+      <!-- matcher type  
+        0: none 
+        1: icp using pointmatcher 
+        2: icp using libicp 
+        3: ndt&gicp 
+        4: kfpcs(not available now)
+        5: lego loam(in test)
+        6: ndt omp(in test) -->
+      <scan_matcher_options 
+        type="1" 
+        enable_ndt="false" 
+        use_voxel_filter="true" 
+        voxel_filter_resolution="0.2">
+        <inner_filters>
+          <filter name="GroundRemoval2" >
+            <param type="1" name="r_min"> 0.1 </param>
+            <param type="1" name="start_ground_height"> -0.35 </param>
+            <param type="1" name="long_line_threshold"> 10 </param>
+            <param type="1" name="max_slope"> 0.12 </param>
+            <param type="1" name="max_error"> 0.1 </param>
+            <param type="1" name="max_dist_to_line"> 0.10 </param>
+            <param type="1" name="max_start_height"> 0.6 </param>
+            <param type="0" name="thread_num"> 4 </param>
+          </filter>
+          <filter name="RangeImage" >
+            <param type="1" name="top_angle"> 30. </param>
+            <param type="1" name="btm_angle"> -20. </param>
+            <param type="0" name="vertical_line_num"> 60 </param>
+          </filter>
+        </inner_filters>
+      </scan_matcher_options>
+      <!-- translation unit: m
+           angle unit: degree -->
+      <motion_filter 
+        translation_range="1"
+        angle_range="1.5"
+        time_range="0.25" />
+      <!-- imu type 
+          0: normal type
+          1: imu in ins(combined imu) -->
+      <imu_options 
+        use_imu="false"
+        imu_frequency="200."
+        type="0"
+        gravity_constant="9.8" />
+      <motion_compensation_options 
+        enable="true"
+        use_average="true" />
+    </front_end_options>
+    <back_end_options>
+      <!-- type just the same as front end -->
+      <submap_matcher_options 
+        type="1"
+        enable_ndt="false" 
+        use_voxel_filter="true" 
+        voxel_filter_resolution="0.2"
+        accepted_min_score="0.7" />
+      <submap_options 
+        frame_count="2"
+        enable_inner_multiview_icp="false"
+        enable_voxel_filter="false"
+        enable_random_sampleing="false"
+        enable_check="false"
+        random_sampling_rate="0.5"
+        enable_disk_saving="false"
+        disk_saving_delay="30"
+        saving_name_prefix="s_" />
+      <isam_optimizer_options 
+        use_odom="false"
+        use_gps="false" />
+      <loop_detector_setting 
+        use_gps="false"
+        use_descriptor="true"
+        output_matched_cloud="false"
+        loop_ignore_threshold="15"
+        trying_detect_loop_count="1"
+        max_close_loop_distance="2"
+        m2dp_match_score="0.96"
+        nearest_history_pos_num="5" />
+    </back_end_options>
+    <output_mrvm_settings
+      output_average="false"
+      output_rgb="true"
+      prob_threshold="0.56" 
+      low_resolution="1." 
+      high_resolution="0.1"
+      hit_prob="0.55"
+      miss_prob="0.48"
+      z_offset="1.2"
+      max_point_num_in_cell="10">
+    </output_mrvm_settings>
+  </static_mapping>
+</edward_liu>

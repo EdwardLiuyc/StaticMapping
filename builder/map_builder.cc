@@ -188,11 +188,11 @@ void MapBuilder::SetTrackingToLidar(const Eigen::Matrix4f& t) {
 }
 
 void MapBuilder::InsertPointcloudMsg(const PointCloudPtr& point_cloud) {
-  if (end_all_thread_.load() || extrapolator_ == nullptr) {
+  if (end_all_thread_.load() || (use_imu_ && extrapolator_ == nullptr)) {
     return;
   }
-  if (sensors::ToLocalTime(point_cloud->header.stamp) <
-      extrapolator_->GetLastPoseTime()) {
+  if (extrapolator_ && sensors::ToLocalTime(point_cloud->header.stamp) <
+                           extrapolator_->GetLastPoseTime()) {
     PRINT_WARNING("skip cloud.");
     return;
   }
@@ -383,12 +383,15 @@ void MapBuilder::ScanMatchProcessing() {
     }
 
     const auto source_time = sensors::ToLocalTime(source_cloud->header.stamp);
-    if (source_time < extrapolator_->GetLastPoseTime()) {
+    if (extrapolator_ && source_time < extrapolator_->GetLastPoseTime()) {
       PRINT_INFO("Extrapolator still initialising...");
       target_cloud = source_cloud;
       continue;
     }
-    Pose3d pose_source = extrapolator_->ExtrapolatePose(source_time);
+    Pose3d pose_source = pose_target;
+    if (extrapolator_) {
+      pose_source = extrapolator_->ExtrapolatePose(source_time);
+    }
     Pose3d guess = pose_target.inverse() * pose_source;
     common::NormalizeRotation(guess);
 
@@ -447,9 +450,11 @@ void MapBuilder::ScanMatchProcessing() {
 
     pose_source = pose_target * align_result.cast<double>();
     accumulative_transform *= align_result.cast<double>();
-    extrapolator_->AddPose(source_time, pose_source);
-    const Eigen::Quaterniond gravity_alignment =
-        extrapolator_->EstimateGravityOrientation(source_time);
+    if (extrapolator_) {
+      extrapolator_->AddPose(source_time, pose_source);
+    }
+    // const Eigen::Quaterniond gravity_alignment =
+    //     extrapolator_->EstimateGravityOrientation(source_time);
     const float accu_translation =
         common::Translation(accumulative_transform).norm();
     Eigen::Vector3d euler_angles = common::RotationMatrixToEulerAngles(
