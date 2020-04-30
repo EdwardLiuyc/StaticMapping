@@ -9,78 +9,100 @@
 <img src="doc/mapping.png" width="800" />
 
 # Build
-## requirements 
-### Basic 
+## Using Docker 
+It is highly recommended to build and run this project in a docker. anyway, you can also build your envrionment directly on your device refering to **Using host device** section below.
+### Get docker image 
+#### For China Mainland
+The fastest way to get the image is pulling from aliyun if you live in mainland of China
+```docker
+docker pull registry.cn-hangzhou.aliyuncs.com/edward_slam/static_mapping:master_latest
+```
+or you can build it on your own device 
+```docker
+docker build --rm -t slam/static_mapping:latest . 
+```
 
+#### For somewhere else
+first, remove lines in Dockerfile (these lines are for fast access to official images in China mainland) :
+```docker
+COPY ./config/tsinghua_source.txt /etc/apt/sources.list
+RUN sh -c '. /etc/lsb-release && echo "deb http://mirrors.tuna.tsinghua.edu.cn/ros/ubuntu/ `lsb_release -cs` main" > /etc/apt/sources.list.d/ros1-latest.list' 
+```
+then, you can build it on your own using
+```docker
+docker build --rm -t slam/static_mapping:latest . 
+```
+
+### Build in docker 
+```bash 
+## get code 
+git clone https://github.com/EdwardLiuyc/StaticMapping.git
+cd StaticMapping
+
+## start the docker container
+docker run -it --rm -v --net=host `pwd`:'/home/docker/src/StaticMapping' \
+  registry.cn-hangzhou.aliyuncs.com/edward_slam/static_mapping:master_latest /bin/bash
+
+## in the container 
+mkdir -p build && cd build
+cmake ..
+make -j8
+```
+
+## Using host device
+### Install Requirements 
+#### Basic 
 ```bash
 ## basic depencencies
-sudo apt install cmake \
+sudo apt -y install cmake \
   libboost-dev \
   libeigen3-dev \
   libpng-dev \
   libgoogle-glog-dev \
-  libatlas-base-dev
-
-# SuiteSparse and CXSparse (optional)
-# - If you want to build Ceres as a *static* library (the default)
-#   you can use the SuiteSparse package in the main Ubuntu package
-#   repository:
-sudo apt-get install libsuitesparse-dev
-# - However, if you want to build Ceres as a *shared* library, you must
-#   add the following PPA:
-sudo add-apt-repository ppa:bzindovic/suitesparse-bugfix-1319687
-sudo apt update
-sudo apt install libsuitesparse-dev 
+  libatlas-base-dev\
+  libsuitesparse-dev
 ```
 
-### ROS 
+#### ROS 
 
 You can refer to [http://wiki.ros.org/kinetic/Installation/Ubuntu](http://wiki.ros.org/kinetic/Installation/Ubuntu) for more information for installing ROS kinetic or higher version. This repo has been tested in kinetic and melodic.
 
-### PCL
+#### PCL
 
 ```bash
 ## tested in pcl-1.7 (ubuntu16.04) and pcl-1.8 (ubuntu18.04)
-## pcl-1.8 or higher version is strongly recommended
-sudo apt install libpcl-dev
+sudo apt -y install libpcl-dev
 ```
 
-### GTSAM
-
+#### GTSAM
 ```bash
+## install GeoGraphic first 
+wget https://nchc.dl.sourceforge.net/project/geographiclib/distrib/GeographicLib-1.50.1.tar.gz
+tar -zxvf GeographicLib-1.50.1.tar.gz && cd GeographicLib-1.50.1 && \
+  mkdir build && cd build && \
+  cmake .. && make -j4 && \
+  sudo make install && cd ..
+
 ## Go to your wordspace lisk /home/user/3rd_parties
 ## GTSAM(4.0 or higher is needed)
 git clone https://bitbucket.org/gtborg/gtsam.git
 cd gtsam 
+git checkout tags/4.0.0-alpha2
 mkdir build && cd build
-ccmake ..
-### important
-# set GTSAM_USE_SYSTEM_EIGEN to ON
-# then generate makefile
+cmake -DGTSAM_USE_SYSTEM_EIGEN=ON ..
 make -j8
 sudo make install 
 ```
 
-### Ceres Solver 
+#### Ceres Solver 
 
-you can just install with apt  
+you can just install with apt in ubuntu 16.04 && 18.04
 ```bash 
-sudo apt install libceres-dev
+sudo apt -y install libceres-dev
 ```
-or compile with source code
-```bash
-## Ceres Solver(1.12 or higher)
-git clone https://github.com/ceres-solver/ceres-solver.git
-cd ceres-solver
-git checkout tags/1.14.0
-mkdir build && cd build
-cmake ..
-make -j8
-sudo make install
-```
+or you can build and install ceres solver refering to [ceres_installation](http://ceres-solver.org/installation.html)
 
-### libnabo
-
+#### libnabo
 ```bash 
 git clone https://github.com/ethz-asl/libnabo.git
 cd libnabo
@@ -92,7 +114,7 @@ make -j8
 sudo make install
 ```
 
-### libpointmatcher
+#### libpointmatcher
 
 ```bash
 git clone https://github.com/ethz-asl/libpointmatcher.git
@@ -103,25 +125,21 @@ make -j8
 sudo make install
 ```
 
-## Optional libs
+### Optional libs
 - **CUDA**: We have made some attempts in fasting the kdtree in ICP by creating the kdtree on GPU, but the GPU Kdtree is not fast enough(just 1.5~2 times faster than libnabo). Notice that if you use CUDA, your g++ version should be lower than 6.0 because the nvcc does not support the 6.0 or high version g++.  
 - **cuda_utils**: 
 - **TBB**: We have used concurrency containers in TBB for many multi-thread situations, if you turn off this options, the process will use stl containers such as std::vector instead and many multi-thread algorithm will degenerate into single-thread. So, Using TBB is **strongly recommended**;  
 - **OpenCV**: All the matrices in code is in Eigen way, Opencv is only for generating the jpg file of pose gragh. It is a debug function so you can change this option as you wish. (todo: will use png instead and remove the dependency of opencv)
 
-## compiling
+### compiling
 ```bash
 mkdir build && cd build
 cmake ..
 make -j8
-sudo make install
 ```
 
-# BUG  
-- **mapping with odom is not tested! please do not use it!!!!**
-- DO NOT use g++ 7.x, unknow bug with Eigen
-
 # How to use?
+> You can do these in or out of the docker container used for building
 ## step1 run the mapping process
 ```bash
 mkdir pcd
