@@ -10,7 +10,7 @@ RUN sh -c '. /etc/lsb-release && echo "deb http://mirrors.tuna.tsinghua.edu.cn/r
 
 RUN apt -y update && apt -y upgrade && \
   apt -y install cmake libboost-dev libeigen3-dev libpng-dev libgoogle-glog-dev libatlas-base-dev \
-  libsuitesparse-dev libpcl-dev libceres-dev wget \
+  libsuitesparse-dev libpcl-dev libceres-dev wget libmetis-dev \
   ros-melodic-tf* ros-melodic-pcl* ros-melodic-opencv* ros-melodic-urdf
 
 # Enable tab completion by uncommenting it from /etc/bash.bashrc
