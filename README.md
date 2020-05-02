@@ -232,7 +232,6 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - finish multi-trajectory map builder
 - use ground detection to label the pointcloud 
 - use some machine learning or deep learning method to add semantic labels
-- use a docker to release the environment
 - get odom message from a cheap GPS and IMU intergration  
 - fix bug in imu pre-integration (now the imu is just for INS but not normal IMU)
 - add support for different kind of GPS (INS&RTK&cheap gps)
@@ -242,7 +241,6 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - add support for different kind of IMU and ODOM
 - add support for more kind of pointclouds
 - add a Pose3d struct for simple operation of matrix4f or just use gtsam::pose3d
-- using Eigen::Vector instead of sensors::Vector3
 - use double instead of float (eigen::matrix)
 - mrvm output to a special format data file and can be transformed to pcd independently
 - **add more config files and .sh files for other sensor-sets**
@@ -250,3 +248,4 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - gravity alignment (in pose extrapolator)
 - output to .las file
 - Readme in chinese
+- add illustration of some important parameters
