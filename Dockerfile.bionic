@@ -2,7 +2,7 @@
 
 FROM ros:melodic-ros-core-bionic
 
-MAINTAINER edward "liuyongchuan@outlook.com"
+LABEL author="edward" email="liuyongchuan@outook.com"
 
 COPY ./config/tsinghua_source.txt /etc/apt/sources.list
 
@@ -16,16 +16,16 @@ RUN apt -y update && apt -y upgrade && \
 # Enable tab completion by uncommenting it from /etc/bash.bashrc
 # The relevant lines are those below the phrase "enable bash completion in interactive shells"
 RUN export SED_RANGE="$(($(sed -n '\|enable bash completion in interactive shells|=' /etc/bash.bashrc)+1)),$(($(sed -n '\|enable bash completion in interactive shells|=' /etc/bash.bashrc)+7))" && \
-    sed -i -e "${SED_RANGE}"' s/^#//' /etc/bash.bashrc && \
-    unset SED_RANGE
+  sed -i -e "${SED_RANGE}"' s/^#//' /etc/bash.bashrc && \
+  unset SED_RANGE
 
 # Create user "docker" with sudo powers
 RUN useradd -m docker && \
-    usermod -aG sudo docker && \
-    echo '%sudo ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers && \
-    cp /root/.bashrc /home/docker/ && \
-    mkdir -p /home/docker/src/StaticMapping && \
-    chown -R --from=root docker /home/docker
+  usermod -aG sudo docker && \
+  echo '%sudo ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers && \
+  cp /root/.bashrc /home/docker/ && \
+  mkdir -p /home/docker/src/StaticMapping && \
+  chown -R --from=root docker /home/docker
 
 # Use C.UTF-8 locale to avoid issues with ASCII encoding
 ENV LC_ALL=C.UTF-8

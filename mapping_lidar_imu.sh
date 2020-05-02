@@ -2,12 +2,12 @@
 CONFIG_PATH=./config/lidar_imu_default.xml
 ## if you have a urdf file that contains robot model,
 ## set it here and the mapping process will not listen to tf topics
-URDF_FILE=./urdf/test.urdf
+URDF_FILE=./urdf/test2.urdf
 ## the follow 2 items must be set!!!
 ## the topic name of your pointcloud msg (ros)
 POINT_CLOUD_TOPIC=velodyne_points
 ## the frame id of your pointcloud msg (ros)
-POINT_CLOUD_FRAME_ID=velodyne
+POINT_CLOUD_FRAME_ID=frame_velodyne_points
 
 ## the following items are optional
 ## if you do not have an imu or gps or odom
@@ -19,12 +19,6 @@ POINT_CLOUD_FRAME_ID=velodyne
 ## you MUST provide the tf connection between the one to pointcloud frame
 IMU_TOPIC=imu/raw_data
 IMU_FRAME_ID=imu_link
-
-ODOM_TOPIC=/navsat/odom
-ODOM_FRAME_ID=novatel_odom
-
-GPS_TOPIC=/navsat/fix
-GPS_FRAME_ID=novatel_imu
 
 ./build/static_mapping_node \
   -cfg ${CONFIG_PATH} \
