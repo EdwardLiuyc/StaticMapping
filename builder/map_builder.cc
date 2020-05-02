@@ -116,10 +116,6 @@ int MapBuilder::InitialiseInside() {
   data_collector_ = common::make_unique<DataCollector<PointType>>(
       data_collector_options, &filter_factory_);
 
-#ifdef _USE_OPENCV_
-  PRINT_INFO("Enable openCV.");
-#endif
-
 #ifdef _USE_TBB_
   PRINT_INFO("Enable TBB.");
 #endif
