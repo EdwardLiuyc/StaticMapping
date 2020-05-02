@@ -207,7 +207,6 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 4. **Fast Segmentation of 3D Pointcloud for Ground Vehicles**, M. Himmelsbach and Felix v. Hundelshausen and H.-J. Wuensche, IEEE Intelligent Vehicles Symposium, Proceedings, 2010
 
 # TODO
-- **BUG: error of first submap's pose**
 - **Loop Close factor should be rubust**
 - **mapping using kitti data**
 - **using docker to build and run**

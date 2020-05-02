@@ -83,7 +83,7 @@
           1: imu in ins(combined imu) -->
       <imu_options 
         use_imu="true"
-        imu_frequency="100."
+        imu_frequency="200"
         type="0"
         gravity_constant="9.8" />
     </front_end_options>
@@ -113,7 +113,7 @@
         use_descriptor="true"
         loop_ignore_threshold="15"
         trying_detect_loop_count="1"
-        max_close_loop_distance="25."
+        max_close_loop_distance="3."
         m2dp_match_score="0.96"
         nearest_history_pos_num="5" />
     </back_end_options>
