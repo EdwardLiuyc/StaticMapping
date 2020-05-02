@@ -27,9 +27,7 @@
 #include "back_end/view_graph.h"
 #include "common/macro_defines.h"
 
-#ifdef _USE_OPENCV_
-#include <opencv2/opencv.hpp>
-#endif
+#include "CImg/CImg.h"
 
 namespace static_map {
 namespace back_end {
@@ -93,10 +91,7 @@ void ViewGraph::SaveImage(const std::string &filename,
     PRINT_WARNING("Graph is empty, output nothing.");
     return;
   }
-#ifndef _USE_OPENCV_
-  PRINT_WARNING("Option: Do not use OpenCV, so not able to save to image.");
-  return;
-#else
+
   const double edge_width = 1.;
   max_bounding_[0] += edge_width;
   max_bounding_[1] += edge_width;
@@ -115,14 +110,12 @@ void ViewGraph::SaveImage(const std::string &filename,
                           static_cast<int>(image_position[1]));
   };
 
-  cv::Mat image(static_cast<int>(image_bbox[1]),
-                static_cast<int>(image_bbox[0]), CV_8UC3,
-                cv::Scalar(255, 255, 255));
-  if (image.empty()) {
-    PRINT_ERROR("image is empty.");
-    return;
-  }
+  cimg_library::CImg<unsigned char> image(static_cast<int>(image_bbox[0]),
+                                          static_cast<int>(image_bbox[1]), 1, 3,
+                                          255);
 
+  unsigned char red[] = {255, 0, 0};
+  unsigned char blue[] = {0, 0, 255};
   for (auto &item : graph_map_) {
     auto from_index = item.first;
     auto from_coord_in_image = pose_to_image(item.second.self_pose);
@@ -130,23 +123,18 @@ void ViewGraph::SaveImage(const std::string &filename,
       auto to_index = connect.first;
       auto to_coord_in_image = pose_to_image(graph_map_[to_index].self_pose);
       if (to_index - from_index == 1) {
-        cv::line(
-            image,
-            cv::Point(from_coord_in_image.first, from_coord_in_image.second),
-            cv::Point(to_coord_in_image.first, to_coord_in_image.second),
-            cv::Scalar(0, 0, 255), 2, CV_AA);
+        image.draw_line(from_coord_in_image.first, from_coord_in_image.second,
+                        to_coord_in_image.first, to_coord_in_image.second,
+                        blue);
       } else {
-        cv::line(
-            image,
-            cv::Point(from_coord_in_image.first, from_coord_in_image.second),
-            cv::Point(to_coord_in_image.first, to_coord_in_image.second),
-            cv::Scalar(255, 0, 0), 2, CV_AA);
+        image.draw_line(from_coord_in_image.first, from_coord_in_image.second,
+                        to_coord_in_image.first, to_coord_in_image.second, red);
       }
     }
   }
 
-  cv::imwrite(filename, image);
-#endif
+  const char *c_filename = filename.c_str();
+  image.save(c_filename);
 }
 
 }  // namespace back_end

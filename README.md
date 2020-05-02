@@ -10,12 +10,13 @@
 
 # Build
 ## Using Docker 
-It is highly recommended to build and run this project in a docker. anyway, you can also build your envrionment directly on your device refering to **Using host device** section below.
+If yours host device is with UBUNTU 18.04, it is highly recommended to build and run this project in a docker because the docker is `FROM ros:melodic-ros-core-bionic`. Otherwise, you can also build your envrionment directly on your device refering to **Using host device** section below. 
+ps: there is something wrong with ros message sent from ros-kinetic to ros-melodic, so, it your host deice is not with Ubuntu 18.04, you can not use this docker, and the docker for ros-kinetic will come soon.
 ### Get docker image 
 #### For China Mainland
 The fastest way to get the image is pulling from aliyun if you live in mainland of China
 ```docker
-docker pull registry.cn-hangzhou.aliyuncs.com/edward_slam/static_mapping:master_latest
+docker pull registry.cn-hangzhou.aliyuncs.com/edward_slam/static_mapping:master_bionic_latest
 ```
 or you can build it on your own device 
 ```docker
@@ -41,7 +42,7 @@ cd StaticMapping
 
 ## start the docker container
 docker run -it --rm -v --net=host `pwd`:'/home/docker/src/StaticMapping' \
-  registry.cn-hangzhou.aliyuncs.com/edward_slam/static_mapping:master_latest /bin/bash
+  registry.cn-hangzhou.aliyuncs.com/edward_slam/static_mapping:master_bionic_latest /bin/bash
 
 ## in the container 
 mkdir -p build && cd build
@@ -128,8 +129,7 @@ sudo make install
 ### Optional libs
 - **CUDA**: We have made some attempts in fasting the kdtree in ICP by creating the kdtree on GPU, but the GPU Kdtree is not fast enough(just 1.5~2 times faster than libnabo). Notice that if you use CUDA, your g++ version should be lower than 6.0 because the nvcc does not support the 6.0 or high version g++.  
 - **cuda_utils**: 
-- **TBB**: We have used concurrency containers in TBB for many multi-thread situations, if you turn off this options, the process will use stl containers such as std::vector instead and many multi-thread algorithm will degenerate into single-thread. So, Using TBB is **strongly recommended**;  
-- **OpenCV**: All the matrices in code is in Eigen way, Opencv is only for generating the jpg file of pose gragh. It is a debug function so you can change this option as you wish. (todo: will use png instead and remove the dependency of opencv)
+- **TBB**: We have used concurrency containers in TBB for many multi-thread situations, if you turn off this options, the process will use stl containers such as std::vector instead and many multi-thread algorithm will degenerate into single-thread. So, Using TBB is **strongly recommended**.
 
 ### compiling
 ```bash
@@ -248,6 +248,5 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - **add more config files and .sh files for other sensor-sets**
 - using ecef or some other coordinate system instead of utm
 - gravity alignment (in pose extrapolator)
-- make setup more easy
 - output to .las file
-- remove opencv dependency (using png instead)
+- Readme in chinese

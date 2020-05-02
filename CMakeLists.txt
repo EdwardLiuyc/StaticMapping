@@ -148,16 +148,6 @@ if(USE_TBB)
   endif(TBB_FOUND)
 endif(USE_TBB)
 
-option(USE_OPENCV "Enable OpenCV?" ON)
-if(USE_OPENCV)
-  find_package(OpenCV)
-  if(OpenCV_FOUND) 
-    include_directories(${OpenCV_INCLUDE_DIR})
-    list(APPEND require_libs ${OpenCV_LIBRARIES})
-    add_definitions(-D_USE_OPENCV_)
-  endif(OpenCV_FOUND)
-endif(USE_OPENCV)
-
 #######################################################
 ###  Source files
 #######################################################
