@@ -105,8 +105,8 @@ template <typename PointT>
 void DataCollector<PointT>::AddSensorData(const sensors::ImuMsg& imu_msg) {
   ImuData imu_data;
   imu_data.time = imu_msg.header.stamp;
-  imu_data.acceleration = imu_msg.linear_acceleration.ToEigenVector();
-  imu_data.angular_velocity = imu_msg.angular_velocity.ToEigenVector();
+  imu_data.acceleration = imu_msg.linear_acceleration;
+  imu_data.angular_velocity = imu_msg.angular_velocity;
 
   Locker locker(mutex_[kImuData]);
   imu_data_.push_back(imu_data);

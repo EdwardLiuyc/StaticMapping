@@ -45,9 +45,9 @@ std::unique_ptr<PoseExtrapolator> PoseExtrapolator::InitializeWithImu(
   extrapolator->imu_tracker_ = common::make_unique<ImuTracker>(
       imu_gravity_time_constant, imu_data.header.stamp);
   extrapolator->imu_tracker_->AddImuLinearAccelerationObservation(
-      imu_data.linear_acceleration.ToEigenVector());
+      imu_data.linear_acceleration);
   extrapolator->imu_tracker_->AddImuAngularVelocityObservation(
-      imu_data.angular_velocity.ToEigenVector());
+      imu_data.angular_velocity);
   extrapolator->imu_tracker_->Advance(imu_data.header.stamp);
   RigidPose3d init_pose = RigidPose3d::Identity();
 
@@ -244,10 +244,8 @@ void PoseExtrapolator::AdvanceImuTracker(const SimpleTime time,
       });
   while (it != imu_data_.end() && it->header.stamp < time) {
     imu_tracker->Advance(it->header.stamp);
-    imu_tracker->AddImuLinearAccelerationObservation(
-        it->linear_acceleration.ToEigenVector());
-    imu_tracker->AddImuAngularVelocityObservation(
-        it->angular_velocity.ToEigenVector());
+    imu_tracker->AddImuLinearAccelerationObservation(it->linear_acceleration);
+    imu_tracker->AddImuAngularVelocityObservation(it->angular_velocity);
     ++it;
   }
   imu_tracker->Advance(time);

@@ -204,21 +204,11 @@ void MapBuilder::InsertImuMsg(const sensors::ImuMsg::Ptr& imu_msg) {
 
   const Eigen::Matrix3d rotation =
       common::Rotation(tracking_to_imu_).cast<double>();
-  Eigen::Vector3d new_acc =
-      rotation * Eigen::Vector3d(imu_msg->linear_acceleration.x,
-                                 imu_msg->linear_acceleration.y,
-                                 imu_msg->linear_acceleration.z);
-  Eigen::Vector3d new_angular_velocity =
-      rotation * Eigen::Vector3d(imu_msg->angular_velocity.x,
-                                 imu_msg->angular_velocity.y,
-                                 imu_msg->angular_velocity.z);
+  Eigen::Vector3d new_acc = rotation * imu_msg->linear_acceleration;
+  Eigen::Vector3d new_angular_velocity = rotation * imu_msg->angular_velocity;
 
-  imu_msg->linear_acceleration.x = new_acc[0];
-  imu_msg->linear_acceleration.y = new_acc[1];
-  imu_msg->linear_acceleration.z = new_acc[2];
-  imu_msg->angular_velocity.x = new_angular_velocity[0];
-  imu_msg->angular_velocity.y = new_angular_velocity[1];
-  imu_msg->angular_velocity.z = new_angular_velocity[2];
+  imu_msg->linear_acceleration = new_acc;
+  imu_msg->angular_velocity = new_angular_velocity;
   data_collector_->AddSensorData(*imu_msg);
 
   if (!extrapolator_) {

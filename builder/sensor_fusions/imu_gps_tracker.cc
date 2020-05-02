@@ -78,8 +78,7 @@ void ImuGpsTracker::AddImuData(const sensors::ImuMsg& imu_msg) {
     delta_time = imu_period_;
   }
   imu_preintegrated_->integrateMeasurement(
-      imu_msg.linear_acceleration.ToEigenVector(),
-      imu_msg.angular_velocity.ToEigenVector(), delta_time);
+      imu_msg.linear_acceleration, imu_msg.angular_velocity, delta_time);
   last_imu_time_ = imu_msg.header.stamp;
 }
 

@@ -51,18 +51,18 @@ ImuMsg ToLocalImu(const sensor_msgs::Imu& msg) {
 
   local_imu.header = ToLocalHeader(msg.header);
 
-  local_imu.angular_velocity.x = msg.angular_velocity.x;
-  local_imu.angular_velocity.y = msg.angular_velocity.y;
-  local_imu.angular_velocity.z = msg.angular_velocity.z;
+  local_imu.angular_velocity[0] = msg.angular_velocity.x;
+  local_imu.angular_velocity[1] = msg.angular_velocity.y;
+  local_imu.angular_velocity[2] = msg.angular_velocity.z;
 
-  local_imu.linear_acceleration.x = msg.linear_acceleration.x;
-  local_imu.linear_acceleration.y = msg.linear_acceleration.y;
-  local_imu.linear_acceleration.z = msg.linear_acceleration.z;
+  local_imu.linear_acceleration[0] = msg.linear_acceleration.x;
+  local_imu.linear_acceleration[1] = msg.linear_acceleration.y;
+  local_imu.linear_acceleration[2] = msg.linear_acceleration.z;
 
-  local_imu.orientation.x = msg.orientation.x;
-  local_imu.orientation.y = msg.orientation.y;
-  local_imu.orientation.z = msg.orientation.z;
-  local_imu.orientation.w = msg.orientation.w;
+  local_imu.orientation.x() = msg.orientation.x;
+  local_imu.orientation.y() = msg.orientation.y;
+  local_imu.orientation.z() = msg.orientation.z;
+  local_imu.orientation.w() = msg.orientation.w;
 
   for (int i = 0; i < 9; ++i) {
     local_imu.angular_velocity_covariance[i] =
@@ -79,20 +79,18 @@ OdomMsg ToLocalOdom(const nav_msgs::Odometry& msg) {
   OdomMsg local_odom;
   local_odom.header = ToLocalHeader(msg.header);
 
-  local_odom.pose.pose.position.x = msg.pose.pose.position.x;
-  local_odom.pose.pose.position.y = msg.pose.pose.position.y;
-  local_odom.pose.pose.position.z = msg.pose.pose.position.z;
-  local_odom.pose.pose.orientation.w = msg.pose.pose.orientation.w;
-  local_odom.pose.pose.orientation.x = msg.pose.pose.orientation.x;
-  local_odom.pose.pose.orientation.y = msg.pose.pose.orientation.y;
-  local_odom.pose.pose.orientation.z = msg.pose.pose.orientation.z;
+  local_odom.pose.pose.position.x() = msg.pose.pose.position.x;
+  local_odom.pose.pose.position.y() = msg.pose.pose.position.y;
+  local_odom.pose.pose.position.z() = msg.pose.pose.position.z;
+  local_odom.pose.pose.orientation.w() = msg.pose.pose.orientation.w;
+  local_odom.pose.pose.orientation.x() = msg.pose.pose.orientation.x;
+  local_odom.pose.pose.orientation.y() = msg.pose.pose.orientation.y;
+  local_odom.pose.pose.orientation.z() = msg.pose.pose.orientation.z;
 
-  local_odom.twist.twist.linear.set_xyz(msg.twist.twist.linear.x,
-                                        msg.twist.twist.linear.y,
-                                        msg.twist.twist.linear.z);
-  local_odom.twist.twist.angular.set_xyz(msg.twist.twist.angular.x,
-                                         msg.twist.twist.angular.y,
-                                         msg.twist.twist.angular.z);
+  local_odom.twist.twist.linear << msg.twist.twist.linear.x,
+      msg.twist.twist.linear.y, msg.twist.twist.linear.z;
+  local_odom.twist.twist.angular << msg.twist.twist.angular.x,
+      msg.twist.twist.angular.y, msg.twist.twist.angular.z;
   for (int i = 0; i < 36; ++i) {
     local_odom.pose.covariance[i] = msg.pose.covariance[i];
     local_odom.twist.covariance[i] = msg.twist.covariance[i];
