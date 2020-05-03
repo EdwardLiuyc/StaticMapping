@@ -68,6 +68,7 @@ typename LoopDetector<PointT>::DetectResult LoopDetector<PointT>::AddFrame(
 
   Eigen::Vector2d cur_trans_2d =
       all_frames_translation_[current_index].topRows(2);
+  const double cur_trans_z = all_frames_translation_[current_index][2];
   double min_distance = std::numeric_limits<double>::max();
   int closest_index = -1;
 
@@ -79,12 +80,14 @@ typename LoopDetector<PointT>::DetectResult LoopDetector<PointT>::AddFrame(
   }
   for (int i = start_index; i < end_index; ++i) {
     Eigen::Vector2d frame_trans_2d = all_frames_translation_[i].topRows(2);
-    double distance = (cur_trans_2d - frame_trans_2d).norm();
-    if (distance <= settings_.max_close_loop_distance) {
+    double xy_distance = (cur_trans_2d - frame_trans_2d).norm();
+    double z_distance = std::fabs(cur_trans_z - all_frames_translation_[i][2]);
+    if (xy_distance <= settings_.max_close_loop_distance &&
+        z_distance <= settings_.max_close_loop_z_distance) {
       indices_in_distance.push_back(i);
-      if (distance < min_distance) {
+      if (xy_distance < min_distance) {
         closest_index = i;
-        min_distance = distance;
+        min_distance = xy_distance;
       }
     }
   }

@@ -248,6 +248,9 @@ MapBuilderOptions& MapBuilder::Initialise(const char* config_file_name) {
     GET_SINGLE_OPTION(
         back_end_node, "loop_detector_setting", "max_close_loop_distance",
         loop_detector_setting.max_close_loop_distance, float, float);
+    GET_SINGLE_OPTION(
+        back_end_node, "loop_detector_setting", "max_close_loop_z_distance",
+        loop_detector_setting.max_close_loop_z_distance, float, float);
     GET_SINGLE_OPTION(back_end_node, "loop_detector_setting",
                       "m2dp_match_score",
                       loop_detector_setting.m2dp_match_score, float, float);

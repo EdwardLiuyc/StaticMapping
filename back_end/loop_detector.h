@@ -47,6 +47,7 @@ struct LoopDetectorSettings {
   int trying_detect_loop_count = 1;
   int nearest_history_pos_num = 4;
   float max_close_loop_distance = 25.f;
+  float max_close_loop_z_distance = 1.f;
   float m2dp_match_score = 0.99f;
   float accept_scan_match_score = 0.75f;
 };
