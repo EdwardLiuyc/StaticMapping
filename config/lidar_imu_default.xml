@@ -41,7 +41,7 @@
         <param type="0" name="thread_num"> 4 </param>
       </filter> -->
     </filters>
-    <front_end_options accumulate_cloud_num="181">
+    <front_end_options accumulate_cloud_num="151">
       <!-- matcher type  
         0: none 
         1: icp using pointmatcher 
@@ -113,7 +113,8 @@
         use_descriptor="true"
         loop_ignore_threshold="15"
         trying_detect_loop_count="1"
-        max_close_loop_distance="3."
+        max_close_loop_distance="3"
+        max_close_loop_z_distance="1."
         m2dp_match_score="0.96"
         nearest_history_pos_num="5" />
     </back_end_options>
