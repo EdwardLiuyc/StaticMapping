@@ -1055,6 +1055,8 @@ void MapBuilder::EnableUsingOdom(bool flag) {
   PRINT_INFO_FMT("%s odom.", str.c_str());
   if (flag) {
     odom_msgs_.reserve(kOdomMsgMaxSize);
+  } else {
+    options_.back_end_options.isam_optimizer_options.use_odom = false;
   }
 }
 
@@ -1062,6 +1064,18 @@ void MapBuilder::EnableUsingGps(bool flag) {
   use_gps_ = flag;
   std::string str = flag ? "enable" : "disable";
   PRINT_INFO_FMT("%s gps.", str.c_str());
+  if (!flag) {
+    if (options_.back_end_options.loop_detector_setting.use_gps) {
+      PRINT_WARNING(
+          "Gps is disabled, loop_detector_setting.use_gps is set to false.");
+      options_.back_end_options.loop_detector_setting.use_gps = false;
+    }
+    if (options_.back_end_options.isam_optimizer_options.use_gps) {
+      PRINT_WARNING(
+          "Gps is disabled, isam_optimizer_options.use_gps is set to false.");
+      options_.back_end_options.isam_optimizer_options.use_gps = false;
+    }
+  }
 }
 
 void MapBuilder::GenerateMapPackage(const std::string& filename) {
