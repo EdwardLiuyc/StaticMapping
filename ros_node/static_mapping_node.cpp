@@ -32,11 +32,13 @@
 #include <std_msgs/String.h>
 #include <visualization_msgs/Marker.h>
 // stl
+#include <unistd.h>
 #include <sstream>
 // local
 #include "builder/map_builder.h"
 #include "builder/msg_conversion.h"
 #include "common/simple_time.h"
+#include "ros_node/playable_bag.h"
 #include "ros_node/tf_bridge.h"
 
 using static_map::MapBuilder;
@@ -152,6 +154,13 @@ int main(int argc, char** argv) {
   // default: base_link
   std::string tracking_frame = "base_link";
   pcl::console::parse_argument(argc, argv, "-track", tracking_frame);
+
+  std::string bag_file = "";
+  pcl::console::parse_argument(argc, argv, "-bag", bag_file);
+  if (::access(bag_file.c_str(), F_OK) == -1) {
+    PRINT_WARNING_FMT("%s does not exist.", bag_file.c_str());
+    bag_file = "";
+  }
 
   ros::Publisher map_publisher =
       n.advertise<sensor_msgs::PointCloud2>("/optimized_map", 1);
@@ -291,7 +300,53 @@ int main(int argc, char** argv) {
   map_builder->SetShowPoseFunction(show_pose_function);
   map_builder->SetShowSubmapFunction(show_submap_function);
 
-  ::ros::spin();
+  if (bag_file.empty()) {
+    ::ros::spin();
+  } else {
+    static_map_ros::PlayableBag bag(bag_file, ros::TIME_MIN, ros::TIME_MAX,
+                                    ::ros::Duration(1.0));
+
+    const double duration_sec = bag.DurationInSeconds();
+    const auto begin_time = std::get<0>(bag.GetBeginEndTime());
+
+    int message_index = 0;
+    ros::Time last_message_time = begin_time;
+    while (bag.IsMessageAvailable() && ros::ok()) {
+      auto message = bag.GetNextMessage();
+      if (message.isType<sensor_msgs::PointCloud2>() &&
+          message.getTopic() == point_cloud_topic) {
+        pointcloud_callback(message.instantiate<sensor_msgs::PointCloud2>());
+      } else if (message.isType<sensor_msgs::Imu>() &&
+                 message.getTopic() == imu_topic) {
+        if (use_imu) {
+          imu_callback(*message.instantiate<sensor_msgs::Imu>());
+        }
+      } else if (message.isType<nav_msgs::Odometry>() &&
+                 message.getTopic() == odom_topic) {
+        if (use_odom) {
+          odom_callback(*message.instantiate<nav_msgs::Odometry>());
+        }
+      } else if (message.isType<sensor_msgs::NavSatFix>() &&
+                 message.getTopic() == gps_topic) {
+        if (use_gps) {
+          gps_callback(*message.instantiate<sensor_msgs::NavSatFix>());
+        }
+      }
+
+      // read bag in twice time of the bag speed
+      // like : rosbag play ***.bag -r 2
+      if (message.getTime() > last_message_time) {
+        usleep((message.getTime() - last_message_time).toSec() * 0.5 * 1000000);
+      }
+      last_message_time = message.getTime();
+
+      ++message_index;
+      if (message_index % 10000 == 0) {
+        PRINT_COLOR_FMT(BOLD, "processed %lf of %lf seconds of the bag... ",
+                        (message.getTime() - begin_time).toSec(), duration_sec);
+      }
+    }
+  }
 
   map_builder->FinishAllComputations();
   return 0;

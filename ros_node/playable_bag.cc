@@ -29,25 +29,20 @@
 
 namespace static_map_ros {
 
-PlayableBag::PlayableBag(
-    const std::string& bag_filename, const int bag_id,
-    const ros::Time start_time, const ros::Time end_time,
-    const ros::Duration buffer_delay,
-    FilteringEarlyMessageHandler filtering_early_message_handler)
+PlayableBag::PlayableBag(const std::string& bag_filename,
+                         const ros::Time start_time, const ros::Time end_time,
+                         const ros::Duration buffer_delay)
     : bag_(static_map::common::make_unique<rosbag::Bag>(bag_filename,
                                                         rosbag::bagmode::Read)),
       view_(static_map::common::make_unique<rosbag::View>(*bag_, start_time,
                                                           end_time)),
       view_iterator_(view_->begin()),
       finished_(false),
-      bag_id_(bag_id),
       bag_filename_(bag_filename),
       duration_in_seconds_(
           (view_->getEndTime() - view_->getBeginTime()).toSec()),
       message_counter_(0),
-      buffer_delay_(buffer_delay),
-      filtering_early_message_handler_(
-          std::move(filtering_early_message_handler)) {
+      buffer_delay_(buffer_delay) {
   AdvanceUntilMessageAvailable();
   for (const auto* connection_info : view_->getConnections()) {
     topics_.insert(connection_info->topic);
@@ -68,11 +63,11 @@ rosbag::MessageInstance PlayableBag::GetNextMessage() {
   const rosbag::MessageInstance msg = buffered_messages_.front();
   buffered_messages_.pop_front();
   AdvanceUntilMessageAvailable();
-  double processed_seconds = (msg.getTime() - view_->getBeginTime()).toSec();
-  if ((message_counter_ % 10000) == 0) {
-    LOG(INFO) << "Processed " << processed_seconds << " of "
-              << duration_in_seconds_ << " seconds of bag " << bag_filename_;
-  }
+  // double processed_seconds = (msg.getTime() - view_->getBeginTime()).toSec();
+  // if ((message_counter_ % 10000) == 0) {
+  //   LOG(INFO) << "Processed " << processed_seconds << " of "
+  //             << duration_in_seconds_ << " seconds of bag " << bag_filename_;
+  // }
 
   return msg;
 }
@@ -83,8 +78,6 @@ bool PlayableBag::IsMessageAvailable() const {
           buffered_messages_.back().getTime() - buffer_delay_);
 }
 
-int PlayableBag::bag_id() const { return bag_id_; }
-
 void PlayableBag::AdvanceOneMessage() {
   CHECK(!finished_);
   if (view_iterator_ == view_->end()) {
@@ -92,10 +85,8 @@ void PlayableBag::AdvanceOneMessage() {
     return;
   }
   rosbag::MessageInstance& msg = *view_iterator_;
-  if (!filtering_early_message_handler_ ||
-      filtering_early_message_handler_(msg)) {
-    buffered_messages_.push_back(msg);
-  }
+  buffered_messages_.push_back(msg);
+
   ++view_iterator_;
   ++message_counter_;
 }

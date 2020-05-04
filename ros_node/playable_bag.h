@@ -42,23 +42,16 @@ namespace static_map_ros {
 
 class PlayableBag {
  public:
-  // Handles messages early, i.e. when they are about to enter the buffer.
-  // Returns a boolean indicating whether the message should enter the buffer.
-  using FilteringEarlyMessageHandler =
-      std::function<bool(const rosbag::MessageInstance&)>;
-
-  PlayableBag(const std::string& bag_filename, int bag_id, ros::Time start_time,
-              ros::Time end_time, ros::Duration buffer_delay,
-              FilteringEarlyMessageHandler filtering_early_message_handler);
+  PlayableBag(const std::string& bag_filename, ros::Time start_time,
+              ros::Time end_time, ros::Duration buffer_delay);
 
   ros::Time PeekMessageTime() const;
   rosbag::MessageInstance GetNextMessage();
   bool IsMessageAvailable() const;
   std::tuple<ros::Time, ros::Time> GetBeginEndTime() const;
 
-  int bag_id() const;
   std::set<std::string> topics() const { return topics_; }
-  double duration_in_seconds() const { return duration_in_seconds_; }
+  double DurationInSeconds() const { return duration_in_seconds_; }
   bool finished() const { return finished_; }
   std::string get_bag_filename() const { return bag_filename_; }
 
@@ -70,13 +63,11 @@ class PlayableBag {
   std::unique_ptr<rosbag::View> view_;
   rosbag::View::const_iterator view_iterator_;
   bool finished_;
-  const int bag_id_;
   const std::string bag_filename_;
   const double duration_in_seconds_;
   int message_counter_;
   std::deque<rosbag::MessageInstance> buffered_messages_;
   const ::ros::Duration buffer_delay_;
-  FilteringEarlyMessageHandler filtering_early_message_handler_;
   std::set<std::string> topics_;
 };
 
