@@ -212,7 +212,6 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - **using docker to build and run**
 - **use enu instead of utm**
 - solve all nls problem using gtsam
-- **read bag on its own**
 - **supporting multi-lidars**
 - **remove the imu dependency of pose extrapolator**
 - save submap binary data into a special format file not just pointcloud into .pcd
