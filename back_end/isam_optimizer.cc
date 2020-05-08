@@ -23,6 +23,7 @@
 // third party
 #include <gtsam/navigation/GPSFactor.h>
 #include <gtsam/nonlinear/DoglegOptimizer.h>
+#include <gtsam/nonlinear/GaussNewtonOptimizer.h>
 // local
 #include "back_end/isam_optimizer.h"
 #include "back_end/odom_to_pose_factor.h"
@@ -55,8 +56,6 @@ namespace NM = gtsam::noiseModel;
 #define IMU_CALIB_KEY (gtsam::Symbol(CALIB_SYMBOL, 1))
 #define GPS_COORD_KEY (gtsam::Symbol(GPS_COORD_SYMBOL, 0))
 
-constexpr int kGpsSkipNum = 20;
-
 template <typename PointT>
 IsamOptimizer<PointT>::IsamOptimizer(const IsamOptimizerOptions &options,
                                      const LoopDetectorSettings &l_d_setting)
@@ -71,12 +70,12 @@ IsamOptimizer<PointT>::IsamOptimizer(const IsamOptimizerOptions &options,
   parameters.setOptimizationParams(dogleg_param);
   isam_ = common::make_unique<gtsam::ISAM2>(parameters);
 
-  prior_noise_model_ = NM::Isotropic::Sigma(6, 1.e-3);
+  prior_noise_model_ = NM::Isotropic::Sigma(6, 1.e-6);
   gps_noise_model_ = NM::Isotropic::Sigma(3, 0.15);
   frame_match_noise_model_ = NM::Diagonal::Sigmas(
-      (gtsam::Vector(6) << 0.15, 0.15, 0.1, 0.15, 0.15, 0.15).finished());
+      (gtsam::Vector(6) << 0.1, 0.1, 0.1, 0.15, 0.15, 0.15).finished());
   loop_closure_noise_model_ = NM::Diagonal::Sigmas(
-      (gtsam::Vector(6) << 0.15, 0.15, 0.1, 0.15, 0.15, 0.15).finished());
+      (gtsam::Vector(6) << 0.1, 0.1, 0.1, 0.15, 0.15, 0.15).finished());
   odom_tf_noise_model_ = NM::Diagonal::Sigmas(
       (gtsam::Vector(6) << 0.5, 0.5, 1.5, 0.1, 0.1, 0.1).finished());
   odom_noise_model_ = NM::Robust::Create(
@@ -131,11 +130,13 @@ void IsamOptimizer<PointT>::AddVertex(
     const NM::Base::shared_ptr &odom_noise) {
   auto &frames = loop_detector_.GetFrames();
   gtsam::Pose3 pose_gtsam = gtsam::Pose3(pose.cast<double>());
-  gtsam::Pose3 pose_from_gtsam =
+  gtsam::Pose3 transform_gtsam =
       gtsam::Pose3(transform_from_last_pose.cast<double>());
   initial_estimate_.insert(POSE_KEY(index), pose_gtsam);
   view_graph_.AddVertex(index, pose);
   if (index == 0) {
+    // first index
+    // the pose should be set constant
     isam_factor_graph_->addExpressionFactor(prior_noise_model_, pose_gtsam,
                                             Pose3_(POSE_KEY(index)));
     if (options_.use_odom) {
@@ -148,17 +149,9 @@ void IsamOptimizer<PointT>::AddVertex(
                                               Pose3_(ODOM_CALIB_KEY));
       calib_factor_inserted_ = true;
     }
-    if (options_.use_gps) {
-      initial_estimate_.insert(GPS_COORD_KEY, gps_coord_transform_);
-      isam_factor_graph_->addExpressionFactor(
-          NM::Diagonal::Sigmas(
-              (gtsam::Vector(6) << 0.5, 0.5, 1.57, 2, 2, 2.).finished()),
-          gps_coord_transform_, Pose3_(GPS_COORD_KEY));
-    }
-
   } else {
     isam_factor_graph_->addExpressionFactor(
-        odom_noise, pose_from_gtsam,
+        odom_noise, transform_gtsam,
         between(Pose3_(POSE_KEY(index - 1)), Pose3_(POSE_KEY(index))));
 
     frames[index - 1]->AddConnectedSubmap(frames[index]->GetId());
@@ -173,7 +166,8 @@ void IsamOptimizer<PointT>::AddFrame(
     const std::shared_ptr<Submap<PointT>> &frame, const double match_score) {
   CHECK(frame);
   auto result = loop_detector_.AddFrame(frame, true);
-  int frame_index = static_cast<int>(loop_detector_.GetFrames().size()) - 1;
+  const auto &frames = loop_detector_.GetFrames();
+  int frame_index = static_cast<int>(frames.size()) - 1;
   CHECK_EQ(frame_index, result.current_frame_index);
   PRINT_DEBUG_FMT("optimizer inserting a new frame, match score: %lf",
                   match_score);
@@ -198,27 +192,6 @@ void IsamOptimizer<PointT>::AddFrame(
         odom_noise_model_, Pose3(frame->GetRelatedOdom()), uncalibrated);
   }
 
-  if (options_.use_gps) {
-    if (frame->HasUtm()) {
-      // expression :
-      // map_origin_in_gps * map_pose * tracking_to_gps = gps pose
-      // but gps has no rotation since it only provides longtitude, latitude ...
-      // so we use only translation in the tracking_to_gps
-      auto map_origin_in_gps = Pose3_(GPS_COORD_KEY);
-      auto pose = Pose3_(POSE_KEY(result.current_frame_index));
-      const gtsam::Point3 tracking_gps_translation(
-          tf_tracking_gps_.block(0, 3, 3, 1).cast<double>());
-      isam_factor_graph_->addExpressionFactor(
-          gps_noise_model_, gtsam::Point3(frame->GetRelatedUtm()),
-          gtsam::transform_from(gtsam::compose(map_origin_in_gps, pose),
-                                gtsam::Point3_(tracking_gps_translation)));
-      accumulated_gps_count_++;
-      IsamUpdate();
-    } else {
-      PRINT_WARNING("No Gps related.");
-    }
-  }
-
   // try to close loop and add constraint
   if (result.close_succeed) {
     const int edge_size = result.close_pair.size();
@@ -230,6 +203,44 @@ void IsamOptimizer<PointT>::AddFrame(
     PRINT_INFO_FMT(BOLD "Add %d loop closure edges." NONE_FORMAT, edge_size);
   }
 
+  auto add_utm_factor = [&](const int index, const UtmPosition &utm) {
+    // expression :
+    // map_origin_in_gps * map_pose * tracking_to_gps = gps pose
+    // but gps has no rotation since it only provides longtitude, latitude
+    // so we use only translation in the tracking_to_gps
+    auto map_origin_in_gps = Pose3_(GPS_COORD_KEY);
+    auto pose = Pose3_(POSE_KEY(index));
+    const gtsam::Point3 tracking_gps_translation(
+        tf_tracking_gps_.block(0, 3, 3, 1).cast<double>());
+    isam_factor_graph_->addExpressionFactor(
+        gps_noise_model_, gtsam::Point3(utm),
+        gtsam::transform_from(gtsam::compose(map_origin_in_gps, pose),
+                              gtsam::Point3_(tracking_gps_translation)));
+  };
+
+  if (options_.use_gps) {
+    if (frame->HasUtm()) {
+      if (cached_utm_.size() < options_.gps_skip_num) {
+        // cache utm data
+        cached_utm_[result.current_frame_index] = frame->GetRelatedUtm();
+      } else if (!calculated_first_gps_coord_) {
+        SolveGpsCorrdAlone();
+
+        PRINT_INFO("Add all utm back to isam.");
+        for (const auto &index_utm : cached_utm_) {
+          add_utm_factor(index_utm.first, index_utm.second);
+        }
+        IsamUpdate();
+        calculated_first_gps_coord_ = true;
+      } else {
+        add_utm_factor(result.current_frame_index, frame->GetRelatedUtm());
+        IsamUpdate();
+      }
+    } else {
+      PRINT_WARNING("No Gps related.");
+    }
+  }
+
   IsamUpdate();
   CHECK(isam_->valueExists(POSE_KEY(frame_index)));
   gtsam::Values estimate_poses = isam_->calculateEstimate();
@@ -239,13 +250,57 @@ void IsamOptimizer<PointT>::AddFrame(
           .cast<float>();
   frame->SetGlobalPose(current_pose);
   view_graph_.AddVertex(frame_index, current_pose);
-  PRINT_DEBUG("update pose.");
-  // if (options_.use_gps &&
-  //     accumulated_gps_count_ % kGpsSkipNum == kGpsSkipNum - 1) {
-  //   UpdateAllPose();
-  // } else {
-  //   isam_->calculateEstimate();
-  // }
+}
+
+template <typename PointT>
+void IsamOptimizer<PointT>::SolveGpsCorrdAlone() {
+  PRINT_INFO("Solve the gps coord alone with exsiting pose and utm.");
+  LOG(FATAL) << "This function is not ready.";
+
+  // CHECK_EQ(cached_utm_.size(), options_.gps_skip_num);
+  IsamUpdate();
+  gtsam::Values estimate_poses = isam_->calculateBestEstimate();
+
+  gtsam::NonlinearFactorGraph graph;
+  gtsam::Values initials;
+  const auto gps_key = gtsam::Symbol('c', 0);
+  initials.insert(gps_key, gps_coord_transform_);
+  graph.addExpressionFactor(
+      NM::Diagonal::Sigmas(
+          (gtsam::Vector(6) << 0.01, 0.2, 1.57, 2, 2, 2.).finished()),
+      gps_coord_transform_, Pose3_(gps_key));
+  NM::Diagonal::shared_ptr pose_noise = NM::Isotropic::Sigma(6, 1.e-2);
+  const gtsam::Point3 tracking_gps_translation(
+      tf_tracking_gps_.block(0, 3, 3, 1).cast<double>());
+
+  for (const auto &index_utm : cached_utm_) {
+    const auto index = index_utm.first;
+    const auto pose = estimate_poses.at<gtsam::Pose3>(POSE_KEY(index));
+    const auto pose_key = gtsam::Symbol('p', index);
+    initials.insert(pose_key, pose);
+    graph.emplace_shared<gtsam::PriorFactor<gtsam::Pose3>>(pose_key, pose,
+                                                           pose_noise);
+    graph.addExpressionFactor(
+        gps_noise_model_, gtsam::Point3(index_utm.second),
+        gtsam::transform_from(gtsam::compose(Pose3_(gps_key), Pose3_(pose_key)),
+                              gtsam::Point3_(tracking_gps_translation)));
+  }
+
+  gtsam::GaussNewtonParams parameters;
+  parameters.relativeErrorTol = 1e-6;
+  parameters.maxIterations = 100;
+  gtsam::GaussNewtonOptimizer optimizer(graph, initials, parameters);
+  gtsam::Values result = optimizer.optimize();
+  gps_coord_transform_ = result.at<gtsam::Pose3>(gps_key);
+
+  PRINT_INFO("Got init estimation of 'gps_coord_transform_': ");
+  common::PrintTransform(gps_coord_transform_.matrix());
+
+  initial_estimate_.insert(GPS_COORD_KEY, gps_coord_transform_);
+  isam_factor_graph_->addExpressionFactor(
+      NM::Diagonal::Sigmas(
+          (gtsam::Vector(6) << 0.2, 0.2, 0.1, 0.5, 0.5, 0.5).finished()),
+      gps_coord_transform_, Pose3_(GPS_COORD_KEY));
 }
 
 template <typename PointT>
@@ -274,6 +329,10 @@ Eigen::Matrix4d IsamOptimizer<PointT>::GetGpsCoordTransfrom() {
     gtsam::Values estimate_poses = isam_->calculateEstimate();
     if (estimate_poses.exists<gtsam::Pose3>(GPS_COORD_KEY)) {
       gps_coord_transform_ = estimate_poses.at<gtsam::Pose3>(GPS_COORD_KEY);
+
+      PRINT_INFO("Got final estimation of 'gps_coord_transform_': ");
+      common::PrintTransform(gps_coord_transform_.matrix());
+
       return gps_coord_transform_.matrix();
     }
   }

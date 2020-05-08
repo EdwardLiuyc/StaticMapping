@@ -37,11 +37,13 @@
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 // stl
+#include <map>
 #include <memory>
 #include <utility>
 // local
 #include <boost/optional.hpp>
 #include "back_end/loop_detector.h"
+#include "back_end/map_utm_matcher.h"
 #include "back_end/view_graph.h"
 #include "builder/sensors.h"
 #include "builder/submap.h"
@@ -51,7 +53,8 @@ namespace back_end {
 
 struct IsamOptimizerOptions {
   bool use_odom = false;
-  bool use_gps = false;  // not used temperorilly
+  bool use_gps = false;
+  int gps_skip_num = 25;
 };
 
 template <typename PointT>
@@ -92,6 +95,8 @@ class IsamOptimizer {
                  const gtsam::noiseModel::Base::shared_ptr &odom_noise);
   void IsamUpdate(const int update_time = 1);
 
+  void SolveGpsCorrdAlone();
+
   gtsam::Values UpdateAllPose();
 
  private:
@@ -112,6 +117,9 @@ class IsamOptimizer {
 
   LoopDetector<PointT> loop_detector_;
   IsamOptimizerOptions options_;
+
+  std::map<int /* frame index*/, UtmPosition> cached_utm_;
+  bool calculated_first_gps_coord_ = false;
 
   ViewGraph view_graph_;
   bool calib_factor_inserted_ = false;

@@ -20,13 +20,16 @@ POINT_CLOUD_FRAME_ID=frame_velodyne_points
 IMU_TOPIC=imu/raw_data
 IMU_FRAME_ID=imu_link
 
+BAG_FILE=/mnt/Data/visual/map_test/20200507124024_1_NoPlace.bag
+
 ./build/static_mapping_node \
   -cfg ${CONFIG_PATH} \
   -urdf ${URDF_FILE} \
   -pc ${POINT_CLOUD_TOPIC} \
   -pc_frame_id ${POINT_CLOUD_FRAME_ID} \
   -imu ${IMU_TOPIC} \
-  -imu_frame_id ${IMU_FRAME_ID}
+  -imu_frame_id ${IMU_FRAME_ID} \
+  -bag ${BAG_FILE}
 
 exit 0 
 
