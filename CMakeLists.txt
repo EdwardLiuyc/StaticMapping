@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 3.5.0)
 project(static_mapping)
-set(TARGET_LIB_NAME static_mapping)
 
 #######################################################
 ###  Compiler Options
@@ -165,25 +164,21 @@ endif(ENBALE_PROF)
 add_subdirectory(common)
 add_subdirectory(descriptor)
 add_subdirectory(back_end)
-
-file(GLOB srcs "builder/*.cc" ) 
-file(GLOB sensors_fusion_srcs "builder/sensor_fusions/*.cc")
-file(GLOB registrators_srcs "registrators/*.cc")
+add_subdirectory(registrators)
+add_subdirectory(builder)
 #######################################################
 ###  Target
 #######################################################
 # link_libraries(glog)
-list(APPEND require_libs ${PROJECT_NAME}_common
+list(APPEND static_mapping_libs ${PROJECT_NAME}_builder 
+  ${PROJECT_NAME}_backend 
+  ${PROJECT_NAME}_registrators
   ${PROJECT_NAME}_descriptor
-  ${PROJECT_NAME}_backend)
+  ${PROJECT_NAME}_common)
 
+message(STATUS "Local libs: ${static_mapping_libs}")
 message(STATUS "Link libs: ${require_libs}")
 message(STATUS "CXX FLAGS: ${CMAKE_CXX_FLAGS}")
-
-add_library(${TARGET_LIB_NAME} 
-  ${srcs} ${sensors_fusion_srcs} 
-  ${registrators_srcs})
-# target_link_libraries(${TARGET_LIB_NAME} ${OpenCV_LIBRARIES})
 
 if($ENV{ROS_DISTRO} STREQUAL "melodic")
   message(STATUS "Using ROS melodic")
@@ -202,7 +197,7 @@ add_executable(static_mapping_node
   ros_node/tf_bridge.cc
   ros_node/playable_bag.cc
   ros_node/kitti_reader.cc)
-target_link_libraries(static_mapping_node ${TARGET_LIB_NAME} ${require_libs})
+target_link_libraries(static_mapping_node ${static_mapping_libs} ${require_libs})
 
 add_executable(join_maps_node ros_node/join_maps_node.cpp)
-target_link_libraries(join_maps_node ${TARGET_LIB_NAME} ${require_libs})
+target_link_libraries(join_maps_node ${static_mapping_libs} ${require_libs})
