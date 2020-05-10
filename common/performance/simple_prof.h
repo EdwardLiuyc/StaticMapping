@@ -100,18 +100,17 @@ class TimerManager {
 
 #ifdef ENBALE_PROFILING
 
-#define REGISTER_BLOCK(NAME)                                             \
-  auto manager =                                                         \
-      localization_fusion::tools::performance::TimerManager::Instance(); \
-  localization_fusion::tools::performance::SimpleTimer timer(            \
+#define REGISTER_BLOCK(NAME)                                                \
+  auto manager = static_map::common::performance::TimerManager::Instance(); \
+  static_map::common::performance::SimpleTimer timer(                       \
       manager->RegisterTimer(NAME));
 
 #define REGISTER_FUNC REGISTER_BLOCK(__FUNCTION__)
 
-#define INIT_PROF                                                        \
-  std::shared_ptr<localization_fusion::tools::performance::TimerManager> \
-      localization_fusion::tools::performance::TimerManager::instance_ = \
-          localization_fusion::tools::performance::TimerManager::Instance();
+#define INIT_PROF                                                \
+  std::shared_ptr<static_map::common::performance::TimerManager> \
+      static_map::common::performance::TimerManager::instance_ = \
+          static_map::common::performance::TimerManager::Instance();
 
 #else
 
