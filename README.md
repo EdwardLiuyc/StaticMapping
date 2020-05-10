@@ -211,6 +211,7 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - **mapping using kitti data**
 - **using docker to build and run**
 - **use enu instead of utm**
+- use some other lock free technology instead of tbb since it's not completely processor independent. like folly
 - solve all nls problem using gtsam
 - **supporting multi-lidars**
 - **remove the imu dependency of pose extrapolator**
@@ -241,7 +242,6 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - add a Pose3d struct for simple operation of matrix4f or just use gtsam::pose3d
 - use double instead of float (eigen::matrix)
 - mrvm output to a special format data file and can be transformed to pcd independently
-- **add more config files and .sh files for other sensor-sets**
 - using ecef or some other coordinate system instead of utm
 - gravity alignment (in pose extrapolator)
 - output to .las file

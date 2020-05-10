@@ -38,6 +38,7 @@
 #include "builder/map_builder.h"
 #include "builder/msg_conversion.h"
 #include "common/simple_time.h"
+#include "ros_node/kitti_reader.h"
 #include "ros_node/playable_bag.h"
 #include "ros_node/tf_bridge.h"
 
@@ -80,6 +81,11 @@ void gps_callback(const sensor_msgs::NavSatFix& gps_msg) {
 int main(int argc, char** argv) {
   ros::init(argc, argv, "static_mapping_node");
   ros::NodeHandle n;
+
+  google::InitGoogleLogging(argv[0]);
+  FLAGS_alsologtostderr = true;
+  FLAGS_colorlogtostderr = true;
+  google::InstallFailureSignalHandler();
 
   // parse auguements
   // point cloud
@@ -155,11 +161,25 @@ int main(int argc, char** argv) {
   std::string tracking_frame = "base_link";
   pcl::console::parse_argument(argc, argv, "-track", tracking_frame);
 
+  // ros bag
   std::string bag_file = "";
   pcl::console::parse_argument(argc, argv, "-bag", bag_file);
   if (::access(bag_file.c_str(), F_OK) == -1) {
     PRINT_WARNING_FMT("%s does not exist.", bag_file.c_str());
     bag_file = "";
+  }
+
+  // kitti data set
+  std::string kitti_path = "";
+  pcl::console::parse_argument(argc, argv, "-kitti", kitti_path);
+  if (::access(kitti_path.c_str(), F_OK) == -1) {
+    PRINT_WARNING_FMT("%s does not exist.", kitti_path.c_str());
+    kitti_path = "";
+  }
+
+  if (!kitti_path.empty() && !bag_file.empty()) {
+    PRINT_ERROR("Should not read bag and kitti data set at the same time.");
+    return -1;
   }
 
   ros::Publisher map_publisher =
@@ -300,9 +320,7 @@ int main(int argc, char** argv) {
   map_builder->SetShowPoseFunction(show_pose_function);
   map_builder->SetShowSubmapFunction(show_submap_function);
 
-  if (bag_file.empty()) {
-    ::ros::spin();
-  } else {
+  if (!bag_file.empty()) {
     static_map_ros::PlayableBag bag(bag_file, ros::TIME_MIN, ros::TIME_MAX,
                                     ::ros::Duration(1.0));
 
@@ -346,6 +364,28 @@ int main(int argc, char** argv) {
                         (message.getTime() - begin_time).toSec(), duration_sec);
       }
     }
+  } else if (!kitti_path.empty()) {
+    PRINT_INFO("No bag, read kitti data.");
+    static_map::KittiReader kitti_reader;
+    kitti_reader.SetPointCloudDataPath(kitti_path);
+    int index = 0;
+    while (true && ros::ok()) {
+      MapBuilder::PointCloudPtr point_cloud = kitti_reader.ReadFromBin(index);
+      if (point_cloud && !point_cloud->empty()) {
+        // LOG(ERROR) << point_cloud->size();
+        point_cloud->header.frame_id = cloud_frame_id;
+        point_cloud->header.stamp =
+            static_map::SimpleTime::get_current_time().toNSec() / 1000ull;
+        map_builder->InsertPointcloudMsg(point_cloud);
+
+        usleep(100000);
+      } else {
+        break;
+      }
+      index++;
+    }
+  } else {
+    ::ros::spin();
   }
 
   map_builder->FinishAllComputations();

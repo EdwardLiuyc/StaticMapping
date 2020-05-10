@@ -192,6 +192,7 @@ void MapBuilder::InsertPointcloudMsg(const PointCloudPtr& point_cloud) {
     PRINT_WARNING("skip cloud.");
     return;
   }
+  // LOG(INFO) << point_cloud->header.stamp;
   // transform to tracking frame
   pcl::transformPointCloud(*point_cloud, *point_cloud, tracking_to_lidar_);
   data_collector_->AddSensorData(point_cloud);
