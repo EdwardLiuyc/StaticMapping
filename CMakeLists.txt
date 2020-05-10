@@ -1,11 +1,10 @@
 cmake_minimum_required(VERSION 3.5.0)
-project(mapping)
+project(static_mapping)
 set(TARGET_LIB_NAME static_mapping)
 
 #######################################################
 ###  Compiler Options
 #######################################################
-# set(CMAKE_BUILD_TYPE "Release")
 set(CMAKE_BUILD_TYPE Release)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -126,7 +125,6 @@ find_package(Ceres REQUIRED)
 include_directories(${CERES_INCLUDE_DIR})
 list(APPEND require_libs ceres)
 
-
 # option(USE_OPENVDB "Use Openvdb?" OFF)
 # if(USE_OPENVDB)
 #   find_package(OpenVDB)
@@ -150,27 +148,42 @@ if(USE_TBB)
   endif(TBB_FOUND)
 endif(USE_TBB)
 
+find_package(gflags REQUIRED)
+list(APPEND require_libs ${GFLAGS_LIBRARIES})
+
+option(ENBALE_PROF "Enable profiling?" OFF)
+if(ENBALE_PROF)
+  add_definitions(-DENBALE_PROFILING)
+  set(PROF_LOG_DIR ".static_mapping_log")
+  add_definitions(-D_PROF_LOG_DIR_=".static_mapping_log")
+  execute_process (COMMAND bash -c "mkdir -p ~/${PROF_LOG_DIR}")
+endif(ENBALE_PROF)
+
 #######################################################
 ###  Source files
 #######################################################
+add_subdirectory(common)
+add_subdirectory(descriptor)
+add_subdirectory(back_end)
+
 file(GLOB srcs "builder/*.cc" ) 
 file(GLOB sensors_fusion_srcs "builder/sensor_fusions/*.cc")
-file(GLOB common_srcs "common/*.cc")
 file(GLOB registrators_srcs "registrators/*.cc")
-file(GLOB backend_srcs "back_end/*.cc")
-file(GLOB desp_srcs "descriptor/*.cc")
 #######################################################
 ###  Target
 #######################################################
 # link_libraries(glog)
+list(APPEND require_libs ${PROJECT_NAME}_common
+  ${PROJECT_NAME}_descriptor
+  ${PROJECT_NAME}_backend)
+
 message(STATUS "Link libs: ${require_libs}")
 message(STATUS "CXX FLAGS: ${CMAKE_CXX_FLAGS}")
 
 add_library(${TARGET_LIB_NAME} 
   ${srcs} ${sensors_fusion_srcs} 
-  ${common_srcs} ${registrators_srcs} 
-  ${backend_srcs} ${desp_srcs})
-target_link_libraries(${TARGET_LIB_NAME} ${OpenCV_LIBRARIES})
+  ${registrators_srcs})
+# target_link_libraries(${TARGET_LIB_NAME} ${OpenCV_LIBRARIES})
 
 if($ENV{ROS_DISTRO} STREQUAL "melodic")
   message(STATUS "Using ROS melodic")
@@ -187,7 +200,8 @@ add_executable(static_mapping_node
   ros_node/static_mapping_node.cpp
   ros_node/urdf_reader.cc
   ros_node/tf_bridge.cc
-  ros_node/playable_bag.cc)
+  ros_node/playable_bag.cc
+  ros_node/kitti_reader.cc)
 target_link_libraries(static_mapping_node ${TARGET_LIB_NAME} ${require_libs})
 
 add_executable(join_maps_node ros_node/join_maps_node.cpp)
