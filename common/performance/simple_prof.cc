@@ -22,6 +22,8 @@
 
 #include "common/performance/simple_prof.h"
 
+#include <map>
+
 namespace static_map {
 namespace common {
 namespace performance {
@@ -58,21 +60,27 @@ std::vector<int64_t>* TimerManager::RegisterTimer(
 }
 
 TimerManager::~TimerManager() {
+  std::map<OutputUnit, std::pair<std::string, double> > output_factor;
+  output_factor[kS] = std::make_pair("(s)", 1.e-6);
+  output_factor[kMs] = std::make_pair("(ms)", 1.e-3);
+  output_factor[kUs] = std::make_pair("(us)", 1.);
+
   std::cout << std::endl;
   std::cout << "\e[1;31m" << std::setw(25) << "block name"
             << " | " << std::setw(8) << "times"
-            << " | " << std::setw(9) << "avg.(us)"
-            << " | " << std::setw(10) << "sum.(us)"
-            << " | " << std::setw(9) << "min.(us)"
-            << " | " << std::setw(9) << "max.(us)"
+            << " | " << std::setw(9) << "avg." + output_factor[unit_].first
+            << " | " << std::setw(10) << "sum." + output_factor[unit_].first
+            << " | " << std::setw(9) << "min." + output_factor[unit_].first
+            << " | " << std::setw(9) << "max." + output_factor[unit_].first
             << "\e[0m" << std::endl;
   for (int i = 0; i < 85; ++i) {
     std::cout << "-";
   }
   std::cout << std::endl;
 
-  const auto time_to_string = [](const int64_t time) -> std::string {
-    return (time >= 1 ? std::to_string(time) : "<1");
+  const auto time_to_string = [&](const int64_t time) -> std::string {
+    int factored_time = time * output_factor[unit_].second;
+    return (factored_time >= 1 ? std::to_string(factored_time) : "<1");
   };
 
   for (auto& id_block : durations_) {

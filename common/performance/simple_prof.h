@@ -79,6 +79,9 @@ class TimerManager {
 
   std::vector<int64_t>* RegisterTimer(const std::string& block_name);
 
+  enum OutputUnit { kS, kMs, kUs };
+  void SetUnit(const OutputUnit unit) { unit_ = unit; }
+
  private:
   TimerManager() = default;
 
@@ -88,6 +91,7 @@ class TimerManager {
       durations_;
 
   static std::shared_ptr<TimerManager> instance_;
+  OutputUnit unit_ = kUs;
 
   ProcessProfiler profiler_;
 };
@@ -105,10 +109,20 @@ class TimerManager {
 
 #define REGISTER_FUNC REGISTER_BLOCK(__FUNCTION__)
 
+#define SIMPLE_PROF_USE_MS                                            \
+  static_map::common::performance::TimerManager::Instance()->SetUnit( \
+      static_map::common::performance::TimerManager::OutputUnit::kMs);
+
+#define SIMPLE_PROF_USE_SECOND                                        \
+  static_map::common::performance::TimerManager::Instance()->SetUnit( \
+      static_map::common::performance::TimerManager::OutputUnit::kS);
+
 #else
 
 #define REGISTER_BLOCK(NAME)
 #define REGISTER_FUNC
+#define SIMPLE_PROF_USE_MS
+#define SIMPLE_PROF_USE_SECOND
 
 #endif
 

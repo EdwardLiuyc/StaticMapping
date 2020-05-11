@@ -83,6 +83,8 @@ int main(int argc, char** argv) {
   ros::init(argc, argv, "static_mapping_node");
   ros::NodeHandle n;
 
+  SIMPLE_PROF_USE_MS;
+
   google::InitGoogleLogging(argv[0]);
   FLAGS_alsologtostderr = true;
   FLAGS_colorlogtostderr = true;
