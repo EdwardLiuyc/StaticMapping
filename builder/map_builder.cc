@@ -30,7 +30,6 @@
 
 // local headers
 #include "builder/map_builder.h"
-#include "builder/utm.h"
 #include "common/macro_defines.h"
 #include "common/make_unique.h"
 #include "common/performance/simple_prof.h"
@@ -743,7 +742,7 @@ void MapBuilder::OutputPath() {
   }
 
   data_collector_->RawGpsDataToFile(options_.whole_options.export_file_path +
-                                    "original_utm.pcd");
+                                    "original_gps.pcd");
   data_collector_->RawOdomDataToFile(options_.whole_options.export_file_path +
                                      "original_odom.pcd");
 }
@@ -828,7 +827,7 @@ void MapBuilder::SubmapProcessing() {
 
     const auto time = submap->GetTimeStamp();
     if (use_gps_) {
-      const auto utm = data_collector_->InterpolateUtm(time, 0.005, true);
+      const auto utm = data_collector_->InterpolateGps(time, 0.005, true);
       if (utm) {
         submap->SetRelatedUtm(*utm);
       }
@@ -1021,10 +1020,10 @@ void MapBuilder::CalculateCoordTransformToUtm() {
     return;
   }
 
+  // @todo(edward) get gps origin
   const Eigen::Matrix4d result = isam_optimizer_->GetGpsCoordTransfrom();
   const Eigen::Matrix3d map_utm_rotation = common::Rotation(result);
-  const Eigen::Vector3d map_utm_translation =
-      common::Translation(result) + data_collector_->GetUtmOffset();
+  const Eigen::Vector3d map_utm_translation = common::Translation(result);
   // output the result to file( txt or xml ).
   PRINT_INFO_FMT("utm translation: %.12lf, %.12lf", map_utm_translation[0],
                  map_utm_translation[1]);

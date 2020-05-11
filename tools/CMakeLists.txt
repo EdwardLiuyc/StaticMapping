@@ -1,5 +1,4 @@
 add_executable(pcd_sampler pcd_sampler.cc)
-add_executable(fuse_with_hdmap fuse_with_hdmap.cc)
 add_executable(path_statistic path_statistic.cc)
 add_executable(join_pieces join_pieces.cc ../common/pugixml.cc)
 

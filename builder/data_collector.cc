@@ -24,7 +24,6 @@
 
 #include "builder/data_collector.h"
 #include "builder/msg_conversion.h"
-#include "builder/utm.h"
 #include "common/macro_defines.h"
 #include "common/make_unique.h"
 #include "common/math.h"
@@ -33,9 +32,6 @@
 #include "pcl/io/pcd_io.h"
 
 namespace static_map {
-
-// usually, our longtitude is about 121E, in UTM "51R" zone
-constexpr int kUtmZone = 51;
 
 template <typename DataTypeWithTime>
 std::pair<int, int> TimeStampBinarySearch(
@@ -71,7 +67,7 @@ DataCollector<PointT>::DataCollector(
   imu_data_.reserve(reserve_size);
   gps_data_.reserve(reserve_size);
   cloud_data_.reserve(reserve_size);
-  utm_path_cloud_.points.reserve(reserve_size);
+  enu_path_cloud_.points.reserve(reserve_size);
   odom_path_cloud_.points.reserve(reserve_size);
 }
 
@@ -86,9 +82,9 @@ DataCollector<PointT>::~DataCollector() {
 template <typename PointT>
 void DataCollector<PointT>::RawGpsDataToFile(
     const std::string& filename) const {
-  if (!utm_path_cloud_.empty()) {
+  if (!enu_path_cloud_.empty()) {
     PRINT_INFO_FMT("output raw gps data into file: %s", filename.c_str());
-    pcl::io::savePCDFileBinaryCompressed(filename, utm_path_cloud_);
+    pcl::io::savePCDFileBinaryCompressed(filename, enu_path_cloud_);
   }
 }
 
@@ -121,29 +117,34 @@ void DataCollector<PointT>::AddSensorData(
   data.status_fixed = (navsat_msg.status.status == sensors::STATUS_FIX);
   data.time = navsat_msg.header.stamp;
 
+  if (!reference_gps_point_.is_initialized()) {
+    if (!data.status_fixed) {
+      return;
+    }
+    PRINT_INFO("Init position with input gps reference.");
+    reference_gps_point_ = GeographicLib::LocalCartesian(
+        navsat_msg.latitude, navsat_msg.longtitude, navsat_msg.altitude);
+  }
+
   // first, save raw data including latitude, longtitude, altitude
   data.lat_lon_alt << navsat_msg.latitude, navsat_msg.longtitude,
       navsat_msg.altitude;
-  // transform to utm
-  utm::LatLonToUTMXY(navsat_msg.latitude, navsat_msg.longtitude, kUtmZone,
-                     data.utm_postion[0], data.utm_postion[1]);
-  data.utm_postion[2] = navsat_msg.altitude;
+  // transform to enu
+  reference_gps_point_.value().Forward(
+      navsat_msg.latitude, navsat_msg.longtitude, navsat_msg.altitude,
+      data.enu_position[0], data.enu_position[1], data.enu_position[2]);
 
-  if (!utm_init_offset_) {
-    utm_init_offset_ = data.utm_postion;
-  }
-  data.utm_postion -= utm_init_offset_.value();
   if (!gps_data_.empty()) {
     CHECK(data.time > gps_data_.back().time);
   }
   gps_data_.push_back(data);
 
   pcl::PointXYZI path_point;
-  path_point.x = data.utm_postion[0];
-  path_point.y = data.utm_postion[1];
-  path_point.z = data.utm_postion[2];
+  path_point.x = data.enu_position[0];
+  path_point.y = data.enu_position[1];
+  path_point.z = data.enu_position[2];
   path_point.intensity = navsat_msg.status.status;
-  utm_path_cloud_.push_back(path_point);
+  enu_path_cloud_.push_back(path_point);
 }
 
 template <typename PointT>
@@ -260,7 +261,7 @@ void DataCollector<PointT>::AddSensorData(const sensors::OdomMsg& odom_msg) {
 }
 
 template <typename PointT>
-std::unique_ptr<Eigen::Vector3d> DataCollector<PointT>::InterpolateUtm(
+std::unique_ptr<Eigen::Vector3d> DataCollector<PointT>::InterpolateGps(
     const SimpleTime& time, double time_threshold, bool trim_data) {
   CHECK_LE(time_threshold, 0.5);
   GpsData former_data;
@@ -276,7 +277,7 @@ std::unique_ptr<Eigen::Vector3d> DataCollector<PointT>::InterpolateUtm(
       if (std::fabs(time.toSec() - gps_data_[0].time.toSec()) <=
               time_threshold &&
           gps_data_[0].status_fixed) {
-        return common::make_unique<Eigen::Vector3d>(gps_data_[0].utm_postion);
+        return common::make_unique<Eigen::Vector3d>(gps_data_[0].enu_position);
       } else {
         PRINT_WARNING("the only data is not good.");
         return nullptr;
@@ -311,8 +312,8 @@ std::unique_ptr<Eigen::Vector3d> DataCollector<PointT>::InterpolateUtm(
   const double factor = (time - former_data.time).toSec() / delta_time;
   CHECK(factor >= 0. && factor <= 1.);
   const Eigen::Vector3d delta =
-      factor * (latter_data.utm_postion - former_data.utm_postion);
-  return common::make_unique<Eigen::Vector3d>(former_data.utm_postion + delta);
+      factor * (latter_data.enu_position - former_data.enu_position);
+  return common::make_unique<Eigen::Vector3d>(former_data.enu_position + delta);
 }
 
 template <typename PointT>
@@ -368,8 +369,9 @@ std::unique_ptr<Eigen::Matrix4d> DataCollector<PointT>::InterpolateOdom(
 }
 
 template <typename PointT>
-Eigen::Vector3d DataCollector<PointT>::GetUtmOffset() const {
-  return utm_init_offset_.get_value_or(Eigen::Vector3d());
+boost::optional<GeographicLib::LocalCartesian>
+DataCollector<PointT>::GetGpsReference() const {
+  return reference_gps_point_;
 }
 
 template <typename PointT>
