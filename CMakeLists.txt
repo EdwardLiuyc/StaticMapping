@@ -150,13 +150,14 @@ endif(USE_TBB)
 find_package(gflags REQUIRED)
 list(APPEND require_libs ${GFLAGS_LIBRARIES})
 
-option(ENBALE_PROF "Enable profiling?" OFF)
-if(ENBALE_PROF)
-  add_definitions(-DENBALE_PROFILING)
+option(ENABLE_PROF "Enable profiling?" OFF)
+if(ENABLE_PROF)
+  message(STATUS "Enable simple profiling.")
+  add_definitions(-DENABLE_PROFILING)
   set(PROF_LOG_DIR ".static_mapping_log")
   add_definitions(-D_PROF_LOG_DIR_=".static_mapping_log")
   execute_process (COMMAND bash -c "mkdir -p ~/${PROF_LOG_DIR}")
-endif(ENBALE_PROF)
+endif(ENABLE_PROF)
 
 #######################################################
 ###  Source files

@@ -37,6 +37,7 @@
 // local
 #include "builder/map_builder.h"
 #include "builder/msg_conversion.h"
+#include "common/performance/simple_prof.h"
 #include "common/simple_time.h"
 #include "ros_node/kitti_reader.h"
 #include "ros_node/playable_bag.h"
@@ -319,6 +320,8 @@ int main(int argc, char** argv) {
   map_builder->SetShowMapFunction(show_function);
   map_builder->SetShowPoseFunction(show_pose_function);
   map_builder->SetShowSubmapFunction(show_submap_function);
+
+  REGISTER_FUNC;
 
   if (!bag_file.empty()) {
     static_map_ros::PlayableBag bag(bag_file, ros::TIME_MIN, ros::TIME_MAX,

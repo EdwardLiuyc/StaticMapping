@@ -80,7 +80,7 @@ class TimerManager {
   std::vector<int64_t>* RegisterTimer(const std::string& block_name);
 
  private:
-  TimerManager() { std::cout << "simple prof enabled." << std::endl; }
+  TimerManager() = default;
 
   std::mutex mutex_;
   std::unordered_map<std::thread::id,
@@ -92,13 +92,11 @@ class TimerManager {
   ProcessProfiler profiler_;
 };
 
-// std::shared_ptr<TimerManager> TimerManager::instance_ = nullptr;
-
 }  // namespace performance
 }  // namespace common
 }  // namespace static_map
 
-#ifdef ENBALE_PROFILING
+#ifdef ENABLE_PROFILING
 
 #define REGISTER_BLOCK(NAME)                                                \
   auto manager = static_map::common::performance::TimerManager::Instance(); \
@@ -107,16 +105,10 @@ class TimerManager {
 
 #define REGISTER_FUNC REGISTER_BLOCK(__FUNCTION__)
 
-#define INIT_PROF                                                \
-  std::shared_ptr<static_map::common::performance::TimerManager> \
-      static_map::common::performance::TimerManager::instance_ = \
-          static_map::common::performance::TimerManager::Instance();
-
 #else
 
 #define REGISTER_BLOCK(NAME)
 #define REGISTER_FUNC
-#define INIT_PROF
 
 #endif
 
