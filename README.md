@@ -2,10 +2,10 @@
 
 [![Badge](https://img.shields.io/badge/link-996.icu-%23FF4D5B.svg?style=flat-square)](https://996.icu/#/en_US)
 [![LICENSE](https://img.shields.io/badge/license-Anti%20996-blue.svg?style=flat-square)](https://github.com/996icu/996.ICU/blob/master/LICENSE)
-[![Slack](https://img.shields.io/badge/slack-996icu-green.svg?style=flat-square)](https://join.slack.com/t/996icu/shared_invite/enQtNjI0MjEzMTUxNDI0LTkyMGViNmJiZjYwOWVlNzQ3NmQ4NTQyMDRiZTNmOWFkMzYxZWNmZGI0NDA4MWIwOGVhOThhMzc3NGQyMDBhZDc)
+[![Slack](https://img.shields.io/badge/slack-996icu-green.svg?style=flat-square)](https://join.slack.com/t/996icu/shared_invite/enQtNjI0MjEzMTUxNDI0LTkyMGViNmJiZjYwOWVlNzQ3NmQ4NTQyMDRiZTNmOWFkMzYxZWNmZGI0NDA4MWIwOGVhOThhMzc3NGQyMDBhZDc)  
+[中文文档](README.Chinese.md)  
 
-
-# Introduction
+# Introduction  
 <img src="doc/mapping.png" width="800" />
 
 # Build
@@ -211,7 +211,7 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - **mapping using kitti data**
 - **using docker to build and run**
 - **use enu instead of utm**
-- use some other lock free technology instead of tbb since it's not completely processor independent. like folly
+- mrvp using cuda or opencl
 - solve all nls problem using gtsam
 - **supporting multi-lidars**
 - **remove the imu dependency of pose extrapolator**
@@ -245,5 +245,7 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - using ecef or some other coordinate system instead of utm
 - gravity alignment (in pose extrapolator)
 - output to .las file
-- Readme in chinese
 - add illustration of some important parameters
+
+# Tried
+- tried folly, libcds (intending to used instead of tbb) but they are not very freindly to use and not like stl containers

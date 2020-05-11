@@ -38,15 +38,15 @@ struct StatisticDetails {
   int64_t sum;
 };
 
-inline StatisticDetails GetStatistics(std::vector<int64_t>& data) {
-  std::sort(data.begin(), data.end());
+inline StatisticDetails GetStatistics(std::vector<int64_t>* const data) {
+  std::sort(data->begin(), data->end());
   StatisticDetails statistics;
-  statistics.size = data.size();
-  statistics.max = data.back();
-  statistics.min = data.front();
+  statistics.size = data->size();
+  statistics.max = data->back();
+  statistics.min = data->front();
 
   statistics.sum = 0;
-  for (const auto& d : data) {
+  for (const auto& d : *data) {
     statistics.sum += d;
   }
   statistics.average = statistics.sum / statistics.size;
@@ -85,7 +85,7 @@ TimerManager::~TimerManager() {
 
   for (auto& id_block : durations_) {
     for (auto& name_vector : id_block.second) {
-      const auto statistics = GetStatistics(name_vector.second);
+      const auto statistics = GetStatistics(&name_vector.second);
 
       std::cout << std::setw(25) << name_vector.first << " | " << std::setw(8)
                 << statistics.size << " | " << std::setw(9)
