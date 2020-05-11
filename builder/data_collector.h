@@ -37,6 +37,11 @@
 #include "pcl/point_types.h"
 
 #include <boost/optional.hpp>
+#include "GeographicLib/GeoCoords.hpp"
+#include "GeographicLib/Geocentric.hpp"
+#include "GeographicLib/Geoid.hpp"
+#include "GeographicLib/LocalCartesian.hpp"
+#include "GeographicLib/MagneticModel.hpp"
 
 namespace static_map {
 
@@ -82,7 +87,8 @@ class DataCollector {
   struct GpsData {
     SimpleTime time;
     bool status_fixed;
-    Eigen::Vector3d utm_postion;
+    // Eigen::Vector3d utm_postion;
+    Eigen::Vector3d enu_position;
     Eigen::Vector3d lat_lon_alt;
   };
 
@@ -104,7 +110,7 @@ class DataCollector {
   /// @brief collect odom data
   void AddSensorData(const sensors::OdomMsg& odom_msg);
   /// @brief get utm at 'time' using linear interpolation
-  std::unique_ptr<Eigen::Vector3d> InterpolateUtm(const SimpleTime& time,
+  std::unique_ptr<Eigen::Vector3d> InterpolateGps(const SimpleTime& time,
                                                   double time_threshold = 0.005,
                                                   bool trim_data = false);
   std::unique_ptr<Eigen::Matrix4d> InterpolateOdom(
@@ -113,7 +119,7 @@ class DataCollector {
   /// @brief delete specific type of data before time
   void TrimSensorData(const SensorDataType type, const SimpleTime& time);
   /// @brief get init utm offset for all utm coords
-  Eigen::Vector3d GetUtmOffset() const;
+  boost::optional<GeographicLib::LocalCartesian> GetGpsReference() const;
   /// @brief get
   PointCloudPtr GetNewCloud(float* const delta_time);
   /// @brief output utm path to .pcd file for review
@@ -145,10 +151,10 @@ class DataCollector {
   std::vector<GpsData> gps_data_;
   std::vector<OdometryData> odom_data_;
 
-  boost::optional<Eigen::Vector3d> utm_init_offset_;
   boost::optional<Eigen::Matrix4d> odom_init_offset_;
+  boost::optional<GeographicLib::LocalCartesian> reference_gps_point_;
 
-  pcl::PointCloud<pcl::PointXYZI> utm_path_cloud_;
+  pcl::PointCloud<pcl::PointXYZI> enu_path_cloud_;
   pcl::PointCloud<pcl::PointXYZI> odom_path_cloud_;
 
   PointCloudPtr accumulated_point_cloud_ = nullptr;

@@ -150,6 +150,10 @@ endif(USE_TBB)
 find_package(gflags REQUIRED)
 list(APPEND require_libs ${GFLAGS_LIBRARIES})
 
+find_package(GeographicLib REQUIRED)
+include_directories(${GeographicLib_INCLUDE_DIRS})
+list(APPEND require_libs ${GeographicLib_LIBRARIES})
+
 option(ENABLE_PROF "Enable profiling?" OFF)
 if(ENABLE_PROF)
   message(STATUS "Enable simple profiling.")

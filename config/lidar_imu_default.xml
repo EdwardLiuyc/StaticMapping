@@ -86,6 +86,9 @@
         imu_frequency="200"
         type="0"
         gravity_constant="9.8" />
+      <motion_compensation_options 
+        enable="true"
+        use_average="true" />
     </front_end_options>
     <back_end_options>
       <!-- type just the same as front end -->
