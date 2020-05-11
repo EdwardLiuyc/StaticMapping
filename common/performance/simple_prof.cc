@@ -26,6 +26,8 @@ namespace static_map {
 namespace common {
 namespace performance {
 
+std::shared_ptr<TimerManager> TimerManager::instance_ = nullptr;
+
 struct StatisticDetails {
   size_t size;
   int64_t average;
@@ -92,4 +94,4 @@ TimerManager::~TimerManager() {
 }  // namespace common
 }  // namespace static_map
 
-INIT_PROF;
+// INIT_PROF;
