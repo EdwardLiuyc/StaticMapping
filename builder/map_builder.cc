@@ -33,6 +33,7 @@
 #include "builder/utm.h"
 #include "common/macro_defines.h"
 #include "common/make_unique.h"
+#include "common/performance/simple_prof.h"
 #include "common/pugixml.hpp"
 #include "cost_functions/odom_map_match.h"
 #include "descriptor/m2dp.h"
@@ -640,16 +641,18 @@ void MapBuilder::ConnectAllSubmap() {
     for (auto& submap : *current_trajectory_) {
       PRINT_DEBUG_FMT("submap index: %d / %d", submap->GetId().submap_index,
                       submaps_size - 1);
-      start_clock();
-      for (auto& frame : submap->GetFrames()) {
-        output_cloud->clear();
-        pcl::transformPointCloud(*(frame->Cloud()), *output_cloud,
-                                 frame->GlobalPose());
-        map.InsertPointCloud(output_cloud, frame->GlobalTranslation());
+      {
+        REGISTER_BLOCK("mrvp_insert_one_frame");
+        for (auto& frame : submap->GetFrames()) {
+          output_cloud->clear();
+          pcl::transformPointCloud(*(frame->Cloud()), *output_cloud,
+                                   frame->GlobalPose());
+          map.InsertPointCloud(output_cloud, frame->GlobalTranslation());
+        }
       }
-      end_clock(__FILE__, __FUNCTION__, __LINE__);
       submap->ClearCloud();
       submap->ClearCloudInFrames();
+      submap->ResetCloud();
     }
     PRINT_INFO("creating the whole static map ...");
     map.OutputToPointCloud(
