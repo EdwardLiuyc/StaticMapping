@@ -639,8 +639,10 @@ void MapBuilder::ConnectAllSubmap() {
     PointCloudPtr output_cloud(new PointCloudType);
     const int submaps_size = current_trajectory_->size();
     for (auto& submap : *current_trajectory_) {
-      PRINT_DEBUG_FMT("submap index: %d / %d", submap->GetId().submap_index,
-                      submaps_size - 1);
+      // PRINT_DEBUG_FMT("submap index: %d / %d", submap->GetId().submap_index,
+      //                 submaps_size - 1);
+      std::cout << "submap index: " << submap->GetId().submap_index << " / "
+                << submaps_size - 1 << "\r" << std::flush;
       {
         REGISTER_BLOCK("mrvp_insert_one_frame");
         for (auto& frame : submap->GetFrames()) {

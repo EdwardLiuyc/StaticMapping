@@ -24,8 +24,10 @@
 #define BUILDER_MULTI_RESOLUTION_VOXEL_MAP_H_
 
 // stl
+#include <atomic>
 #include <map>
 #include <string>
+#include <type_traits>
 #include <vector>
 // third party
 #include "glog/logging.h"
@@ -41,11 +43,7 @@
 #include <tbb/atomic.h>
 #include <tbb/concurrent_unordered_map.h>
 #include <tbb/concurrent_vector.h>
-#else
-#include <atomic>
 #endif
-
-#include <type_traits>
 
 namespace static_map {
 
