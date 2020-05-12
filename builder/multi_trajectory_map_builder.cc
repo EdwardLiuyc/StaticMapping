@@ -218,7 +218,7 @@ void MultiTrajectoryMapBuilder::SaveWholeMap(const std::string& package_file) {
   pugi::xml_node map_node = doc.append_child("Map");
   for (auto& trajectory : base_trajectories_) {
     // trajectory->SetSavePath(pkg_path);
-    trajectory->SetUtmOffset(base_utm_x_, base_utm_y_);
+    trajectory->SetEnuOffset(base_utm_x_, base_utm_y_);
     trajectory->ToXmlNode(&map_node);
   }
 

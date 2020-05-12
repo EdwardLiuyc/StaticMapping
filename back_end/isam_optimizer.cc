@@ -203,7 +203,7 @@ void IsamOptimizer<PointT>::AddFrame(
     PRINT_INFO_FMT(BOLD "Add %d loop closure edges." NONE_FORMAT, edge_size);
   }
 
-  auto add_utm_factor = [&](const int index, const UtmPosition &utm) {
+  auto add_enu_factor = [&](const int index, const EnuPosition &enu) {
     // expression :
     // map_origin_in_gps * map_pose * tracking_to_gps = gps pose
     // but gps has no rotation since it only provides longtitude, latitude
@@ -213,27 +213,27 @@ void IsamOptimizer<PointT>::AddFrame(
     const gtsam::Point3 tracking_gps_translation(
         tf_tracking_gps_.block(0, 3, 3, 1).cast<double>());
     isam_factor_graph_->addExpressionFactor(
-        gps_noise_model_, gtsam::Point3(utm),
+        gps_noise_model_, gtsam::Point3(enu),
         gtsam::transform_from(gtsam::compose(map_origin_in_gps, pose),
                               gtsam::Point3_(tracking_gps_translation)));
   };
 
   if (options_.use_gps) {
-    if (frame->HasUtm()) {
-      if (cached_utm_.size() < options_.gps_skip_num) {
-        // cache utm data
-        cached_utm_[result.current_frame_index] = frame->GetRelatedUtm();
+    if (frame->HasGps()) {
+      if (cached_enu_.size() < options_.gps_skip_num) {
+        // cache enu data
+        cached_enu_[result.current_frame_index] = frame->GetRelatedGpsInENU();
       } else if (!calculated_first_gps_coord_) {
         SolveGpsCorrdAlone();
 
-        PRINT_INFO("Add all utm back to isam.");
-        for (const auto &index_utm : cached_utm_) {
-          add_utm_factor(index_utm.first, index_utm.second);
+        PRINT_INFO("Add all enu back to isam.");
+        for (const auto &index_enu : cached_enu_) {
+          add_enu_factor(index_enu.first, index_enu.second);
         }
         IsamUpdate();
         calculated_first_gps_coord_ = true;
       } else {
-        add_utm_factor(result.current_frame_index, frame->GetRelatedUtm());
+        add_enu_factor(result.current_frame_index, frame->GetRelatedGpsInENU());
         IsamUpdate();
       }
     } else {
@@ -254,10 +254,10 @@ void IsamOptimizer<PointT>::AddFrame(
 
 template <typename PointT>
 void IsamOptimizer<PointT>::SolveGpsCorrdAlone() {
-  PRINT_INFO("Solve the gps coord alone with exsiting pose and utm.");
+  PRINT_INFO("Solve the gps coord alone with exsiting pose and gps(enu).");
   LOG(FATAL) << "This function is not ready.";
 
-  // CHECK_EQ(cached_utm_.size(), options_.gps_skip_num);
+  // CHECK_EQ(cached_enu_.size(), options_.gps_skip_num);
   IsamUpdate();
   gtsam::Values estimate_poses = isam_->calculateBestEstimate();
 
@@ -273,15 +273,15 @@ void IsamOptimizer<PointT>::SolveGpsCorrdAlone() {
   const gtsam::Point3 tracking_gps_translation(
       tf_tracking_gps_.block(0, 3, 3, 1).cast<double>());
 
-  for (const auto &index_utm : cached_utm_) {
-    const auto index = index_utm.first;
+  for (const auto &index_enu : cached_enu_) {
+    const auto index = index_enu.first;
     const auto pose = estimate_poses.at<gtsam::Pose3>(POSE_KEY(index));
     const auto pose_key = gtsam::Symbol('p', index);
     initials.insert(pose_key, pose);
     graph.emplace_shared<gtsam::PriorFactor<gtsam::Pose3>>(pose_key, pose,
                                                            pose_noise);
     graph.addExpressionFactor(
-        gps_noise_model_, gtsam::Point3(index_utm.second),
+        gps_noise_model_, gtsam::Point3(index_enu.second),
         gtsam::transform_from(gtsam::compose(Pose3_(gps_key), Pose3_(pose_key)),
                               gtsam::Point3_(tracking_gps_translation)));
   }

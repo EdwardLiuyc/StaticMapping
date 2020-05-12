@@ -52,7 +52,7 @@ class ImuGpsTracker : public Interface {
   ~ImuGpsTracker();
 
   void AddImuData(const sensors::ImuMsg& imu_msg) final;
-  void AddUtmData(const sensors::UtmMsg& utm_msg) final;
+  void AddGpsData(const sensors::GpsEnuMsg& gps_msg) final;
   void AddOdomData(const sensors::OdomMsg&) final {
     LOG(FATAL) << "Not supported in this tracker.";
   }

@@ -20,8 +20,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BACK_END_MAP_UTM_MATCHER_H_
-#define BACK_END_MAP_UTM_MATCHER_H_
+#ifndef BACK_END_MAP_GPS_MATCHER_H_
+#define BACK_END_MAP_GPS_MATCHER_H_
 
 #include <string>
 #include <vector>
@@ -31,25 +31,25 @@
 
 namespace static_map {
 /*
- * @class MapUtmMatcher
- * @brief matcher for matcher path and utm path (for bost 2d and 3d)
+ * @class MapGpsMatcher
+ * @brief matcher for matcher path and gps(enu) path (for bost 2d and 3d)
  *
- * @notice this class is in no use anymore since the map&utm matching
+ * @notice this class is in no use anymore since the map&gps(enu) matching
  * has been done in isam_optimizer
  */
 template <int DIM>
-class MapUtmMatcher {
+class MapGpsMatcher {
  public:
-  MapUtmMatcher() : output_file_path_("") {}
-  ~MapUtmMatcher() {}
+  MapGpsMatcher() : output_file_path_("") {}
+  ~MapGpsMatcher() {}
 
   enum { kDimValue = DIM };
 
-  MapUtmMatcher(const MapUtmMatcher&) = delete;
-  MapUtmMatcher& operator=(const MapUtmMatcher&) = delete;
+  MapGpsMatcher(const MapGpsMatcher&) = delete;
+  MapGpsMatcher& operator=(const MapGpsMatcher&) = delete;
 
   /// @brief insert data for the matching
-  void InsertPositionData(const Eigen::VectorNd<DIM>& utm_position,
+  void InsertPositionData(const Eigen::VectorNd<DIM>& enu_position,
                           const Eigen::VectorNd<DIM>& map_position,
                           const Eigen::VectorNd<DIM>& map_direction);
   /*
@@ -75,7 +75,7 @@ class MapUtmMatcher {
 
  private:
   // inserted data
-  std::vector<Eigen::VectorNd<DIM>> utm_positions_;
+  std::vector<Eigen::VectorNd<DIM>> enu_positions_;
   std::vector<Eigen::VectorNd<DIM>> map_positions_;
   std::vector<Eigen::VectorNd<DIM>> map_directions_;
 
@@ -84,4 +84,4 @@ class MapUtmMatcher {
 
 }  // namespace static_map
 
-#endif  // BACK_END_MAP_UTM_MATCHER_H_
+#endif  // BACK_END_MAP_GPS_MATCHER_H_

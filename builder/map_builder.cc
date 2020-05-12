@@ -622,9 +622,9 @@ void MapBuilder::ConnectAllSubmap() {
     submap->UpdateInnerFramePose();
   }
 
-  // calculate the coord transform from the map th utm
-  CalculateCoordTransformToUtm();
-  // path to pcd file after rotation into utm corrdinate
+  // calculate the coord transform from the map gps (enu)
+  CalculateCoordTransformToGps();
+  // path to pcd file after rotation into enu corrdinate
   OutputPath();
   // @todo add a paramter for map filename
   GenerateMapPackage(options_.whole_options.map_package_path + "map.xml");
@@ -653,7 +653,6 @@ void MapBuilder::ConnectAllSubmap() {
       }
       submap->ClearCloud();
       submap->ClearCloudInFrames();
-      submap->ResetCloud();
     }
     PRINT_INFO("creating the whole static map ...");
     map.OutputToPointCloud(
@@ -674,19 +673,19 @@ void MapBuilder::OutputPath() {
   bool write_to_text = path_text_file.is_open();
   pcl::PointCloud<pcl::_PointXYZI>::Ptr path_cloud(
       new pcl::PointCloud<pcl::_PointXYZI>);
-  pcl::PointCloud<pcl::PointXYZI> utm_path_cloud;
+  pcl::PointCloud<pcl::PointXYZI> enu_path_cloud;
   pcl::PointCloud<pcl::PointXYZI> odom_path_cloud;
-  utm_path_cloud.points.reserve(current_trajectory_->size());
+  enu_path_cloud.points.reserve(current_trajectory_->size());
   for (auto& submap : *current_trajectory_) {
-    // utm path
-    if (submap->HasUtm()) {
-      pcl::PointXYZI utm_point;
-      const Eigen::Vector3d utm = submap->GetRelatedUtm();
-      utm_point.x = utm[0];
-      utm_point.y = utm[1];
-      utm_point.z = utm[2];
-      utm_point.intensity = 0.;
-      utm_path_cloud.push_back(utm_point);
+    // enu path
+    if (submap->HasGps()) {
+      pcl::PointXYZI enu_point;
+      const Eigen::Vector3d enu = submap->GetRelatedGpsInENU();
+      enu_point.x = enu[0];
+      enu_point.y = enu[1];
+      enu_point.z = enu[2];
+      enu_point.intensity = 0.;
+      enu_path_cloud.push_back(enu_point);
     }
     // odom path
     if (submap->HasOdom()) {
@@ -703,21 +702,21 @@ void MapBuilder::OutputPath() {
     for (auto& frame : submap->GetFrames()) {
       pcl::_PointXYZI path_point;
       Eigen::Matrix4d pose = frame->GlobalPose().cast<double>();
-      Eigen::Vector6<double> utm_pose_6d = common::TransformToVector6(pose);
-      path_point.x = utm_pose_6d[0];
-      path_point.y = utm_pose_6d[1];
-      path_point.z = utm_pose_6d[2];
+      Eigen::Vector6<double> global_pose_6d = common::TransformToVector6(pose);
+      path_point.x = global_pose_6d[0];
+      path_point.y = global_pose_6d[1];
+      path_point.z = global_pose_6d[2];
       path_point.intensity = path_point_index;
 
       path_cloud->push_back(path_point);
       if (write_to_text) {
         path_content += (std::to_string(path_point_index) + ", ");
-        path_content += (std::to_string(utm_pose_6d[0]) + ", ");
-        path_content += (std::to_string(utm_pose_6d[1]) + ", ");
-        path_content += (std::to_string(utm_pose_6d[2]) + ", ");
-        path_content += (std::to_string(utm_pose_6d[3]) + ", ");
-        path_content += (std::to_string(utm_pose_6d[4]) + ", ");
-        path_content += (std::to_string(utm_pose_6d[5]) + " \n");
+        path_content += (std::to_string(global_pose_6d[0]) + ", ");
+        path_content += (std::to_string(global_pose_6d[1]) + ", ");
+        path_content += (std::to_string(global_pose_6d[2]) + ", ");
+        path_content += (std::to_string(global_pose_6d[3]) + ", ");
+        path_content += (std::to_string(global_pose_6d[4]) + ", ");
+        path_content += (std::to_string(global_pose_6d[5]) + " \n");
       }
       path_point_index++;
     }
@@ -726,10 +725,10 @@ void MapBuilder::OutputPath() {
     pcl::io::savePCDFileBinaryCompressed(
         options_.whole_options.export_file_path + "path.pcd", *path_cloud);
   }
-  if (!utm_path_cloud.points.empty()) {
+  if (!enu_path_cloud.points.empty()) {
     pcl::io::savePCDFileBinaryCompressed(
-        options_.whole_options.export_file_path + "utm_path.pcd",
-        utm_path_cloud);
+        options_.whole_options.export_file_path + "enu_path.pcd",
+        enu_path_cloud);
   }
   if (!odom_path_cloud.points.empty()) {
     pcl::io::savePCDFileBinaryCompressed(
@@ -827,9 +826,9 @@ void MapBuilder::SubmapProcessing() {
 
     const auto time = submap->GetTimeStamp();
     if (use_gps_) {
-      const auto utm = data_collector_->InterpolateGps(time, 0.005, true);
-      if (utm) {
-        submap->SetRelatedUtm(*utm);
+      const auto gps_enu = data_collector_->InterpolateGps(time, 0.005, true);
+      if (gps_enu) {
+        submap->SetRelatedGpsInENU(*gps_enu);
       }
     }
     if (use_odom_) {
@@ -1015,30 +1014,30 @@ void MapBuilder::OfflineCalibrationOdomToLidar() {
   common::PrintTransform(transform_odom_lidar_);
 }
 
-void MapBuilder::CalculateCoordTransformToUtm() {
+void MapBuilder::CalculateCoordTransformToGps() {
   if (!use_gps_) {
     return;
   }
 
   // @todo(edward) get gps origin
   const Eigen::Matrix4d result = isam_optimizer_->GetGpsCoordTransfrom();
-  const Eigen::Matrix3d map_utm_rotation = common::Rotation(result);
-  const Eigen::Vector3d map_utm_translation = common::Translation(result);
+  const Eigen::Matrix3d map_enu_rotation = common::Rotation(result);
+  const Eigen::Vector3d map_enu_translation = common::Translation(result);
   // output the result to file( txt or xml ).
-  PRINT_INFO_FMT("utm translation: %.12lf, %.12lf", map_utm_translation[0],
-                 map_utm_translation[1]);
+  PRINT_INFO_FMT("enu translation: %.12lf, %.12lf", map_enu_translation[0],
+                 map_enu_translation[1]);
 
   // update the submap pose and frame pose
-  Eigen::Matrix4d map_utm_transform = Eigen::Matrix4d::Identity();
-  map_utm_transform.block<3, 3>(0, 0) = map_utm_rotation;
+  Eigen::Matrix4d map_enu_transform = Eigen::Matrix4d::Identity();
+  map_enu_transform.block<3, 3>(0, 0) = map_enu_rotation;
   for (auto& submap : *current_trajectory_) {
     Eigen::Matrix4d new_submap_pose =
-        map_utm_transform * submap->GlobalPose().cast<double>();
+        map_enu_transform * submap->GlobalPose().cast<double>();
     submap->SetGlobalPose(new_submap_pose.cast<float>());
     submap->UpdateInnerFramePose();
   }
-  current_trajectory_->SetUtmOffset(map_utm_translation[0],
-                                    map_utm_translation[1]);
+  current_trajectory_->SetEnuOffset(map_enu_translation[0],
+                                    map_enu_translation[1]);
 }
 
 void MapBuilder::SetShowMapFunction(const MapBuilder::ShowMapFunction& func) {

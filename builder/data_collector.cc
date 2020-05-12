@@ -270,7 +270,7 @@ std::unique_ptr<Eigen::Vector3d> DataCollector<PointT>::InterpolateGps(
     Locker locker(mutex_[kGpsData]);
     if (gps_data_.empty()) {
       // size == 0
-      PRINT_WARNING("no utm data.");
+      PRINT_WARNING("no gps (enu) data.");
       return nullptr;
     } else if (gps_data_.size() == 1) {
       // size == 1

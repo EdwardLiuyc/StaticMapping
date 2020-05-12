@@ -82,7 +82,7 @@ void ImuGpsTracker::AddImuData(const sensors::ImuMsg& imu_msg) {
   last_imu_time_ = imu_msg.header.stamp;
 }
 
-void ImuGpsTracker::AddUtmData(const sensors::UtmMsg& utm_msg) {
+void ImuGpsTracker::AddGpsData(const sensors::GpsEnuMsg& enu_msg) {
   gps_count_++;
 
   // step1. add imu factors
@@ -99,7 +99,7 @@ void ImuGpsTracker::AddUtmData(const sensors::UtmMsg& utm_msg) {
 
   // step2. add gps factor
   gtsam::GPSFactor gps_factor(P(gps_count_),
-                              gtsam::Point3(utm_msg.x, utm_msg.y, utm_msg.z),
+                              gtsam::Point3(enu_msg.x, enu_msg.y, enu_msg.z),
                               gtsam::noiseModel::Isotropic::Sigma(3, 2.0));
   factor_graph_->add(gps_factor);
   const auto prop_state = imu_preintegrated_->predict(prev_state_, prev_bias_);

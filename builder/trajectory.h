@@ -125,7 +125,7 @@ class Trajectory {
   // Trajectory APIs
   inline void SetId(int id) { id_ = id; }
   inline int GetId() { return id_; }
-  void SetUtmOffset(const double x, const double y);
+  void SetEnuOffset(const double x, const double y);
   void ToXmlNode(pugi::xml_node* map_node);
   void SetSavePath(const std::string& path);
 
@@ -136,8 +136,8 @@ class Trajectory {
   std::vector<std::shared_ptr<Submap<PointT>>> submaps_;
 
   int id_;
-  double utm_offset_x_ = 0.;
-  double utm_offset_y_ = 0.;
+  double enu_offset_x_ = 0.;
+  double enu_offset_y_ = 0.;
 };
 
 }  // namespace static_map

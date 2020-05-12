@@ -35,7 +35,7 @@ class Interface {
   virtual ~Interface() {}
 
   virtual void AddImuData(const sensors::ImuMsg&) = 0;
-  virtual void AddUtmData(const sensors::UtmMsg&) = 0;
+  virtual void AddGpsData(const sensors::GpsEnuMsg&) = 0;
   virtual void AddOdomData(const sensors::OdomMsg&) = 0;
 };
 

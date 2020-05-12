@@ -43,7 +43,7 @@
 // local
 #include <boost/optional.hpp>
 #include "back_end/loop_detector.h"
-#include "back_end/map_utm_matcher.h"
+#include "back_end/map_gps_matcher.h"
 #include "back_end/view_graph.h"
 #include "builder/sensors.h"
 #include "builder/submap.h"
@@ -95,6 +95,8 @@ class IsamOptimizer {
                  const gtsam::noiseModel::Base::shared_ptr &odom_noise);
   void IsamUpdate(const int update_time = 1);
 
+  double AnalyseAllFramePoseForMaxRotation();
+
   void SolveGpsCorrdAlone();
 
   gtsam::Values UpdateAllPose();
@@ -118,7 +120,7 @@ class IsamOptimizer {
   LoopDetector<PointT> loop_detector_;
   IsamOptimizerOptions options_;
 
-  std::map<int /* frame index*/, UtmPosition> cached_utm_;
+  std::map<int /* frame index*/, EnuPosition> cached_enu_;
   bool calculated_first_gps_coord_ = false;
 
   ViewGraph view_graph_;

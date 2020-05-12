@@ -210,7 +210,8 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - **Loop Close factor should be rubust**
 - **mapping using kitti data**
 - **using docker to build and run**
-- **use enu instead of utm**
+- **use enu instead of utm in multi-traj situation**
+- re-organize the process of caching submaps
 - mrvp using cuda or opencl
 - solve all nls problem using gtsam
 - **supporting multi-lidars**
@@ -242,7 +243,6 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - add a Pose3d struct for simple operation of matrix4f or just use gtsam::pose3d
 - use double instead of float (eigen::matrix)
 - mrvm output to a special format data file and can be transformed to pcd independently
-- using ecef or some other coordinate system instead of utm
 - gravity alignment (in pose extrapolator)
 - output to .las file
 - add illustration of some important parameters

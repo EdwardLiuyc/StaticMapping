@@ -157,9 +157,9 @@ struct OdomMsg {
   Eigen::Quaterniond RotationInMatrix() const { return pose.pose.orientation; }
 };
 
-struct UtmMsg {
-  using Ptr = std::shared_ptr<UtmMsg>;
-  using ConstPtr = std::shared_ptr<const UtmMsg>;
+struct GpsEnuMsg {
+  using Ptr = std::shared_ptr<GpsEnuMsg>;
+  using ConstPtr = std::shared_ptr<const GpsEnuMsg>;
 
   Header header;
 
