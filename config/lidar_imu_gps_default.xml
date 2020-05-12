@@ -15,7 +15,7 @@
         0 : int
         1 : float  -->
       <filter name="Range" >
-        <param type="1" name="max_range"> 80. </param>
+        <param type="1" name="max_range"> 75. </param>
         <param type="1" name="min_range"> 4.5 </param>
       </filter>
       <filter name="RandomSampler" >
@@ -77,8 +77,7 @@
            angle unit: degree -->
       <motion_filter 
         translation_range="1"
-        angle_range="1.5"
-        time_range="0.25" />
+        angle_range="1.5" />
       <!-- imu type 
           0: normal type
           1: imu in ins(combined imu) -->
@@ -98,11 +97,11 @@
         enable_ndt="false" 
         use_voxel_filter="true" 
         voxel_filter_resolution="0.2"
-        accepted_min_score="0.65" />
+        accepted_min_score="0.75" />
       <submap_options 
         frame_count="2"
         enable_inner_multiview_icp="false"
-        enable_voxel_filter="false"
+        enable_voxel_filter="true"
         enable_random_sampleing="false"
         enable_check="false"
         random_sampling_rate="0.5"
@@ -115,22 +114,23 @@
       <loop_detector_setting 
         use_gps="true"
         use_descriptor="true"
-        output_matched_cloud="false"
-        loop_ignore_threshold="15"
+        output_matched_cloud="true"
+        loop_ignore_threshold="20"
         trying_detect_loop_count="1"
-        max_close_loop_distance="15."
-        m2dp_match_score="0.96"
+        max_close_loop_distance="10."
+        max_close_loop_z_distance="3."
+        m2dp_match_score="0.97"
+        accept_scan_match_score="0.85"
         nearest_history_pos_num="5" />
     </back_end_options>
     <output_mrvm_settings
-      output_average="false"
-      output_rgb="true"
-      prob_threshold="0.56" 
+      output_average="true"
+      prob_threshold="0.57" 
       low_resolution="1." 
       high_resolution="0.1"
       hit_prob="0.55"
       miss_prob="0.48"
-      z_offset="1.2"
+      z_offset="0."
       max_point_num_in_cell="10">
     </output_mrvm_settings>
   </static_mapping>

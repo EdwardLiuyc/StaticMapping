@@ -24,6 +24,10 @@
 #include <gtsam/navigation/GPSFactor.h>
 #include <gtsam/nonlinear/DoglegOptimizer.h>
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
+
+#include <algorithm>
+#include <vector>
+
 // local
 #include "back_end/isam_optimizer.h"
 #include "back_end/odom_to_pose_factor.h"
@@ -162,6 +166,28 @@ void IsamOptimizer<PointT>::AddVertex(
 }
 
 template <typename PointT>
+double IsamOptimizer<PointT>::AnalyseAllFramePoseForMaxRotation() {
+  const auto &frames = loop_detector_.GetFrames();
+
+  if (frames.size() <= 1) {
+    return 0.;
+  }
+
+  std::vector<double> delta_rotations;
+  // assume that the car or robot move on the xy plane
+  const Eigen::Vector3f x_norm(1.f, 0., 0.);
+  const Eigen::Matrix3f first_rotation = frames[0]->GlobalRotation();
+  const Eigen::Vector3f v0 = first_rotation * x_norm;
+  for (const auto frame : frames) {
+    const Eigen::Vector3f v_f = frame->GlobalRotation() * x_norm;
+    delta_rotations.push_back(std::fabs(std::acos(v0.dot(v_f))));
+  }
+  std::sort(delta_rotations.begin(), delta_rotations.end());
+  LOG(INFO) << delta_rotations.back();
+  return delta_rotations.back();
+}
+
+template <typename PointT>
 void IsamOptimizer<PointT>::AddFrame(
     const std::shared_ptr<Submap<PointT>> &frame, const double match_score) {
   CHECK(frame);
@@ -218,26 +244,24 @@ void IsamOptimizer<PointT>::AddFrame(
                               gtsam::Point3_(tracking_gps_translation)));
   };
 
-  if (options_.use_gps) {
-    if (frame->HasGps()) {
-      if (cached_enu_.size() < options_.gps_skip_num) {
+  if (options_.use_gps && frame->HasGps()) {
+    if (!calculated_first_gps_coord_) {
+      if (cached_enu_.size() < options_.gps_skip_num ||
+          AnalyseAllFramePoseForMaxRotation() < 1.6) {
         // cache enu data
         cached_enu_[result.current_frame_index] = frame->GetRelatedGpsInENU();
-      } else if (!calculated_first_gps_coord_) {
+      } else {
         SolveGpsCorrdAlone();
-
         PRINT_INFO("Add all enu back to isam.");
         for (const auto &index_enu : cached_enu_) {
           add_enu_factor(index_enu.first, index_enu.second);
         }
         IsamUpdate();
         calculated_first_gps_coord_ = true;
-      } else {
-        add_enu_factor(result.current_frame_index, frame->GetRelatedGpsInENU());
-        IsamUpdate();
       }
     } else {
-      PRINT_WARNING("No Gps related.");
+      add_enu_factor(result.current_frame_index, frame->GetRelatedGpsInENU());
+      IsamUpdate();
     }
   }
 
@@ -255,9 +279,8 @@ void IsamOptimizer<PointT>::AddFrame(
 template <typename PointT>
 void IsamOptimizer<PointT>::SolveGpsCorrdAlone() {
   PRINT_INFO("Solve the gps coord alone with exsiting pose and gps(enu).");
-  LOG(FATAL) << "This function is not ready.";
+  // LOG(FATAL) << "This function is not ready.";
 
-  // CHECK_EQ(cached_enu_.size(), options_.gps_skip_num);
   IsamUpdate();
   gtsam::Values estimate_poses = isam_->calculateBestEstimate();
 
@@ -267,7 +290,7 @@ void IsamOptimizer<PointT>::SolveGpsCorrdAlone() {
   initials.insert(gps_key, gps_coord_transform_);
   graph.addExpressionFactor(
       NM::Diagonal::Sigmas(
-          (gtsam::Vector(6) << 0.01, 0.2, 1.57, 2, 2, 2.).finished()),
+          (gtsam::Vector(6) << 0.2, 0.2, 1.57, 20, 20, 20).finished()),
       gps_coord_transform_, Pose3_(gps_key));
   NM::Diagonal::shared_ptr pose_noise = NM::Isotropic::Sigma(6, 1.e-2);
   const gtsam::Point3 tracking_gps_translation(
@@ -293,13 +316,13 @@ void IsamOptimizer<PointT>::SolveGpsCorrdAlone() {
   gtsam::Values result = optimizer.optimize();
   gps_coord_transform_ = result.at<gtsam::Pose3>(gps_key);
 
-  PRINT_INFO("Got init estimation of 'gps_coord_transform_': ");
+  PRINT_INFO("Got init estimation of 'gps_coord_transform': ");
   common::PrintTransform(gps_coord_transform_.matrix());
 
   initial_estimate_.insert(GPS_COORD_KEY, gps_coord_transform_);
   isam_factor_graph_->addExpressionFactor(
       NM::Diagonal::Sigmas(
-          (gtsam::Vector(6) << 0.2, 0.2, 0.1, 0.5, 0.5, 0.5).finished()),
+          (gtsam::Vector(6) << 0.2, 0.2, 0.2, 1., 1., 1.).finished()),
       gps_coord_transform_, Pose3_(GPS_COORD_KEY));
 }
 
@@ -330,7 +353,7 @@ Eigen::Matrix4d IsamOptimizer<PointT>::GetGpsCoordTransfrom() {
     if (estimate_poses.exists<gtsam::Pose3>(GPS_COORD_KEY)) {
       gps_coord_transform_ = estimate_poses.at<gtsam::Pose3>(GPS_COORD_KEY);
 
-      PRINT_INFO("Got final estimation of 'gps_coord_transform_': ");
+      PRINT_INFO("Got final estimation of 'gps_coord_transform': ");
       common::PrintTransform(gps_coord_transform_.matrix());
 
       return gps_coord_transform_.matrix();
