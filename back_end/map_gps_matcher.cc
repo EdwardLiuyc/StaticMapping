@@ -30,26 +30,26 @@
 #include "pcl/point_cloud.h"
 #include "pcl/point_types.h"
 // local
-#include "back_end/map_utm_matcher.h"
+#include "back_end/map_gps_matcher.h"
 #include "common/macro_defines.h"
-#include "cost_functions/utm_map_match.h"
+#include "cost_functions/gps_map_match.h"
 
 namespace static_map {
 
 template <int DIM>
-void MapUtmMatcher<DIM>::InsertPositionData(
-    const Eigen::VectorNd<DIM>& utm_position,
+void MapGpsMatcher<DIM>::InsertPositionData(
+    const Eigen::VectorNd<DIM>& enu_position,
     const Eigen::VectorNd<DIM>& map_position,
     const Eigen::VectorNd<DIM>& map_direction) {
-  const Eigen::VectorNd<DIM> new_utm = utm_position;
-  utm_positions_.push_back(new_utm);
+  const Eigen::VectorNd<DIM> new_enu = enu_position;
+  enu_positions_.push_back(new_enu);
   map_positions_.push_back(map_position);
   map_directions_.push_back(map_direction);
 }
 
 template <int DIM>
-Eigen::Matrix4d MapUtmMatcher<DIM>::RunMatch(bool output_files) {
-  if (utm_positions_.empty()) {
+Eigen::Matrix4d MapGpsMatcher<DIM>::RunMatch(bool output_files) {
+  if (enu_positions_.empty()) {
     PRINT_WARNING("No positions to run the match.");
     return Eigen::Matrix4d::Identity();
   }
@@ -65,8 +65,8 @@ Eigen::Matrix4d MapUtmMatcher<DIM>::RunMatch(bool output_files) {
     // vector in both coord system
     const Eigen::VectorNd<DIM> vec_map =
         map_positions_[i + half] - map_positions_[i];
-    const Eigen::VectorNd<DIM> vec_utm =
-        utm_positions_[i + half] - utm_positions_[i];
+    const Eigen::VectorNd<DIM> vec_enu =
+        enu_positions_[i + half] - enu_positions_[i];
     // shoule not be to close from start to end
     if (vec_map.template topRows(2).norm() < min_distance) {
       continue;
@@ -75,8 +75,8 @@ Eigen::Matrix4d MapUtmMatcher<DIM>::RunMatch(bool output_files) {
     num++;
     // yaw
     double alpha_map = std::atan2(vec_map[1], vec_map[0]);
-    double alpha_utm = std::atan2(vec_utm[1], vec_utm[0]);
-    double diff = alpha_map - alpha_utm;
+    double alpha_enu = std::atan2(vec_enu[1], vec_enu[0]);
+    double diff = alpha_map - alpha_enu;
     if (diff < 0.) {
       diff += (M_PI * 2);
     }
@@ -105,9 +105,9 @@ Eigen::Matrix4d MapUtmMatcher<DIM>::RunMatch(bool output_files) {
     const Eigen::VectorNd<DIM> mid_point_submap =
         (map_positions_[i + half] + map_positions_[i]) / 2;
     // remove the rotation
-    const Eigen::VectorNd<DIM> mid_point_utm =
-        rotation * (utm_positions_[i + half] + utm_positions_[i]) / 2;
-    translation += (mid_point_submap - mid_point_utm);
+    const Eigen::VectorNd<DIM> mid_point_enu =
+        rotation * (enu_positions_[i + half] + enu_positions_[i]) / 2;
+    translation += (mid_point_submap - mid_point_enu);
   }
   translation /= static_cast<double>(half);
 
@@ -129,13 +129,13 @@ Eigen::Matrix4d MapUtmMatcher<DIM>::RunMatch(bool output_files) {
     pcl::PointCloud<pcl::PointXYZI>::Ptr path_compare_cloud(
         new pcl::PointCloud<pcl::PointXYZI>);
     for (int i = 0; i < corre_size; ++i) {
-      Eigen::VectorNd<DIM> utm_in_map = r * utm_positions_[i] + t;
+      Eigen::VectorNd<DIM> enu_in_map = r * enu_positions_[i] + t;
       pcl::PointXYZI point_pcl_map = vec_to_point(map_positions_[i]);
-      pcl::PointXYZI point_pcl_utm = vec_to_point(utm_in_map);
+      pcl::PointXYZI point_pcl_enu = vec_to_point(enu_in_map);
       point_pcl_map.intensity = 1.;
-      point_pcl_utm.intensity = 2.;
+      point_pcl_enu.intensity = 2.;
       path_compare_cloud->push_back(point_pcl_map);
-      path_compare_cloud->push_back(point_pcl_utm);
+      path_compare_cloud->push_back(point_pcl_enu);
     }
     if (!path_compare_cloud->empty()) {
       pcl::io::savePCDFileBinaryCompressed(filename, *path_compare_cloud);
@@ -144,7 +144,7 @@ Eigen::Matrix4d MapUtmMatcher<DIM>::RunMatch(bool output_files) {
 
   if (output_files) {
     // output the path in pcd using the initial estimate
-    output_compare_file(output_file_path_ + "utm_before.pcd", translation,
+    output_compare_file(output_file_path_ + "enu_before.pcd", translation,
                         rotation);
   }
 
@@ -158,7 +158,7 @@ Eigen::Matrix4d MapUtmMatcher<DIM>::RunMatch(bool output_files) {
       Eigen::MatrixXd A(corre_size, 3);
       Eigen::MatrixXd b(corre_size, 1);
       for (int i = 0; i < corre_size; ++i) {
-        Eigen::VectorNd<DIM> p_u = utm_positions_[i];
+        Eigen::VectorNd<DIM> p_u = enu_positions_[i];
         Eigen::VectorNd<DIM> p_m = map_positions_[i];
         // Get the normal vector to normal
         Eigen::VectorNd<DIM> n_m = Eigen::VectorNd<DIM>::Zero();
@@ -202,15 +202,15 @@ Eigen::Matrix4d MapUtmMatcher<DIM>::RunMatch(bool output_files) {
     double r[3] = {eulers[0], eulers[1], eulers[2]};
     ceres::Problem problem;
     for (int i = 0; i < corre_size; ++i) {
-      Eigen::Vector3d map_position, utm_position, map_direction;
+      Eigen::Vector3d map_position, enu_position, map_direction;
       map_position << map_positions_[i][0], map_positions_[i][1],
           map_positions_[i][2];
-      utm_position << utm_positions_[i][0], utm_positions_[i][1],
-          utm_positions_[i][2];
+      enu_position << enu_positions_[i][0], enu_positions_[i][1],
+          enu_positions_[i][2];
       map_direction << map_directions_[i][0], map_directions_[i][1],
           map_directions_[i][2];
-      auto cost_function = cost_functions::UtmToMap3D::Create(
-          map_position, utm_position, map_direction);
+      auto cost_function = cost_functions::GpsEnuToMap3D::Create(
+          map_position, enu_position, map_direction);
       problem.AddResidualBlock(cost_function, new ceres::HuberLoss(1.0), t, r);
     }
     ceres::Solver::Options options;
@@ -231,18 +231,18 @@ Eigen::Matrix4d MapUtmMatcher<DIM>::RunMatch(bool output_files) {
   }
 
   if (output_files) {
-    output_compare_file(output_file_path_ + "utm.pcd", translation, rotation);
+    output_compare_file(output_file_path_ + "enu.pcd", translation, rotation);
   }
 
   Eigen::Matrix4d result = Eigen::Matrix4d::Identity();
   result.block<DIM, DIM>(0, 0) = rotation.inverse();
   result.block<DIM, 1>(0, 3) = -rotation.inverse() * translation;
   if (output_files) {
-    std::ofstream utm_file(output_file_path_ + "utm.txt");
-    if (utm_file.is_open()) {
-      utm_file << "-x " << std::to_string(result(0, 3)) << " -y "
+    std::ofstream enu_file(output_file_path_ + "enu.txt");
+    if (enu_file.is_open()) {
+      enu_file << "-x " << std::to_string(result(0, 3)) << " -y "
                << std::to_string(result(1, 3)) << "\n";
-      utm_file.close();
+      enu_file.close();
     } else {
       PRINT_ERROR("Failed to open file.");
     }
@@ -251,7 +251,7 @@ Eigen::Matrix4d MapUtmMatcher<DIM>::RunMatch(bool output_files) {
 }
 
 template <int DIM>
-void MapUtmMatcher<DIM>::OutputError(const Eigen::Matrix4d& result,
+void MapGpsMatcher<DIM>::OutputError(const Eigen::Matrix4d& result,
                                      const std::string& filename) {
   CHECK(!filename.empty());
   std::ofstream error_file(filename);
@@ -264,17 +264,17 @@ void MapUtmMatcher<DIM>::OutputError(const Eigen::Matrix4d& result,
   const Eigen::VectorNd<DIM> translation = result.block<DIM, 1>(0, 3);
   for (int i = 0; i < map_positions_.size(); ++i) {
     Eigen::VectorNd<DIM> map_position = map_positions_[i];
-    Eigen::VectorNd<DIM> utm_in_map =
-        rotation.inverse() * (utm_positions_[i] - translation);
+    Eigen::VectorNd<DIM> enu_in_map =
+        rotation.inverse() * (enu_positions_[i] - translation);
     Eigen::VectorNd<DIM> map_direction = map_directions_[i];
     // ingore the distance in Z axis
     if (kDimValue == 3) {
       map_position[2] = 0.;
       map_direction[2] = 0.;
-      utm_in_map[2] = 0.;
+      enu_in_map[2] = 0.;
     }
     error_content += std::to_string(
-        common::DistanceToLine<DIM>(utm_in_map, map_position, map_direction));
+        common::DistanceToLine<DIM>(enu_in_map, map_position, map_direction));
     error_content += "\n";
   }
   if (error_file.is_open()) {
@@ -283,7 +283,7 @@ void MapUtmMatcher<DIM>::OutputError(const Eigen::Matrix4d& result,
   }
 }
 
-template class MapUtmMatcher<2>;
-template class MapUtmMatcher<3>;
+template class MapGpsMatcher<2>;
+template class MapGpsMatcher<3>;
 
 }  // namespace static_map

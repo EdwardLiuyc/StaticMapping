@@ -21,11 +21,14 @@ IMU_FRAME_ID=imu_link
 GPS_TOPIC=navsatfix
 GPS_FRAME_ID=gps
 
+BAG_FILE=/mnt/Data/OS1-64_freeway1.bag
+
 ./build/static_mapping_node \
   -cfg ${CONFIG_PATH} \
   -pc ${POINT_CLOUD_TOPIC} \
   -pc_frame_id ${POINT_CLOUD_FRAME_ID} \
-  -urdf ${URDF_FILE} 
+  -urdf ${URDF_FILE} \
+  -bag ${BAG_FILE}
 
 exit 0 
 

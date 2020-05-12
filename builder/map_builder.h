@@ -176,7 +176,7 @@ class MapBuilder {
   void InsertGpsMsg(const sensors::NavSatFixMsg::Ptr& gps_msg);
   /// @brief if enable odom, will get the scan matching guess from odom
   void EnableUsingOdom(bool flag);
-  /// @brief if enable gps, will calculate the transform from map to utm
+  /// @brief if enable gps, will calculate the transform from map to gps (enu)
   void EnableUsingGps(bool flag);
   /// @brief set static tf link from tracking frame to imu
   void SetTrackingToImu(const Eigen::Matrix4f& t);
@@ -199,20 +199,12 @@ class MapBuilder {
   /// @brief inner initialise the mapbuilder with options for both
   /// front and and back end
   int InitialiseInside();
-  /// @brief get the pose of odometry at the given time
-  /// @return true if succeed, otherwise, return false
-  bool GetOdomAtTime(const SimpleTime& stamp, sensors::OdomMsg* odom,
-                     double threshold_in_sec = 0.008);
-  /// @brief get the utm at the given time
-  /// @return true if succeed, otherwise, return false
-  bool GetUtmAtTime(const SimpleTime& stamp, sensors::UtmMsg* utm,
-                    double threshold_in_sec = 0.008 /* default: 8ms */);
   /// @brief add a new trajectory
   /// when build a new map or load a exsiting map
   void AddNewTrajectory();
   /// @brief thread for scan to scan matching
   void ScanMatchProcessing();
-  /// @brief
+  /// @brief it ia a new frame in current submap, with input cloud and pose
   void InsertFrameForSubmap(const PointCloudPtr& cloud_ptr,
                             const Eigen::Matrix4f& global_pose,
                             const double match_score);
@@ -228,10 +220,10 @@ class MapBuilder {
   /// after finishing the optimization of whole map
   void OfflineCalibrationOdomToLidar();
   /// @brief after getting the map path, calcualate
-  /// the transform from map to utm, and set the rotation into submap pose
-  void CalculateCoordTransformToUtm();
+  /// the transform from map to enu, and set the rotation into submap pose
+  void CalculateCoordTransformToGps();
   /// @brief output the path into .pcd and .csv file
-  /// @notice the path has been rotated into utm system
+  /// @notice the path has been rotated into gps (enu) system
   void OutputPath();
   /// @brief save the info about all submaps
   void GenerateMapPackage(const std::string& filename);

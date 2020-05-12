@@ -87,7 +87,6 @@ class DataCollector {
   struct GpsData {
     SimpleTime time;
     bool status_fixed;
-    // Eigen::Vector3d utm_postion;
     Eigen::Vector3d enu_position;
     Eigen::Vector3d lat_lon_alt;
   };
@@ -109,7 +108,7 @@ class DataCollector {
   void AddSensorData(const PointCloudPtr& cloud);
   /// @brief collect odom data
   void AddSensorData(const sensors::OdomMsg& odom_msg);
-  /// @brief get utm at 'time' using linear interpolation
+  /// @brief get gps(enu) at 'time' using linear interpolation
   std::unique_ptr<Eigen::Vector3d> InterpolateGps(const SimpleTime& time,
                                                   double time_threshold = 0.005,
                                                   bool trim_data = false);
@@ -118,11 +117,12 @@ class DataCollector {
       bool trim_data = false);
   /// @brief delete specific type of data before time
   void TrimSensorData(const SensorDataType type, const SimpleTime& time);
-  /// @brief get init utm offset for all utm coords
+  /// @brief get init gps reference (lat,lon,alt)
+  /// it is a boost::optional object so it can be empty
   boost::optional<GeographicLib::LocalCartesian> GetGpsReference() const;
   /// @brief get
   PointCloudPtr GetNewCloud(float* const delta_time);
-  /// @brief output utm path to .pcd file for review
+  /// @brief output gps(enu) path to .pcd file for review
   void RawGpsDataToFile(const std::string& filename) const;
   /// @brief output odom path to .pcd file for review
   void RawOdomDataToFile(const std::string& filename) const;

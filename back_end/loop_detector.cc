@@ -38,8 +38,8 @@ typename LoopDetector<PointT>::DetectResult LoopDetector<PointT>::AddFrame(
     const std::shared_ptr<Submap<PointT>>& frame, bool do_loop_detect) {
   all_frames_.push_back(frame);
   if (settings_.use_gps) {
-    if (frame->HasUtm()) {
-      all_frames_translation_.push_back(frame->GetRelatedUtm());
+    if (frame->HasGps()) {
+      all_frames_translation_.push_back(frame->GetRelatedGpsInENU());
     } else {
       all_frames_translation_.push_back(
           Eigen::Vector3d::Constant(std::numeric_limits<double>::max()));

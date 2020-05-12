@@ -28,14 +28,16 @@
 #include <memory>
 #include <string>
 // local
+#include <boost/optional.hpp>
 #include "common/math.h"
 #include "common/simple_time.h"
 #include "descriptor/m2dp.h"
+#include "glog/logging.h"
 #include "registrators/registrator_interface.h"
 
 namespace static_map {
 
-using UtmPosition = Eigen::Vector3d;
+using EnuPosition = Eigen::Vector3d;
 using OdomPose = Eigen::Matrix4d;
 
 /*
@@ -57,8 +59,6 @@ class SimpleFrame {
         local_pose_(Eigen::Matrix4f::Identity()),
         transform_from_last_frame_(Eigen::Matrix4f::Identity()),
         transform_to_next_frame_(Eigen::Matrix4f::Identity()),
-        related_utm_(UtmPosition::Zero()),
-        got_related_utm_(false),
         related_odom_(OdomPose::Zero()),
         got_related_odom_(false) {}
 
@@ -105,7 +105,6 @@ class SimpleFrame {
   // cloud
   virtual PointCloudPtr Cloud() = 0;
   inline void SetCloud(const PointCloudPtr& cloud) { cloud_ = cloud; }
-  inline void ResetCloud() { cloud_.reset(); }
   inline void ClearCloud() {
     if (cloud_) {
       cloud_->clear();
@@ -145,13 +144,13 @@ class SimpleFrame {
     return transform_from_last_frame_;
   }
 
-  // utm
-  inline void SetRelatedUtm(const UtmPosition& utm) {
-    related_utm_ = utm;
-    got_related_utm_ = true;
+  // enu
+  inline void SetRelatedGpsInENU(const EnuPosition& enu) { related_enu_ = enu; }
+  inline EnuPosition GetRelatedGpsInENU() {
+    CHECK(HasGps());
+    return related_enu_.value();
   }
-  inline UtmPosition GetRelatedUtm() { return related_utm_; }
-  inline bool HasUtm() { return got_related_utm_; }
+  inline bool HasGps() { return related_enu_.is_initialized(); }
 
   // odom
   inline void SetRelatedOdom(const OdomPose& odom) {
@@ -175,8 +174,7 @@ class SimpleFrame {
   SimpleTime stamp_;
   typename descriptor::M2dp<PointType>::Descriptor descriptor_;
 
-  UtmPosition related_utm_;
-  bool got_related_utm_;
+  boost::optional<EnuPosition> related_enu_;
 
   OdomPose related_odom_;
   bool got_related_odom_;

@@ -13,7 +13,7 @@ with open("/home/edward/src/mapping/pcd/error.csv", "r") as file:
         vec_d8.append(line)
 file.close()
 
-plt.title('Utm&Path Error')
+plt.title('Gps&Path Error')
 plt.ylabel("Error /m")
 # Create a figure instance
 fig = plt.figure(1, figsize=(9, 6))

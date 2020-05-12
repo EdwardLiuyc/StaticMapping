@@ -30,8 +30,8 @@ template <typename PointT>
 void Trajectory<PointT>::ToXmlNode(pugi::xml_node* map_node) {
   pugi::xml_node t_node = map_node->append_child("Trajectory");
   t_node.append_attribute("id") = id_;
-  t_node.append_attribute("utm_x") = utm_offset_x_;
-  t_node.append_attribute("utm_y") = utm_offset_y_;
+  t_node.append_attribute("enu_x") = enu_offset_x_;
+  t_node.append_attribute("enu_y") = enu_offset_y_;
   for (auto& submap : submaps_) {
     pugi::xml_node submap_node = t_node.append_child("Submap");
     submap_node.append_attribute("id") = submap->GetId().submap_index;
@@ -56,9 +56,9 @@ void Trajectory<PointT>::ToXmlNode(pugi::xml_node* map_node) {
 }
 
 template <typename PointT>
-void Trajectory<PointT>::SetUtmOffset(const double x, const double y) {
-  utm_offset_x_ = x;
-  utm_offset_y_ = y;
+void Trajectory<PointT>::SetEnuOffset(const double x, const double y) {
+  enu_offset_x_ = x;
+  enu_offset_y_ = y;
 }
 
 template <typename PointT>
