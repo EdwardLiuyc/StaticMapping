@@ -212,12 +212,12 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - **using docker to build and run**
 - **use enu instead of utm in multi-traj situation**
 - re-organize the process of caching submaps
+- fix bug in visual graph
 - mrvp using cuda or opencl
 - solve all nls problem using gtsam
 - **supporting multi-lidars**
 - **remove the imu dependency of pose extrapolator**
 - save submap binary data into a special format file not just pointcloud into .pcd
-- gps factor static bias
 - save the frame clouds instead of submap clouds
 - filtering the cars directly at the input of the pointclouds
 - **add imu integrating factor in backend**

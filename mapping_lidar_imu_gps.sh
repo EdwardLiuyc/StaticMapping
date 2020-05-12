@@ -20,6 +20,7 @@ IMU_FRAME_ID=imu_link
 
 GPS_TOPIC=navsatfix
 GPS_FRAME_ID=gps
+BAG_FILE=/mnt/Data/juxin_fisheye_0228/proj-29.bag
 
 ./build/static_mapping_node \
   -cfg ${CONFIG_PATH} \
@@ -29,7 +30,8 @@ GPS_FRAME_ID=gps
   -imu_frame_id ${IMU_FRAME_ID} \
   -urdf ${URDF_FILE} \
   -gps ${GPS_TOPIC} \
-  -gps_frame_id ${GPS_FRAME_ID}
+  -gps_frame_id ${GPS_FRAME_ID} \
+  -bag ${BAG_FILE}
 
 exit 0 
 
