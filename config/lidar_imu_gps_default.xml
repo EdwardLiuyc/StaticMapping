@@ -114,13 +114,13 @@
       <loop_detector_setting 
         use_gps="true"
         use_descriptor="true"
-        output_matched_cloud="true"
+        output_matched_cloud="false"
         loop_ignore_threshold="20"
         trying_detect_loop_count="1"
-        max_close_loop_distance="10."
+        max_close_loop_distance="20."
         max_close_loop_z_distance="3."
         m2dp_match_score="0.97"
-        accept_scan_match_score="0.85"
+        accept_scan_match_score="0.8"
         nearest_history_pos_num="5" />
     </back_end_options>
     <output_mrvm_settings

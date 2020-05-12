@@ -37,17 +37,8 @@ template <typename PointT>
 typename LoopDetector<PointT>::DetectResult LoopDetector<PointT>::AddFrame(
     const std::shared_ptr<Submap<PointT>>& frame, bool do_loop_detect) {
   all_frames_.push_back(frame);
-  if (settings_.use_gps) {
-    if (frame->HasGps()) {
-      all_frames_translation_.push_back(frame->GetRelatedGpsInENU());
-    } else {
-      all_frames_translation_.push_back(
-          Eigen::Vector3d::Constant(std::numeric_limits<double>::max()));
-    }
-  } else {
-    Eigen::Vector3f translation = frame->GlobalTranslation();
-    all_frames_translation_.push_back(translation.cast<double>());
-  }
+  const Eigen::Vector3f translation = frame->GlobalTranslation();
+  all_frames_translation_.push_back(translation.cast<double>());
 
   int32_t current_index = all_frames_.size() - 1;
   const char* mode_name[kLoopStatusCount] = {"No Loop", "Trying To Close Loop",
@@ -265,12 +256,14 @@ bool LoopDetector<PointT>::CloseLoop(const int target_id, const int source_id,
   CHECK(all_frames_.size() > target_id && all_frames_.size() > source_id);
   Eigen::Matrix4f init_guess = all_frames_[target_id]->GlobalPose().inverse() *
                                all_frames_[source_id]->GlobalPose();
+  // @todo it is a trick, remove it
   init_guess(2, 3) = 0.f;
-  if (settings_.use_gps) {
+  if (settings_.use_gps && all_frames_[target_id]->HasGps() &&
+      all_frames_[source_id]->HasGps()) {
     // if use gps, update the translation part of guess
-    init_guess.block(0, 3, 3, 1) = (all_frames_translation_[source_id] -
-                                    all_frames_translation_[target_id])
-                                       .cast<float>();
+    const EnuPosition delta_enu = all_frames_[source_id]->GetRelatedGpsInENU() -
+                                  all_frames_[target_id]->GetRelatedGpsInENU();
+    init_guess.block(0, 3, 3, 1) = delta_enu.cast<float>();
   }
 
   registrator::IcpUsingPointMatcher<PointT> scan_matcher;

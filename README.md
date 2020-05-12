@@ -212,7 +212,6 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - **using docker to build and run**
 - **use enu instead of utm in multi-traj situation**
 - re-organize the process of caching submaps
-- fix bug in visual graph
 - mrvp using cuda or opencl
 - solve all nls problem using gtsam
 - **supporting multi-lidars**

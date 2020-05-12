@@ -108,6 +108,7 @@ gtsam::Values IsamOptimizer<PointT>::UpdateAllPose() {
     Eigen::Matrix4f pose =
         estimate_poses.at<gtsam::Pose3>(POSE_KEY(i)).matrix().cast<float>();
     frames[i]->SetGlobalPose(pose);
+    view_graph_.AddVertex(i, pose);
   }
 
   return estimate_poses;
