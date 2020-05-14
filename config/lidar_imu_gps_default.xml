@@ -77,7 +77,7 @@
            angle unit: degree -->
       <motion_filter 
         translation_range="1"
-        angle_range="1.5" />
+        angle_range="20." />
       <!-- imu type 
           0: normal type
           1: imu in ins(combined imu) -->

@@ -37,6 +37,8 @@
 namespace static_map {
 namespace back_end {
 
+constexpr double kInitGpsOptimizeRotationThreshold = 1.6;  // rad
+
 using gtsam::between;
 using gtsam::compose;
 using gtsam::Point3;
@@ -184,7 +186,7 @@ double IsamOptimizer<PointT>::AnalyseAllFramePoseForMaxRotation() {
     delta_rotations.push_back(std::fabs(std::acos(v0.dot(v_f))));
   }
   std::sort(delta_rotations.begin(), delta_rotations.end());
-  LOG(INFO) << delta_rotations.back();
+  // LOG(INFO) << delta_rotations.back();
   return delta_rotations.back();
 }
 
@@ -248,7 +250,8 @@ void IsamOptimizer<PointT>::AddFrame(
   if (options_.use_gps && frame->HasGps()) {
     if (!calculated_first_gps_coord_) {
       if (cached_enu_.size() < options_.gps_skip_num ||
-          AnalyseAllFramePoseForMaxRotation() < 1.6) {
+          AnalyseAllFramePoseForMaxRotation() <
+              kInitGpsOptimizeRotationThreshold) {
         // cache enu data
         cached_enu_[result.current_frame_index] = frame->GetRelatedGpsInENU();
       } else {
