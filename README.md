@@ -215,6 +215,7 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - mrvp using cuda or opencl
 - solve all nls problem using gtsam
 - **supporting multi-lidars**
+- perhaps need a brand-new data type for pointcloud 
 - **remove the imu dependency of pose extrapolator**
 - save submap binary data into a special format file not just pointcloud into .pcd
 - save the frame clouds instead of submap clouds

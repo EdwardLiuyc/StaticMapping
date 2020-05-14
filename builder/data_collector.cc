@@ -56,17 +56,14 @@ DataCollector<PointT>::DataCollector(
     const DataCollectorOptions& options,
     pre_processers::filter::Factory<PointT>* const filter)
     : options_(options),
-      accumulate_cloud_available_(false),
       cloud_processing_thread_(
           std::bind(&DataCollector<PointT>::CloudPreProcessing, this)),
       filter_factory_(filter),
-      copied_accumulated_point_cloud_(new PointCloudType),
       accumulated_cloud_count_(0) {
   // reserve the vectors for less memory copy when push_back
   constexpr size_t reserve_size = 2000;
   imu_data_.reserve(reserve_size);
   gps_data_.reserve(reserve_size);
-  cloud_data_.reserve(reserve_size);
   enu_path_cloud_.points.reserve(reserve_size);
   odom_path_cloud_.points.reserve(reserve_size);
 }
@@ -168,11 +165,17 @@ void DataCollector<PointT>::AddSensorData(const PointCloudPtr& cloud) {
   } else {
     accumulated_point_cloud_.reset();
     accumulated_point_cloud_ = cloud;
+    first_time_in_accmulated_cloud_ = sensors::ToLocalTime(cloud->header.stamp);
   }
 
-  *copied_accumulated_point_cloud_ = *accumulated_point_cloud_;
-  copied_first_time_ = first_time_in_accmulated_cloud_;
-  accumulate_cloud_available_ = true;
+  PointCloudData data_before_processing;
+  data_before_processing.time = first_time_in_accmulated_cloud_;
+  data_before_processing.cloud.reset(new PointCloudType);
+  *data_before_processing.cloud = *accumulated_point_cloud_;
+  data_before_processing.cloud->header.stamp =
+      first_time_in_accmulated_cloud_.toNSec() / 1000ull;
+  cloud_data_before_preprocessing_.push_back(data_before_processing);
+
   cloud->points.clear();
   cloud->points.shrink_to_fit();
   accumulated_cloud_count_ = 0;
@@ -184,28 +187,36 @@ void DataCollector<PointT>::CloudPreProcessing() {
     if (kill_cloud_preprocessing_thread_) {
       break;
     }
-    if (!accumulate_cloud_available_.load()) {
+    if (cloud_data_before_preprocessing_.size() < 2) {
       SimpleTime::from_sec(0.005).sleep();
       continue;
     }
-    accumulate_cloud_available_ = false;
 
+    SimpleTime next_data_time;
     PointCloudData data;
+    {
+      Locker locker(mutex_[kPointCloudData]);
+      data = cloud_data_before_preprocessing_.front();
+      cloud_data_before_preprocessing_.pop_front();
+
+      next_data_time = cloud_data_before_preprocessing_.front().time;
+    }
+    data.delta_time_in_cloud = (next_data_time - data.time).toSec();
     // filtering cloud
     PointCloudPtr filtered_cloud(new PointCloudType);
-    filter_factory_->SetInputCloud(copied_accumulated_point_cloud_);
+    filter_factory_->SetInputCloud(data.cloud);
     filter_factory_->Filter(filtered_cloud);
     // insert new data
     Locker locker(mutex_[kPointCloudData]);
     data.cloud = filtered_cloud;
-    data.time =
-        sensors::ToLocalTime(copied_accumulated_point_cloud_->header.stamp);
-    if (copied_first_time_ != SimpleTime()) {
-      data.delta_time_in_cloud = (data.time - copied_first_time_).toSec();
-    } else {
-      data.delta_time_in_cloud = 0.f;
-    }
     cloud_data_.push_back(data);
+
+    // LOG(INFO) << data.time.toNSec() << " "
+    //           << sensors::ToLocalTime(data.cloud->header.stamp).toNSec() << "
+    //           "
+    //           << data.delta_time_in_cloud;
+
+    CHECK(data.time == sensors::ToLocalTime(data.cloud->header.stamp));
 
     // just for debug
     got_clouds_count_++;
@@ -225,9 +236,9 @@ DataCollector<PointT>::GetNewCloud(float* const delta_time) {
     return nullptr;
   }
 
-  PointCloudPtr cloud = cloud_data_[0].cloud;
-  *delta_time = cloud_data_[0].delta_time_in_cloud;
-  cloud_data_.erase(cloud_data_.begin());
+  PointCloudPtr cloud = cloud_data_.front().cloud;
+  *delta_time = cloud_data_.front().delta_time_in_cloud;
+  cloud_data_.pop_front();
   return cloud;
 }
 
