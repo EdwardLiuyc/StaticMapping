@@ -271,13 +271,14 @@ void IsamOptimizer<PointT>::AddFrame(
 
   IsamUpdate();
   CHECK(isam_->valueExists(POSE_KEY(frame_index)));
-  gtsam::Values estimate_poses = isam_->calculateEstimate();
-  Eigen::Matrix4f current_pose =
-      estimate_poses.at<gtsam::Pose3>(POSE_KEY(frame_index))
-          .matrix()
-          .cast<float>();
-  frame->SetGlobalPose(current_pose);
-  view_graph_.AddVertex(frame_index, current_pose);
+  UpdateAllPose();
+  // gtsam::Values estimate_poses = isam_->calculateEstimate();
+  // Eigen::Matrix4f current_pose =
+  //     estimate_poses.at<gtsam::Pose3>(POSE_KEY(frame_index))
+  //         .matrix()
+  //         .cast<float>();
+  // frame->SetGlobalPose(current_pose);
+  // view_graph_.AddVertex(frame_index, current_pose);
 }
 
 template <typename PointT>
@@ -351,7 +352,7 @@ void IsamOptimizer<PointT>::RunFinalOptimazation() {
 }
 
 template <typename PointT>
-Eigen::Matrix4d IsamOptimizer<PointT>::GetGpsCoordTransfrom() {
+Eigen::Matrix4d IsamOptimizer<PointT>::GetGpsCoordTransform() {
   if (options_.use_gps) {
     gtsam::Values estimate_poses = isam_->calculateEstimate();
     if (estimate_poses.exists<gtsam::Pose3>(GPS_COORD_KEY)) {

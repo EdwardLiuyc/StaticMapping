@@ -27,6 +27,7 @@
 #include "common/macro_defines.h"
 #include "common/make_unique.h"
 #include "common/math.h"
+#include "common/performance/simple_prof.h"
 #include "glog/logging.h"
 
 #include "pcl/io/pcd_io.h"
@@ -151,7 +152,6 @@ void DataCollector<PointT>::AddSensorData(const PointCloudPtr& cloud) {
     // "+=" will update the time stamp of accumulated_point_cloud_
     // so, no need to manually copy the time stamp from pointcloud to
     // accumulated_point_cloud_
-    Locker locker(mutex_[kPointCloudData]);
     if (accumulated_cloud_count_ == 0) {
       accumulated_point_cloud_.reset(new PointCloudType);
       first_time_in_accmulated_cloud_ =
@@ -168,17 +168,21 @@ void DataCollector<PointT>::AddSensorData(const PointCloudPtr& cloud) {
     first_time_in_accmulated_cloud_ = sensors::ToLocalTime(cloud->header.stamp);
   }
 
+  REGISTER_FUNC;
+
   PointCloudData data_before_processing;
   data_before_processing.time = first_time_in_accmulated_cloud_;
   data_before_processing.cloud.reset(new PointCloudType);
   *data_before_processing.cloud = *accumulated_point_cloud_;
   data_before_processing.cloud->header.stamp =
       first_time_in_accmulated_cloud_.toNSec() / 1000ull;
-  cloud_data_before_preprocessing_.push_back(data_before_processing);
 
   cloud->points.clear();
   cloud->points.shrink_to_fit();
   accumulated_cloud_count_ = 0;
+
+  Locker locker(mutex_[kPointCloudData]);
+  cloud_data_before_preprocessing_.push_back(data_before_processing);
 }
 
 template <typename PointT>
@@ -317,7 +321,7 @@ std::unique_ptr<Eigen::Vector3d> DataCollector<PointT>::InterpolateGps(
 
   CHECK(time >= former_data.time && time <= latter_data.time);
   if (!former_data.status_fixed || !latter_data.status_fixed) {
-    PRINT_WARNING("no fixed gps data at this time.");
+    // PRINT_WARNING("no fixed gps data at this time.");
     return nullptr;
   }
   const double factor = (time - former_data.time).toSec() / delta_time;
