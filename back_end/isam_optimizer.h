@@ -81,7 +81,7 @@ class IsamOptimizer {
 
   void RunFinalOptimazation();
 
-  Eigen::Matrix4d GetGpsCoordTransfrom();
+  Eigen::Matrix4d GetGpsCoordTransform();
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
