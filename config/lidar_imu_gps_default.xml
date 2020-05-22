@@ -117,14 +117,15 @@
         output_matched_cloud="false"
         loop_ignore_threshold="20"
         trying_detect_loop_count="1"
-        max_close_loop_distance="20."
-        max_close_loop_z_distance="3."
+        max_close_loop_distance="15."
+        max_close_loop_z_distance="5."
         m2dp_match_score="0.97"
         accept_scan_match_score="0.8"
         nearest_history_pos_num="5" />
     </back_end_options>
     <output_mrvm_settings
-      output_average="true"
+      output_average="false"
+      output_rgb="true"
       prob_threshold="0.57" 
       low_resolution="1." 
       high_resolution="0.1"

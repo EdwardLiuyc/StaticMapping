@@ -226,6 +226,11 @@ void MapBuilder::InsertOdomMsg(const sensors::OdomMsg::Ptr& odom_msg) {
     return;
   }
 
+  LOG(FATAL) << "This function is temporarily for very percise odom such as "
+                "INS-RTK, and only the pose will be used. If you are in the "
+                "same situation, you can comment this line and use this "
+                "function, it will be really helpful";
+
   {
     common::MutexLocker locker(&mutex_);
     // odom_msgs_ are just for generating path file now
@@ -382,27 +387,10 @@ void MapBuilder::ScanMatchProcessing() {
     Pose3d guess = pose_target.inverse() * pose_source;
     common::NormalizeRotation(guess);
 
-    // common::PrintTransform(guess);
-
-    // filter some registration if not moving
-    // const double guess_angles =
-    //     common::RotationMatrixToEulerAngles(common::Rotation(guess)).norm() *
-    //     180. / M_PI;
-    // const double guess_translation = common::Translation(guess).norm();
-    // if (guess_translation <
-    //         options_.front_end_options.motion_filter.translation_range &&
-    //     guess_angles < options_.front_end_options.motion_filter.angle_range
-    //     && sensors::ToLocalTime(source_cloud->header.stamp -
-    //                          target_cloud->header.stamp)
-    //             .toSec() <
-    //         options_.front_end_options.motion_filter.time_range) {
-    //   source_cloud.reset();
-    //   continue;
-    // }
-
     // motion compensation using guess
     scan_matcher_->setInputTarget(target_cloud);
-    if (options_.front_end_options.motion_compensation_options.enable) {
+    if (options_.front_end_options.motion_compensation_options.enable &&
+        options_.front_end_options.motion_compensation_options.use_average) {
       PointCloudType compensated_source_cloud;
       MotionCompensation(source_cloud, source_cloud_delta_time,
                          guess.cast<float>(), &compensated_source_cloud);
@@ -412,13 +400,6 @@ void MapBuilder::ScanMatchProcessing() {
     }
     Eigen::Matrix4f align_result = Eigen::Matrix4f::Identity();
     scan_matcher_->align(guess.cast<float>(), align_result);
-    // PRINT_DEBUG("guess vs result");
-    // std::cout << common::Translation(guess).transpose() << std::endl;
-    // std::cout << common::Translation(align_result).transpose() << std::endl;
-    // std::cout << common::Translation(
-    //                  (guess.inverse() * align_result.cast<double>()).eval())
-    //                  .transpose()
-    //           << std::endl;
 
     if (options_.front_end_options.motion_compensation_options.enable) {
       Eigen::Matrix4f average_transform = align_result;
@@ -464,6 +445,7 @@ void MapBuilder::ScanMatchProcessing() {
       }
 
       final_transform *= accumulative_transform;
+      pose_source = final_transform;
       InsertFrameForSubmap(source_cloud, final_transform.cast<float>(),
                            scan_matcher_->getFitnessScore());
 
@@ -584,6 +566,47 @@ void MapBuilder::ConnectAllSubmap() {
       isam_optimizer_->AddFrame(
           submaps_to_connect[i],
           submaps_to_connect[i]->match_score_to_previous_submap_);
+    }
+
+    if (show_path_function_) {
+      std::vector<Eigen::Matrix4d> poses;
+      poses.reserve(current_trajectory_->size());
+      for (auto& submap : *current_trajectory_) {
+        if (submap->GetId().submap_index <= current_finished_index) {
+          poses.push_back(submap->GlobalPose().cast<double>());
+        }
+      }
+      show_path_function_(poses);
+    }
+
+    if (show_map_function_) {
+      constexpr double kLocalMapRange = 50.;
+      PointCloudPtr local_map(new PointCloudType);
+      for (auto& submap : *current_trajectory_) {
+        if (submap->GetId().submap_index > current_finished_index) {
+          break;
+        }
+
+        if ((submap->GlobalTranslation() -
+             current_trajectory_->at(current_finished_index)
+                 ->GlobalTranslation())
+                .norm() >= kLocalMapRange) {
+          continue;
+        }
+
+        PointCloudPtr transformed_cloud(new PointCloudType);
+        Eigen::Matrix4f pose = submap->GlobalPose();
+        pcl::transformPointCloud(*(submap->Cloud()), *transformed_cloud, pose);
+        *local_map += *transformed_cloud;
+      }
+
+      pcl::ApproximateVoxelGrid<PointType> approximate_voxel_filter;
+      approximate_voxel_filter.setLeafSize(0.1, 0.1, 0.1);
+      PointCloudPtr filtered_final_cloud(new PointCloudType);
+      approximate_voxel_filter.setInputCloud(local_map);
+      approximate_voxel_filter.filter(*filtered_final_cloud);
+      show_map_function_(filtered_final_cloud);
+      filtered_final_cloud.reset();
     }
   }
 
@@ -838,17 +861,6 @@ void MapBuilder::SubmapProcessing() {
       }
     }
 
-    // if (current_submap_index != 0) {
-    //   const auto previous_time =
-    //       current_trajectory_->at(current_submap_index - 1)->GetTimeStamp();
-    //   const double delta_time = (time - previous_time).toSec();
-    //   if (delta_time < 0.3) {
-    //     PRINT_INFO_FMT("time: %lf", delta_time);
-    //   } else {
-    //     PRINT_ERROR_FMT("time: %lf", delta_time);
-    //   }
-    // }
-
     local_frames.clear();
     if (show_submap_function_) {
       show_submap_function_(submap->GetFrames()[0]->Cloud());
@@ -1020,32 +1032,30 @@ void MapBuilder::CalculateCoordTransformToGps() {
   }
 
   // @todo(edward) get gps origin
-  const Eigen::Matrix4d result = isam_optimizer_->GetGpsCoordTransfrom();
-  const Eigen::Matrix3d map_enu_rotation = common::Rotation(result);
-  const Eigen::Vector3d map_enu_translation = common::Translation(result);
+  const Eigen::Matrix4d map_enu_transform =
+      isam_optimizer_->GetGpsCoordTransform();
+  const Eigen::Vector3d map_enu_translation =
+      common::Translation(map_enu_transform);
   // output the result to file( txt or xml ).
-  PRINT_INFO_FMT("enu translation: %.12lf, %.12lf", map_enu_translation[0],
-                 map_enu_translation[1]);
+  PRINT_INFO_FMT("enu translation: %.12lf, %.12lf, %.12lf",
+                 map_enu_translation[0], map_enu_translation[1],
+                 map_enu_translation[2]);
 
   // update the submap pose and frame pose
-  Eigen::Matrix4d map_enu_transform = Eigen::Matrix4d::Identity();
-  map_enu_transform.block<3, 3>(0, 0) = map_enu_rotation;
   for (auto& submap : *current_trajectory_) {
     Eigen::Matrix4d new_submap_pose =
         map_enu_transform * submap->GlobalPose().cast<double>();
     submap->SetGlobalPose(new_submap_pose.cast<float>());
     submap->UpdateInnerFramePose();
   }
-  current_trajectory_->SetEnuOffset(map_enu_translation[0],
-                                    map_enu_translation[1]);
 }
 
 void MapBuilder::SetShowMapFunction(const MapBuilder::ShowMapFunction& func) {
   show_map_function_ = std::move(func);
 }
 
-void MapBuilder::SetShowPoseFunction(const MapBuilder::ShowPoseFunction& func) {
-  show_pose_function_ = std::move(func);
+void MapBuilder::SetShowPathFunction(const MapBuilder::ShowPathFunction& func) {
+  show_path_function_ = std::move(func);
 }
 
 void MapBuilder::SetShowSubmapFunction(

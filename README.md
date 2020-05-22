@@ -208,11 +208,9 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 
 # TODO
 - **Loop Close factor should be rubust**
-- unknown bug in global pose
 - **mapping using kitti data**
 - **using docker to build and run**
 - **use enu instead of utm in multi-traj situation**
-- trajectory & local map in rviz 
 - complete the offset for enu coordinate system
 - faster compiling
 - re-organize the process of caching submaps
