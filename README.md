@@ -208,9 +208,13 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 
 # TODO
 - **Loop Close factor should be rubust**
+- unknown bug in global pose
 - **mapping using kitti data**
 - **using docker to build and run**
 - **use enu instead of utm in multi-traj situation**
+- trajectory & local map in rviz 
+- complete the offset for enu coordinate system
+- faster compiling
 - re-organize the process of caching submaps
 - mrvp using cuda or opencl
 - solve all nls problem using gtsam
@@ -223,12 +227,10 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - **add imu integrating factor in backend**
 - culling data structures like ImuMsg, NavSatMsg, etc.
 - add tests 
-- **fix motion compensation when motion filtering happens** 
 - **lidar motion compensation after optimization**
 - lidar motion compensation inside ICP
 - ICP using GPU 
 - stand-alone ICP without libpointmatcher
-- parallel PointCloudLib 
 - finish multi-trajectory map builder
 - use ground detection to label the pointcloud 
 - use some machine learning or deep learning method to add semantic labels
@@ -244,8 +246,9 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - use double instead of float (eigen::matrix)
 - mrvm output to a special format data file and can be transformed to pcd independently
 - gravity alignment (in pose extrapolator)
-- output to .las file
+- improve the tool (pcd to las)
 - add illustration of some important parameters
 
 # Tried
 - tried folly, libcds (intending to used instead of tbb) but they are not very freindly to use and not like stl containers
+- tried to create a brand-new point cloud type using tbb, but it is very slow and thread-safety is not necessary when create a point cloud
