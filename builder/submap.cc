@@ -54,7 +54,7 @@ void Submap<PointType>::InsertFrame(
 
     MultiResolutionVoxelMap<PointType> map;
     // todo add a parameter : z offset
-    map.SetOffsetZ(1.2);
+    // map.SetOffsetZ(1.2);
     for (auto& frame : frames_) {
       pcl::transformPointCloud(*frame->Cloud(), *output_cloud,
                                frame->LocalPose());

@@ -134,7 +134,8 @@ class MapBuilder {
   // call back function for ROS
   using ShowMapFunction = std::function<void(const PointCloudPtr&)>;
   using ShowSubmapFunction = ShowMapFunction;
-  using ShowPoseFunction = std::function<void(const Eigen::Matrix4f&)>;
+  using ShowPathFunction =
+      std::function<void(const std::vector<Eigen::Matrix4d>&)>;
 
   using TransformMatrix = Eigen::Matrix4f;
   using Ptr = std::shared_ptr<MapBuilder>;
@@ -165,7 +166,7 @@ class MapBuilder {
   /// @brief set a callback function when the map updated
   void SetShowSubmapFunction(const ShowMapFunction& func);
   /// @brief set a callback function whem the pose updated
-  void SetShowPoseFunction(const ShowPoseFunction& func);
+  void SetShowPathFunction(const ShowPathFunction& func);
   /// @brief get pointcloud and insert it into the inner container
   void InsertPointcloudMsg(const PointCloudPtr& point_cloud);
   /// @brief get imu msg from sensor and insert it into the inner container
@@ -273,7 +274,7 @@ class MapBuilder {
   // show the result in RVIZ(ros) or other platform
   ShowMapFunction show_map_function_;
   ShowSubmapFunction show_submap_function_;
-  ShowPoseFunction show_pose_function_;
+  ShowPathFunction show_path_function_;
 
   // trajectories
   std::vector<Trajectory<PointType>::Ptr> trajectories_;

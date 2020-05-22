@@ -21,6 +21,7 @@
 // SOFTWARE.
 
 // third party
+#include <nav_msgs/Path.h>
 #include <pcl/console/parse.h>
 #include <pcl/conversions.h>
 #include <pcl/io/pcd_io.h>
@@ -191,6 +192,8 @@ int main(int argc, char** argv) {
       n.advertise<sensor_msgs::PointCloud2>("/submap", 1);
   ros::Publisher pose_marker_pub =
       n.advertise<visualization_msgs::Marker>("/submap_pose", 1);
+  ros::Publisher path_pub =
+      n.advertise<nav_msgs::Path>("/static_mapping_path", 1);
 
   auto show_function =
       [&](const static_map::MapBuilder::PointCloudPtr& cloud) -> void {
@@ -210,43 +213,26 @@ int main(int argc, char** argv) {
     submap_publisher.publish(submap_pointcloud);
   };
 
-  auto show_pose_function = [&](const Eigen::Matrix4f& pose) -> void {
-    visualization_msgs::Marker marker;
-    // Set the frame ID and timestamp.  See the TF tutorials for information
-    // on these.
-    marker.header.frame_id = "/map";
-    marker.header.stamp = ros::Time::now();
-    marker.ns = "basic_shapes";
-    marker.id = 0;
-    marker.type = visualization_msgs::Marker::ARROW;
+  const auto publish_path = [&](const std::vector<Eigen::Matrix4d>& poses) {
+    nav_msgs::Path path;
+    path.header.frame_id = "/map";
 
-    // Set the marker action.  Options are ADD, DELETE, and new in ROS
-    // Indigo: 3 (DELETEALL)
-    marker.action = visualization_msgs::Marker::ADD;
+    path.poses.reserve(poses.size());
+    for (const Eigen::Matrix4d& pose : poses) {
+      geometry_msgs::PoseStamped pose_ros;
+      pose_ros.header.frame_id = "/map";
+      Eigen::Quaterniond q(Eigen::Matrix3d(pose.block(0, 0, 3, 3)));
+      pose_ros.pose.orientation.w = q.w();
+      pose_ros.pose.orientation.x = q.x();
+      pose_ros.pose.orientation.y = q.y();
+      pose_ros.pose.orientation.z = q.z();
+      pose_ros.pose.position.x = pose(0, 3);
+      pose_ros.pose.position.y = pose(1, 3);
+      pose_ros.pose.position.z = pose(2, 3);
 
-    // Set the pose of the marker.  This is a full 6DOF pose relative to the
-    // frame/time specified in the header
-    marker.pose.position.x = pose(0, 3);
-    marker.pose.position.y = pose(1, 3);
-    marker.pose.position.z = pose(2, 3);
-    Eigen::Quaternionf q(Eigen::Matrix3f(pose.block(0, 0, 3, 3)));
-    marker.pose.orientation.x = q.x();
-    marker.pose.orientation.y = q.y();
-    marker.pose.orientation.z = q.z();
-    marker.pose.orientation.w = q.w();
-
-    // Set the scale of the marker -- 1x1x1 here means 1m on a side
-    marker.scale.x = 2.0;
-    marker.scale.y = 0.5;
-    marker.scale.z = 0.5;
-
-    // Set the color -- be sure to set alpha to something non-zero!
-    marker.color.r = 0.0f;
-    marker.color.g = 1.0f;
-    marker.color.b = 0.0f;
-    marker.color.a = 1.0;
-    marker.lifetime = ros::Duration();
-    pose_marker_pub.publish(marker);
+      path.poses.push_back(pose_ros);
+    }
+    path_pub.publish(path);
   };
 
   map_builder = std::make_shared<MapBuilder>();
@@ -319,9 +305,9 @@ int main(int argc, char** argv) {
   }
   map_builder->EnableUsingOdom(use_odom);
   map_builder->EnableUsingGps(use_gps);
-  map_builder->SetShowMapFunction(show_function);
-  map_builder->SetShowPoseFunction(show_pose_function);
-  map_builder->SetShowSubmapFunction(show_submap_function);
+  // map_builder->SetShowMapFunction(show_function);
+  // map_builder->SetShowPathFunction(publish_path);
+  // map_builder->SetShowSubmapFunction(show_submap_function);
 
   REGISTER_FUNC;
 
