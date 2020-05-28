@@ -25,59 +25,14 @@
 #include <memory>
 #include <vector>
 
-#include "registrators/cuda/icp_cuda.h"
+#include "nabo/nabo.h"
 #include "registrators/registrator_interface.h"
 
 namespace static_map {
 namespace registrator {
 
-constexpr int kDim = 3;
-
-struct InnerPoint {
-  Eigen::Vector3f point = Eigen::Vector3f::Zero();
-  Eigen::Vector3f normal = Eigen::Vector3f::Zero();
-  double intensity;
-  bool has_normal = false;
-
-  inline void FromFloatArray(const float* const array) {
-    point << array[0], array[1], array[2];
-  }
-
-  inline void ToFloatArray(float* const array) {
-    array[0] = point[0];
-    array[1] = point[1];
-    array[2] = point[2];
-  }
-
-  inline void FromPoint(const pcl::PointXYZI& p) {
-    point[0] = p.x;
-    point[1] = p.y;
-    point[2] = p.z;
-    intensity = p.intensity;
-  }
-  inline void FromPoint(const pcl::PointXYZ& p) {
-    point[0] = p.x;
-    point[1] = p.y;
-    point[2] = p.z;
-    intensity = 0.;
-  }
-};
-
-struct InnerPointCloud {
-  std::vector<InnerPoint> points;
-
-  void ToFloatArray(float* const array) {
-    CHECK(array);
-    float* start = array;
-    for (auto& p : points) {
-      p.ToFloatArray(start);
-      start += kDim;
-    }
-  }
-
-  using Ptr = std::unique_ptr<InnerPointCloud>;
-  using ConstPtr = std::unique_ptr<const InnerPointCloud>;
-};
+struct BuildData;
+using NNS = Nabo::NearestNeighbourSearch<double>;
 
 template <typename PointType>
 class IcpFast : public Interface<PointType> {
@@ -91,10 +46,9 @@ class IcpFast : public Interface<PointType> {
   bool align(const Eigen::Matrix4f& guess, Eigen::Matrix4f& result) override;
 
  private:
-  typename InnerPointCloud::Ptr source_inner_cloud_;
-  typename InnerPointCloud::Ptr target_inner_cloud_;
-
-  Eigen::Matrix<float, Eigen::Dynamic, 6> target_cloud_with_mormal_;
+  std::shared_ptr<BuildData> source_cloud_;
+  std::shared_ptr<BuildData> target_cloud_;
+  std::shared_ptr<NNS> nns_kdtree_;
 };
 
 }  // namespace registrator

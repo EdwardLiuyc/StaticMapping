@@ -90,7 +90,7 @@
     <back_end_options>
       <!-- type just the same as front end -->
       <submap_matcher_options 
-        type="1"
+        type="6"
         enable_ndt="false" 
         use_voxel_filter="true" 
         voxel_filter_resolution="0.2"

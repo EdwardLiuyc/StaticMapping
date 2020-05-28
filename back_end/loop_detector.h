@@ -29,7 +29,6 @@
 #include <vector>
 // local
 #include "builder/submap.h"
-#include "registrators/icp_pointmatcher.h"
 
 #ifdef _USE_TBB_
 #include <tbb/atomic.h>

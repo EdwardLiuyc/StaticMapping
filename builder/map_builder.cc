@@ -38,6 +38,7 @@
 #include "descriptor/m2dp.h"
 #include "registrators/icp_fast.h"
 #include "registrators/icp_libicp.h"
+#include "registrators/icp_pointmatcher.h"
 #include "registrators/lego_loam.h"
 #include "registrators/ndt.h"
 #include "registrators/ndt_gicp.h"
@@ -92,6 +93,9 @@ int MapBuilder::InitialiseInside() {
       break;
     case registrator::kNdt:
       scan_matcher_ = common::make_unique<Ndt<PointType>>();
+      break;
+    case registrator::kFastIcp:
+      scan_matcher_.reset(new registrator::IcpFast<PointType>());
       break;
     default:
       PRINT_ERROR("Wrong type");
@@ -399,7 +403,10 @@ void MapBuilder::ScanMatchProcessing() {
       scan_matcher_->setInputSource(source_cloud);
     }
     Eigen::Matrix4f align_result = Eigen::Matrix4f::Identity();
-    scan_matcher_->align(guess.cast<float>(), align_result);
+    {
+      REGISTER_BLOCK("scan match");
+      scan_matcher_->align(guess.cast<float>(), align_result);
+    }
 
     if (options_.front_end_options.motion_compensation_options.enable) {
       Eigen::Matrix4f average_transform = align_result;
@@ -490,7 +497,9 @@ void MapBuilder::SubmapPairMatch(const int source_index,
       dynamic_cast<NdtWithGicp<PointType>*>(matcher.get())
           ->enableNdt(submap_matcher_options.enable_ndt);
       break;
-
+    case registrator::kFastIcp:
+      matcher = std::make_shared<registrator::IcpFast<PointType>>();
+      break;
     default:
       PRINT_ERROR("Wrong type");
       return;

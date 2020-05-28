@@ -32,46 +32,18 @@
 namespace static_map {
 namespace registrator {
 
+struct IcpUsingPointMatcherMem;
+
 template <typename PointType>
 class IcpUsingPointMatcher : public Interface<PointType> {
  public:
   USE_REGISTRATOR_CLOUDS;
-  using PM = PointMatcher<float>;
 
-  explicit IcpUsingPointMatcher(const std::string& ymal_file = "")
-      : Interface<PointType>(),
-        reference_cloud_(new PM::DataPoints),
-        reading_cloud_(new PM::DataPoints) {
-    Interface<PointType>::type_ = kIcpPM;
-    loadConfig(ymal_file);
-  }
-  ~IcpUsingPointMatcher() {
-    reference_cloud_.reset();
-    reading_cloud_.reset();
-  }
+  explicit IcpUsingPointMatcher(const std::string& ymal_file = "");
+  ~IcpUsingPointMatcher();
 
-  inline void setInputSource(const PointCloudSourcePtr& cloud) override {
-    if (!cloud || cloud->empty()) {
-      PRINT_ERROR("Empty cloud.");
-      return;
-    }
-    *reading_cloud_ =
-        sensors::pclPointCloudToLibPointMatcherPoints<PointType>(cloud);
-
-    CHECK(reading_cloud_->getNbPoints() == cloud->points.size());
-  }
-
-  inline void setInputTarget(const PointCloudTargetPtr& cloud) override {
-    if (!cloud || cloud->empty()) {
-      PRINT_ERROR("Empty cloud.");
-      return;
-    }
-    *reference_cloud_ =
-        sensors::pclPointCloudToLibPointMatcherPoints<PointType>(cloud);
-
-    CHECK(reference_cloud_->getNbPoints() == cloud->points.size());
-  }
-
+  void setInputSource(const PointCloudSourcePtr& cloud) override;
+  void setInputTarget(const PointCloudTargetPtr& cloud) override;
   bool align(const Eigen::Matrix4f& guess, Eigen::Matrix4f& result) override;
 
  protected:
@@ -79,10 +51,7 @@ class IcpUsingPointMatcher : public Interface<PointType> {
   void loadConfig(const std::string& yaml_filename);
 
  private:
-  std::shared_ptr<PM::DataPoints> reference_cloud_;
-  std::shared_ptr<PM::DataPoints> reading_cloud_;
-
-  PM::ICP pm_icp_;
+  std::unique_ptr<IcpUsingPointMatcherMem> inner_;
 };
 
 }  // namespace registrator

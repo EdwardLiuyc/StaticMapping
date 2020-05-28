@@ -28,15 +28,13 @@
 int main(int argc, char** argv) {
   pcl::PointCloud<pcl::PointXYZINormal>::Ptr cloud(
       new pcl::PointCloud<pcl::PointXYZINormal>);
-  // 读取文件
+  // read pcd file
   if (pcl::io::loadPCDFile<pcl::PointXYZINormal>(argv[1], *cloud) != 0) {
     return -1;
   }
 
-  // 点云数据对象
   pcl::PointCloud<pcl::PointXYZ>::Ptr points(
       new pcl::PointCloud<pcl::PointXYZ>);
-  // 法线对象
   pcl::PointCloud<pcl::Normal>::Ptr normals(new pcl::PointCloud<pcl::Normal>);
   for (int i = 0; i < cloud->size(); ++i) {
     points->push_back(pcl::PointXYZ(cloud->points[i].x, cloud->points[i].y,
@@ -46,7 +44,6 @@ int main(int argc, char** argv) {
                                    cloud->points[i].normal_z));
   }
 
-  // 可视化
   pcl::visualization::PointCloudColorHandlerGenericField<pcl::PointXYZ>
       fildColor(points, "z");
   boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer(

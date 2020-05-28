@@ -25,6 +25,7 @@
 
 #include "back_end/loop_detector.h"
 #include "common/simple_thread_pool.h"
+#include "registrators/icp_pointmatcher.h"
 
 #ifdef _USE_TBB_
 #include <tbb/task_group.h>
