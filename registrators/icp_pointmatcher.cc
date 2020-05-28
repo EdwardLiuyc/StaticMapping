@@ -22,30 +22,119 @@
 
 #include "registrators/icp_pointmatcher.h"
 
+#include <utility>
+
 namespace static_map {
 namespace registrator {
+
+using FloatType = float;
+using PM = PointMatcher<FloatType>;
+
+struct IcpUsingPointMatcherMem {
+  IcpUsingPointMatcherMem()
+      : reference_cloud_(new PM::DataPoints),
+        reading_cloud_(new PM::DataPoints) {}
+
+  std::shared_ptr<PM::DataPoints> reference_cloud_;
+  std::shared_ptr<PM::DataPoints> reading_cloud_;
+  PM::ICP pm_icp_;
+};
+
+template <typename PointT>
+PM::DataPoints pclPointCloudToLibPointMatcherPoints(
+    const typename pcl::PointCloud<PointT>::Ptr& pcl_point_cloud) {
+  if (!pcl_point_cloud || pcl_point_cloud->empty()) {
+    return PM::DataPoints();
+  }
+
+  PM::DataPoints::Labels labels;
+  labels.push_back(PM::DataPoints::Label("x", 1));
+  labels.push_back(PM::DataPoints::Label("y", 1));
+  labels.push_back(PM::DataPoints::Label("z", 1));
+  labels.push_back(PM::DataPoints::Label("pad", 1));
+
+  const size_t point_count(pcl_point_cloud->points.size());
+  PM::Matrix inner_cloud(4, point_count);
+  int index = 0;
+  for (size_t i = 0; i < point_count; ++i) {
+    if (!std::isnan(pcl_point_cloud->points[i].x) &&
+        !std::isnan(pcl_point_cloud->points[i].y) &&
+        !std::isnan(pcl_point_cloud->points[i].z)) {
+      inner_cloud(0, index) = pcl_point_cloud->points[i].x;
+      inner_cloud(1, index) = pcl_point_cloud->points[i].y;
+      inner_cloud(2, index) = pcl_point_cloud->points[i].z;
+      inner_cloud(3, index) = 1;
+      ++index;
+    }
+  }
+
+  PM::DataPoints d(inner_cloud.leftCols(index), labels);
+  return std::move(d);
+}
+
+template <typename PointType>
+IcpUsingPointMatcher<PointType>::IcpUsingPointMatcher(
+    const std::string& ymal_file)
+    : Interface<PointType>(), inner_(new IcpUsingPointMatcherMem) {
+  Interface<PointType>::type_ = kIcpPM;
+  loadConfig(ymal_file);
+}
+
+template <typename PointType>
+IcpUsingPointMatcher<PointType>::~IcpUsingPointMatcher() {
+  inner_->reference_cloud_.reset();
+  inner_->reading_cloud_.reset();
+}
+
+template <typename PointType>
+void IcpUsingPointMatcher<PointType>::setInputSource(
+    const PointCloudSourcePtr& cloud) {
+  if (!cloud || cloud->empty()) {
+    PRINT_ERROR("Empty cloud.");
+    return;
+  }
+  *(inner_->reading_cloud_) =
+      pclPointCloudToLibPointMatcherPoints<PointType>(cloud);
+  CHECK(inner_->reading_cloud_->getNbPoints() == cloud->points.size());
+}
+
+template <typename PointType>
+void IcpUsingPointMatcher<PointType>::setInputTarget(
+    const PointCloudTargetPtr& cloud) {
+  if (!cloud || cloud->empty()) {
+    PRINT_ERROR("Empty cloud.");
+    return;
+  }
+  *(inner_->reference_cloud_) =
+      pclPointCloudToLibPointMatcherPoints<PointType>(cloud);
+  CHECK(inner_->reference_cloud_->getNbPoints() == cloud->points.size());
+}
 
 template <typename PointType>
 bool IcpUsingPointMatcher<PointType>::align(const Eigen::Matrix4f& guess,
                                             Eigen::Matrix4f& result) {
   // **** compute the transform ****
-  result = pm_icp_.compute(*reading_cloud_, *reference_cloud_, guess);
+  result = inner_->pm_icp_
+               .compute(*(inner_->reading_cloud_), *(inner_->reference_cloud_),
+                        guess.cast<FloatType>())
+               .cast<float>();
 
   // **** compute the final score ****
-  PM::DataPoints data_out(*reading_cloud_);
-  pm_icp_.transformations.apply(data_out, result);
-  pm_icp_.matcher->init(*reference_cloud_);
+  PM::DataPoints data_out(*(inner_->reading_cloud_));
+  inner_->pm_icp_.transformations.apply(data_out, result.cast<FloatType>());
+  inner_->pm_icp_.matcher->init(*(inner_->reference_cloud_));
 
   // extract closest points
-  PM::Matches matches = pm_icp_.matcher->findClosests(data_out);
+  PM::Matches matches = inner_->pm_icp_.matcher->findClosests(data_out);
 
   // weight paired points
   const PM::OutlierWeights outlier_weights =
-      pm_icp_.outlierFilters.compute(data_out, *reference_cloud_, matches);
+      inner_->pm_icp_.outlierFilters.compute(
+          data_out, *(inner_->reference_cloud_), matches);
 
   // generate tuples of matched points and remove pairs with zero weight
   const PM::ErrorMinimizer::ErrorElements matched_points(
-      data_out, *reference_cloud_, outlier_weights, matches);
+      data_out, *(inner_->reference_cloud_), outlier_weights, matches);
 
   // extract relevant information for convenience
   const int dim = matched_points.reading.getEuclideanDim();
@@ -89,7 +178,7 @@ void IcpUsingPointMatcher<PointType>::loadConfig(
     PRINT_ERROR_FMT("Cannot open config file: %s", yaml_filename.c_str());
     exit(1);
   }
-  pm_icp_.loadFromYaml(ifs);
+  inner_->pm_icp_.loadFromYaml(ifs);
 }
 
 template <typename PointType>
@@ -159,21 +248,21 @@ void IcpUsingPointMatcher<PointType>::loadDefaultConfig() {
       PM::get().InspectorRegistrar.create("NullInspector");
 
   // data filters
-  pm_icp_.readingDataPointsFilters.push_back(rand_read);
-  pm_icp_.referenceDataPointsFilters.push_back(normal_ref);
+  inner_->pm_icp_.readingDataPointsFilters.push_back(rand_read);
+  inner_->pm_icp_.referenceDataPointsFilters.push_back(normal_ref);
   // matcher
-  pm_icp_.matcher = kdtree;
+  inner_->pm_icp_.matcher = kdtree;
   // outlier filter
-  pm_icp_.outlierFilters.push_back(trim);
+  inner_->pm_icp_.outlierFilters.push_back(trim);
   // error minimizer
-  pm_icp_.errorMinimizer = pointToPlane;
+  inner_->pm_icp_.errorMinimizer = pointToPlane;
   // checker
-  pm_icp_.transformationCheckers.push_back(maxIter);
-  pm_icp_.transformationCheckers.push_back(diff);
+  inner_->pm_icp_.transformationCheckers.push_back(maxIter);
+  inner_->pm_icp_.transformationCheckers.push_back(diff);
 
-  pm_icp_.inspector = nullInspect;
+  inner_->pm_icp_.inspector = nullInspect;
   // result transform
-  pm_icp_.transformations.push_back(rigidTrans);
+  inner_->pm_icp_.transformations.push_back(rigidTrans);
 }
 
 template class IcpUsingPointMatcher<pcl::PointXYZI>;

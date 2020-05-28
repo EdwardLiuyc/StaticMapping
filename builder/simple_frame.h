@@ -180,12 +180,12 @@ class SimpleFrame {
   bool got_related_odom_;
 };
 
-using registrator::InlierPointPairs;
-template <typename PointT>
-InlierPointPairs GetPointPairs(
-    const std::shared_ptr<SimpleFrame<PointT>>& first_frame,
-    const std::shared_ptr<SimpleFrame<PointT>>& last_frame, double max_distance,
-    int sample = 1);
+// using registrator::InlierPointPairs;
+// template <typename PointT>
+// InlierPointPairs GetPointPairs(
+//     const std::shared_ptr<SimpleFrame<PointT>>& first_frame,
+//     const std::shared_ptr<SimpleFrame<PointT>>& last_frame, double
+//     max_distance, int sample = 1);
 
 }  // namespace static_map
 

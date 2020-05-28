@@ -48,39 +48,6 @@ OdomMsg ToLocalOdom(const nav_msgs::Odometry& msg);
 
 NavSatFixMsg ToLocalNavSatMsg(const sensor_msgs::NavSatFix& msg);
 
-using PM = PointMatcher<float>;
-template <typename PointT>
-PM::DataPoints pclPointCloudToLibPointMatcherPoints(
-    const typename pcl::PointCloud<PointT>::Ptr& pcl_point_cloud) {
-  if (!pcl_point_cloud || pcl_point_cloud->empty()) {
-    return PM::DataPoints();
-  }
-
-  PM::DataPoints::Labels labels;
-  labels.push_back(PM::DataPoints::Label("x", 1));
-  labels.push_back(PM::DataPoints::Label("y", 1));
-  labels.push_back(PM::DataPoints::Label("z", 1));
-  labels.push_back(PM::DataPoints::Label("pad", 1));
-
-  const size_t point_count(pcl_point_cloud->points.size());
-  PM::Matrix inner_cloud(4, point_count);
-  int index = 0;
-  for (size_t i = 0; i < point_count; ++i) {
-    if (!std::isnan(pcl_point_cloud->points[i].x) &&
-        !std::isnan(pcl_point_cloud->points[i].y) &&
-        !std::isnan(pcl_point_cloud->points[i].z)) {
-      inner_cloud(0, index) = pcl_point_cloud->points[i].x;
-      inner_cloud(1, index) = pcl_point_cloud->points[i].y;
-      inner_cloud(2, index) = pcl_point_cloud->points[i].z;
-      inner_cloud(3, index) = 1;
-      ++index;
-    }
-  }
-
-  PM::DataPoints d(inner_cloud.leftCols(index), labels);
-  return std::move(d);
-}
-
 }  // namespace sensors
 }  // namespace static_map
 

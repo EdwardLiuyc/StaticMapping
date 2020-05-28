@@ -211,6 +211,7 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - **mapping using kitti data**
 - **using docker to build and run**
 - **use enu instead of utm in multi-traj situation**
+- use double matrices in registrators
 - complete the offset for enu coordinate system
 - faster compiling
 - re-organize the process of caching submaps
@@ -246,6 +247,9 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - gravity alignment (in pose extrapolator)
 - improve the tool (pcd to las)
 - add illustration of some important parameters
+- remove the dependency of ceres solver
+- full support for all kinds of pointcloud
+- totally independent with ROS
 
 # Tried
 - tried folly, libcds (intending to used instead of tbb) but they are not very freindly to use and not like stl containers

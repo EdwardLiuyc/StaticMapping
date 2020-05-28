@@ -48,10 +48,10 @@
         2: icp using libicp 
         3: ndt&gicp 
         4: kfpcs(not available now)
-        5: lego loam(in test)
-        6: ndt omp(in test) -->
+        5: 
+        6: fast icp(in test) -->
       <scan_matcher_options 
-        type="1" 
+        type="6" 
         enable_ndt="false" 
         use_voxel_filter="true" 
         voxel_filter_resolution="0.2">
