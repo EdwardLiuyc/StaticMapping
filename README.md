@@ -49,6 +49,7 @@ mkdir -p build && cd build
 cmake ..
 make -j8
 ```
+perhaps you would meet some error like ` conflicting declaration ‘typedef struct LZ4_stream_t LZ4_stream_t’ `, just refer to this [tricky solution](https://github.com/ethz-asl/lidar_align/issues/16#issuecomment-505393420)
 
 ## Using host device
 ### Install Requirements 
@@ -211,6 +212,13 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - **mapping using kitti data**
 - **using docker to build and run**
 - **use enu instead of utm in multi-traj situation**
+- sometimes bug at the time of initialising threads (quit directly)
+- use sh files for setup
+- add options for registrators, like the filters
+- more robust normal estimate for fast icp
+- remove libicp 
+- use glog or other logging lib instead of print macros
+- fix bug when using G++7.x
 - use double matrices in registrators
 - complete the offset for enu coordinate system
 - faster compiling

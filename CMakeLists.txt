@@ -154,6 +154,10 @@ find_package(GeographicLib REQUIRED)
 include_directories(${GeographicLib_INCLUDE_DIRS})
 list(APPEND require_libs ${GeographicLib_LIBRARIES})
 
+find_package(ImageMagick REQUIRED)
+message(STATUS "Image Magick version : ${ImageMagick_VERSION_STRING}")
+list(APPEND require_libs ${ImageMagick_LIBRARIES})
+
 option(ENABLE_PROF "Enable profiling?" OFF)
 if(ENABLE_PROF)
   message(STATUS "Enable simple profiling.")

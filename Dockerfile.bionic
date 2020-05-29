@@ -11,6 +11,7 @@ RUN sh -c '. /etc/lsb-release && echo "deb http://mirrors.tuna.tsinghua.edu.cn/r
 RUN apt -y update && apt -y upgrade && \
   apt -y install cmake libboost-dev libeigen3-dev libpng-dev libgoogle-glog-dev libatlas-base-dev \
   libsuitesparse-dev libpcl-dev libceres-dev wget libmetis-dev \
+  vim.tiny imagemagick \
   ros-melodic-tf* ros-melodic-pcl* ros-melodic-opencv* ros-melodic-urdf
 
 # Enable tab completion by uncommenting it from /etc/bash.bashrc
@@ -51,20 +52,20 @@ RUN cd libnabo && \
   git checkout tags/1.0.7 && \
   mkdir build && cd build && \
   cmake .. && make -j4 && \
-  sudo make install && cd ..
+  sudo make install && cd ~/src
 
 ## libpointmatcher 
 RUN cd libpointmatcher && \
   git checkout tags/1.3.1 && \
   mkdir build && cd build && \
   cmake .. && make -j4 && \
-  sudo make install && cd ..
+  sudo make install && cd ~/src
 
 ## Geographic
 RUN tar -zxvf GeographicLib-1.50.1.tar.gz && cd GeographicLib-1.50.1 && \
   mkdir build && cd build && \
   cmake .. && make -j4 && \
-  sudo make install && cd ..
+  sudo make install && cd ~/src
 
 ## gtsam
 RUN cd gtsam && \
