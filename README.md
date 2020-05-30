@@ -52,8 +52,9 @@ make -j8
 perhaps you would meet some error like ` conflicting declaration ‘typedef struct LZ4_stream_t LZ4_stream_t’ `, just refer to this [tricky solution](https://github.com/ethz-asl/lidar_align/issues/16#issuecomment-505393420)
 
 ## Using host device
-### Install Requirements 
-#### Basic 
+### Requirements 
+> Ros should be installed in the first place, You can refer to [http://wiki.ros.org/kinetic/Installation/Ubuntu](http://wiki.ros.org/kinetic/Installation/Ubuntu) for more information for installing ROS kinetic or higher version. This repo has been tested in kinetic and melodic.
+
 ```bash
 ## basic depencencies
 sudo apt -y install cmake \
@@ -61,70 +62,29 @@ sudo apt -y install cmake \
   libeigen3-dev \
   libpng-dev \
   libgoogle-glog-dev \
-  libatlas-base-dev\
-  libsuitesparse-dev
-```
+  libatlas-base-dev \
+  libsuitesparse-dev \
+  imagemagick
 
-#### ROS 
-
-You can refer to [http://wiki.ros.org/kinetic/Installation/Ubuntu](http://wiki.ros.org/kinetic/Installation/Ubuntu) for more information for installing ROS kinetic or higher version. This repo has been tested in kinetic and melodic.
-
-#### PCL
-
-```bash
+## install pcl 
 ## tested in pcl-1.7 (ubuntu16.04) and pcl-1.8 (ubuntu18.04)
 sudo apt -y install libpcl-dev
-```
 
-#### GTSAM
-```bash
-## install GeoGraphic first 
-wget https://nchc.dl.sourceforge.net/project/geographiclib/distrib/GeographicLib-1.50.1.tar.gz
-tar -zxvf GeographicLib-1.50.1.tar.gz && cd GeographicLib-1.50.1 && \
-  mkdir build && cd build && \
-  cmake .. && make -j4 && \
-  sudo make install && cd ..
-
-## Go to your wordspace lisk /home/user/3rd_parties
-## GTSAM(4.0 or higher is needed)
-git clone https://bitbucket.org/gtborg/gtsam.git
-cd gtsam 
-git checkout tags/4.0.0-alpha2
-mkdir build && cd build
-cmake -DGTSAM_USE_SYSTEM_EIGEN=ON ..
-make -j8
-sudo make install 
-```
-
-#### Ceres Solver 
-
-you can just install with apt in ubuntu 16.04 && 18.04
-```bash 
+## ceres solver 
 sudo apt -y install libceres-dev
-```
-or you can build and install ceres solver refering to [ceres_installation](http://ceres-solver.org/installation.html)
+## or you can build and install ceres solver refering to http://ceres-solver.org/installation.html
 
-#### libnabo
-```bash 
-git clone https://github.com/ethz-asl/libnabo.git
-cd libnabo
-### checkout to the latest release version
-git checkout tags/1.0.7
-mkdir build && cd build
-cmake ..
-make -j8
-sudo make install
-```
-
-#### libpointmatcher
-
-```bash
-git clone https://github.com/ethz-asl/libpointmatcher.git
-cd libpointmatcher
-mkdir build && cd build
-cmake ..
-make -j8
-sudo make install
+cd your_own_workspace 
+## like /home/user/3rd_parties
+## or you can just go to "third_parties" in this repo
+## GeoGraphic
+./path_of_StaticMapping/setup/install_geographiclib.sh
+## GTSAM(4.0 or higher is needed)
+./path_of_StaticMapping/setup/install_gtsam.sh
+## libnabo
+./path_of_StaticMapping/setup/install_libnabo.sh
+## libpointmatcher
+./path_of_StaticMapping/setup/install_libpointmatcher.sh
 ```
 
 ### Optional libs
@@ -213,10 +173,8 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - **using docker to build and run**
 - **use enu instead of utm in multi-traj situation**
 - sometimes bug at the time of initialising threads (quit directly)
-- use sh files for setup
 - add options for registrators, like the filters
 - more robust normal estimate for fast icp
-- remove libicp 
 - use glog or other logging lib instead of print macros
 - fix bug when using G++7.x
 - use double matrices in registrators
@@ -237,7 +195,6 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - **lidar motion compensation after optimization**
 - lidar motion compensation inside ICP
 - ICP using GPU 
-- stand-alone ICP without libpointmatcher
 - finish multi-trajectory map builder
 - use ground detection to label the pointcloud 
 - use some machine learning or deep learning method to add semantic labels
