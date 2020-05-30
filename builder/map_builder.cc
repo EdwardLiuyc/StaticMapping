@@ -37,7 +37,6 @@
 #include "cost_functions/odom_map_match.h"
 #include "descriptor/m2dp.h"
 #include "registrators/icp_fast.h"
-#include "registrators/icp_libicp.h"
 #include "registrators/icp_pointmatcher.h"
 #include "registrators/lego_loam.h"
 #include "registrators/ndt.h"
@@ -45,7 +44,6 @@
 
 namespace static_map {
 
-using registrator::IcpUsingLibicp;
 using registrator::IcpUsingPointMatcher;
 using registrator::LegoLoam;
 using registrator::Ndt;
@@ -76,7 +74,8 @@ int MapBuilder::InitialiseInside() {
       scan_matcher_ = common::make_unique<IcpUsingPointMatcher<PointType>>();
       break;
     case registrator::kLibicp:
-      scan_matcher_ = common::make_unique<IcpUsingLibicp<PointType>>();
+      LOG(FATAL) << "The registrator using libicp is deprecated. please choose "
+                    "another type";
       break;
     case registrator::kNdtWithGicp:
       scan_matcher_ = common::make_unique<NdtWithGicp<PointType>>(
@@ -488,7 +487,8 @@ void MapBuilder::SubmapPairMatch(const int source_index,
           std::make_shared<registrator::IcpUsingPointMatcher<PointType>>();
       break;
     case registrator::kLibicp:
-      matcher = std::make_shared<IcpUsingLibicp<PointType>>();
+      LOG(FATAL) << "The registrator using libicp is deprecated. please choose "
+                    "another type";
       break;
     case registrator::kNdtWithGicp:
       matcher = std::make_shared<NdtWithGicp<PointType>>(

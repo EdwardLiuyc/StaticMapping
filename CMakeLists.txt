@@ -70,9 +70,6 @@ if(USE_CUDA)
 
 endif(USE_CUDA)
 
-add_subdirectory(third_parties/libicp)
-list(APPEND require_libs icp)
-
 #### pcl ####
 find_package(PCL REQUIRED QUIET)
 if(${PCL_VERSION} VERSION_GREATER "1.8.0" OR 
