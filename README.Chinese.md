@@ -51,75 +51,37 @@ make -j8
 
 ## 本地环境构建项目
 ### 依赖项
-#### 基础库
+> 首先你应该已经安装了 ROS 环境，按照[官方文档](http://wiki.ros.org/kinetic/Installation/Ubuntu)来进行安装，项目在 kinetic 和 melodic 版本中都经过了测试。
+
 ```bash
-## basic depencencies
+## 基础依赖项
 sudo apt -y install cmake \
   libboost-dev \
   libeigen3-dev \
   libpng-dev \
   libgoogle-glog-dev \
-  libatlas-base-dev\
-  libsuitesparse-dev
-```
+  libatlas-base-dev \
+  libsuitesparse-dev \
+  imagemagick
 
-#### ROS 
-按照[官方文档](http://wiki.ros.org/kinetic/Installation/Ubuntu)来进行安装，项目在 kinetic 和 melodic 版本中都经过了测试。
-
-#### PCL
-
-```bash
-## tested in pcl-1.7 (ubuntu16.04) and pcl-1.8 (ubuntu18.04)
+## install pcl 
 sudo apt -y install libpcl-dev
-```
 
-#### GTSAM
-```bash
-## install GeoGraphic first 
-wget https://nchc.dl.sourceforge.net/project/geographiclib/distrib/GeographicLib-1.50.1.tar.gz
-tar -zxvf GeographicLib-1.50.1.tar.gz && cd GeographicLib-1.50.1 && \
-  mkdir build && cd build && \
-  cmake .. && make -j4 && \
-  sudo make install && cd ..
-
-## Go to your wordspace lisk /home/user/3rd_parties
-## GTSAM(4.0 or higher is needed)
-git clone https://bitbucket.org/gtborg/gtsam.git
-cd gtsam 
-git checkout tags/4.0.0-alpha2
-mkdir build && cd build
-cmake -DGTSAM_USE_SYSTEM_EIGEN=ON ..
-make -j8
-sudo make install 
-```
-
-#### Ceres Solver 
-可以使用 apt 进行安装
-```bash 
+## ceres solver 
 sudo apt -y install libceres-dev
-```
-或者你可以按照 ceres solver 的[官方安装文档](http://ceres-solver.org/installation.html)来安装
+## 或者你可以按照 ceres solver 的官方文档 http://ceres-solver.org/installation.html 进行编译安装
 
-#### libnabo
-```bash 
-git clone https://github.com/ethz-asl/libnabo.git
-cd libnabo
-### checkout to the latest release version
-git checkout tags/1.0.7
-mkdir build && cd build
-cmake ..
-make -j8
-sudo make install
-```
-
-#### libpointmatcher
-```bash
-git clone https://github.com/ethz-asl/libpointmatcher.git
-cd libpointmatcher
-mkdir build && cd build
-cmake ..
-make -j8
-sudo make install
+cd your_own_workspace 
+## 比如 /home/user/3rd_parties
+## 或者你可以直接 cd 到当前项目的 third_parties 目录下
+## GeoGraphic
+./path_of_StaticMapping/setup/install_geographiclib.sh
+## GTSAM(4.0 or higher is needed)
+./path_of_StaticMapping/setup/install_gtsam.sh
+## libnabo
+./path_of_StaticMapping/setup/install_libnabo.sh
+## libpointmatcher
+./path_of_StaticMapping/setup/install_libpointmatcher.sh
 ```
 
 ### 选配项
