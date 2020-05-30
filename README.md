@@ -175,8 +175,7 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - sometimes bug at the time of initialising threads (quit directly)
 - add options for registrators, like the filters
 - more robust normal estimate for fast icp
-- use glog or other logging lib instead of print macros
-- fix bug when using G++7.x
+- use glog or other logging lib instead of print macro
 - use double matrices in registrators
 - complete the offset for enu coordinate system
 - faster compiling
