@@ -33,7 +33,7 @@ namespace registrator {
 enum Type {
   kNoType,
   kIcpPM,
-  kLibicp,
+  kLibicp,  // deprecated
   kNdtWithGicp,
   kLegoLoam,
   kNdt,

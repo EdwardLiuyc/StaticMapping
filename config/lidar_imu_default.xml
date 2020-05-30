@@ -45,13 +45,13 @@
       <!-- matcher type  
         0: none 
         1: icp using pointmatcher 
-        2: icp using libicp 
+        2: deprecated
         3: ndt&gicp 
-        4: kfpcs(not available now)
-        5: lego loam(in test)
-        6: ndt omp(in test) -->
+        4: lego loam (in test)
+        5: ndt (in test)
+        6: fast icp (in test) -->
       <scan_matcher_options 
-        type="1" 
+        type="6" 
         enable_ndt="false" 
         use_voxel_filter="true" 
         voxel_filter_resolution="0.2">
@@ -93,7 +93,7 @@
     <back_end_options>
       <!-- type just the same as front end -->
       <submap_matcher_options 
-        type="1"
+        type="6"
         enable_ndt="false" 
         use_voxel_filter="true" 
         voxel_filter_resolution="0.2"
