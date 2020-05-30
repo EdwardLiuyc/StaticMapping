@@ -5,10 +5,8 @@ project(static_mapping)
 ###  Compiler Options
 #######################################################
 set(CMAKE_BUILD_TYPE Release)
-set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_FLAGS "-O3 -Wall \
-  -Wextra -fPIC -ffast-math \
+set(CMAKE_CXX_FLAGS "-std=c++17 -O3 -Wall \
+  -Wextra -fPIC \
   -Wno-sign-compare \
   -Wno-unused-parameter \
   -Wno-unused-but-set-variable ")
@@ -203,7 +201,7 @@ add_executable(static_mapping_node
   ros_node/tf_bridge.cc
   ros_node/playable_bag.cc
   ros_node/kitti_reader.cc)
-target_link_libraries(static_mapping_node ${static_mapping_libs} ${require_libs})
+target_link_libraries(static_mapping_node ${static_mapping_libs} ${require_libs} pthread)
 
 add_executable(join_maps_node ros_node/join_maps_node.cpp)
 target_link_libraries(join_maps_node ${static_mapping_libs} ${require_libs})
