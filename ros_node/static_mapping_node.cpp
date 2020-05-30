@@ -176,7 +176,7 @@ int main(int argc, char** argv) {
   // kitti data set
   std::string kitti_path = "";
   pcl::console::parse_argument(argc, argv, "-kitti", kitti_path);
-  if (::access(kitti_path.c_str(), F_OK) == -1) {
+  if (!kitti_path.empty() && ::access(kitti_path.c_str(), F_OK) == -1) {
     PRINT_WARNING_FMT("%s does not exist.", kitti_path.c_str());
     kitti_path = "";
   }
