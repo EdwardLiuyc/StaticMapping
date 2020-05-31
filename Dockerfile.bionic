@@ -40,14 +40,14 @@ ENV PATH /home/docker/.local/bin:$PATH
 # Avoid first use of sudo warning. c.f. https://askubuntu.com/a/22614/781671
 RUN touch $HOME/.sudo_as_admin_successful
 
-COPY setup/install_libnabo.sh ~/src
-RUN cd ~/src && ./install_libnabo.sh
-COPY setup/install_libpointmatcher.sh ~/src
-RUN cd ~/src && ./install_libpointmatcher.sh
-COPY setup/install_geographiclib.sh ~/src
-RUN cd ~/src && ./install_geographiclib.sh
-COPY setup/install_gtsam.sh ~/src
-RUN cd ~/src && ./install_gtsam.sh
+COPY setup/install_libnabo.sh $HOME/src
+RUN cd $HOME/src && sudo chmod +x install_libnabo.sh && ./install_libnabo.sh
+COPY setup/install_libpointmatcher.sh $HOME/src
+RUN cd $HOME/src && sudo chmod +x install_libpointmatcher.sh && ./install_libpointmatcher.sh
+COPY setup/install_geographiclib.sh $HOME/src
+RUN cd $HOME/src && sudo chmod +x install_geographiclib.sh && ./install_geographiclib.sh
+COPY setup/install_gtsam.sh $HOME/src
+RUN cd $HOME/src && sudo chmod +x install_gtsam.sh && ./install_gtsam.sh
 
 RUN sudo mv /usr/include/flann/ext/lz4.h /usr/include/flann/ext/lz4.h.bak && \
   sudo mv /usr/include/flann/ext/lz4hc.h /usr/include/flann/ext/lz4.hc.bak && \
