@@ -9,48 +9,7 @@
 <img src="doc/mapping.png" width="800" />
 
 # Build
-## Using Docker 
-If yours host device is with UBUNTU 18.04, it is highly recommended to build and run this project in a docker because the docker is `FROM ros:melodic-ros-core-bionic`. Otherwise, you can also build your envrionment directly on your device refering to **Using host device** section below. 
-ps: there is something wrong with ros message sent from ros-kinetic to ros-melodic, so, it your host deice is not with Ubuntu 18.04, you can not use this docker, and the docker for ros-kinetic will come soon.
-### Get docker image 
-#### For China Mainland
-The fastest way to get the image is pulling from aliyun if you live in mainland of China
-```docker
-docker pull registry.cn-hangzhou.aliyuncs.com/edward_slam/static_mapping:master_bionic_latest
-```
-or you can build it on your own device 
-```docker
-docker build --rm -t slam/static_mapping:latest . 
-```
-
-#### For somewhere else
-first, remove lines in Dockerfile (these lines are for fast access to official images in China mainland) :
-```docker
-COPY ./config/tsinghua_source.txt /etc/apt/sources.list
-RUN sh -c '. /etc/lsb-release && echo "deb http://mirrors.tuna.tsinghua.edu.cn/ros/ubuntu/ `lsb_release -cs` main" > /etc/apt/sources.list.d/ros1-latest.list' 
-```
-then, you can build it on your own using
-```docker
-docker build --rm -t slam/static_mapping:latest . 
-```
-
-### Build in docker 
-```bash 
-## get code 
-git clone https://github.com/EdwardLiuyc/StaticMapping.git
-cd StaticMapping
-
-## start the docker container
-docker run -it --rm -v --net=host `pwd`:'/home/docker/src/StaticMapping' \
-  registry.cn-hangzhou.aliyuncs.com/edward_slam/static_mapping:master_bionic_latest /bin/bash
-
-## in the container 
-mkdir -p build && cd build
-cmake ..
-make -j8
-```
-perhaps you would meet some error like ` conflicting declaration ‘typedef struct LZ4_stream_t LZ4_stream_t’ `, just refer to this [tricky solution](https://github.com/ethz-asl/lidar_align/issues/16#issuecomment-505393420)
-
+> For now, It is recommended to build this repo in your host device but not in docker, due to that the docker image is not enough tested.
 ## Using host device
 ### Requirements 
 > Ros should be installed in the first place, You can refer to [http://wiki.ros.org/kinetic/Installation/Ubuntu](http://wiki.ros.org/kinetic/Installation/Ubuntu) for more information for installing ROS kinetic or higher version. This repo has been tested in kinetic and melodic.
@@ -98,6 +57,49 @@ mkdir build && cd build
 cmake ..
 make -j8
 ```
+
+## Using Docker 
+If yours host device is with UBUNTU 18.04, it is highly recommended to build and run this project in a docker because the docker is `FROM ros:melodic-ros-core-bionic`. Otherwise, you can also build your envrionment directly on your device refering to **Using host device** section below. 
+ps: there is something wrong with ros message sent from ros-kinetic to ros-melodic, so, it your host deice is not with Ubuntu 18.04, you can not use this docker, and the docker for ros-kinetic will come soon.
+### Get docker image 
+#### For China Mainland
+The fastest way to get the image is pulling from aliyun if you live in mainland of China
+```docker
+docker pull registry.cn-hangzhou.aliyuncs.com/edward_slam/static_mapping:master_bionic_latest
+```
+or you can build it on your own device 
+```docker
+docker build --rm -t slam/static_mapping:latest . 
+```
+
+#### For somewhere else
+first, remove lines in Dockerfile (these lines are for fast access to official images in China mainland) :
+```docker
+COPY ./config/tsinghua_source.txt /etc/apt/sources.list
+RUN sh -c '. /etc/lsb-release && echo "deb http://mirrors.tuna.tsinghua.edu.cn/ros/ubuntu/ `lsb_release -cs` main" > /etc/apt/sources.list.d/ros1-latest.list' 
+```
+then, you can build it on your own using
+```docker
+docker build --rm -t slam/static_mapping:latest . 
+```
+
+### Build in docker 
+```bash 
+## get code 
+git clone https://github.com/EdwardLiuyc/StaticMapping.git
+cd StaticMapping
+
+## start the docker container
+docker run -it --rm -v --net=host `pwd`:'/home/docker/src/StaticMapping' \
+  registry.cn-hangzhou.aliyuncs.com/edward_slam/static_mapping:master_bionic_latest /bin/bash
+
+## in the container 
+mkdir -p build && cd build
+cmake ..
+make -j8
+```
+perhaps you would meet some error like ` conflicting declaration ‘typedef struct LZ4_stream_t LZ4_stream_t’ `, just refer to this [tricky solution](https://github.com/ethz-asl/lidar_align/issues/16#issuecomment-505393420)
+
 
 # How to use?
 > You can do these in or out of the docker container used for building

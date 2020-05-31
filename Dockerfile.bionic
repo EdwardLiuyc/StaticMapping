@@ -9,7 +9,7 @@ COPY ./config/tsinghua_source.txt /etc/apt/sources.list
 RUN sh -c '. /etc/lsb-release && echo "deb http://mirrors.tuna.tsinghua.edu.cn/ros/ubuntu/ `lsb_release -cs` main" > /etc/apt/sources.list.d/ros1-latest.list'
 
 RUN apt -y update && apt -y upgrade && \
-  apt -y install cmake libboost-dev libeigen3-dev libpng-dev libgoogle-glog-dev libatlas-base-dev \
+  apt -y install cmake gcc g++ libboost-all-dev libeigen3-dev libpng-dev libgoogle-glog-dev libatlas-base-dev \
   libsuitesparse-dev libpcl-dev libceres-dev wget libmetis-dev \
   vim.tiny imagemagick git \
   ros-melodic-tf* ros-melodic-pcl* ros-melodic-opencv* ros-melodic-urdf
