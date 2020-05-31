@@ -11,7 +11,7 @@ RUN sh -c '. /etc/lsb-release && echo "deb http://mirrors.tuna.tsinghua.edu.cn/r
 RUN apt -y update && apt -y upgrade && \
   apt -y install cmake libboost-dev libeigen3-dev libpng-dev libgoogle-glog-dev libatlas-base-dev \
   libsuitesparse-dev libpcl-dev libceres-dev wget libmetis-dev \
-  vim.tiny imagemagick \
+  vim.tiny imagemagick git \
   ros-melodic-tf* ros-melodic-pcl* ros-melodic-opencv* ros-melodic-urdf
 
 # Enable tab completion by uncommenting it from /etc/bash.bashrc
@@ -40,14 +40,11 @@ ENV PATH /home/docker/.local/bin:$PATH
 # Avoid first use of sudo warning. c.f. https://askubuntu.com/a/22614/781671
 RUN touch $HOME/.sudo_as_admin_successful
 
-COPY setup/install_libnabo.sh $HOME/src
-RUN cd $HOME/src && sudo chmod +x install_libnabo.sh && ./install_libnabo.sh
-COPY setup/install_libpointmatcher.sh $HOME/src
-RUN cd $HOME/src && sudo chmod +x install_libpointmatcher.sh && ./install_libpointmatcher.sh
-COPY setup/install_geographiclib.sh $HOME/src
-RUN cd $HOME/src && sudo chmod +x install_geographiclib.sh && ./install_geographiclib.sh
-COPY setup/install_gtsam.sh $HOME/src
-RUN cd $HOME/src && sudo chmod +x install_gtsam.sh && ./install_gtsam.sh
+COPY setup/* $HOME/src/
+RUN sudo chmod +x $HOME/src/install_libnabo.sh && $HOME/src/install_libnabo.sh
+RUN sudo chmod +x install_libpointmatcher.sh && $HOME/src/install_libpointmatcher.sh
+RUN sudo chmod +x install_geographiclib.sh && $HOME/src/install_geographiclib.sh
+RUN sudo chmod +x install_gtsam.sh && $HOME/src/install_gtsam.sh
 
 RUN sudo mv /usr/include/flann/ext/lz4.h /usr/include/flann/ext/lz4.h.bak && \
   sudo mv /usr/include/flann/ext/lz4hc.h /usr/include/flann/ext/lz4.hc.bak && \
