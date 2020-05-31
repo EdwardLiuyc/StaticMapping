@@ -40,42 +40,16 @@ ENV PATH /home/docker/.local/bin:$PATH
 # Avoid first use of sudo warning. c.f. https://askubuntu.com/a/22614/781671
 RUN touch $HOME/.sudo_as_admin_successful
 
+COPY setup/install_libnabo.sh ~/src
+RUN cd ~/src && ./install_libnabo.sh
+COPY setup/install_libpointmatcher.sh ~/src
+RUN cd ~/src && ./install_libpointmatcher.sh
+COPY setup/install_geographiclib.sh ~/src
+RUN cd ~/src && ./install_geographiclib.sh
+COPY setup/install_gtsam.sh ~/src
+RUN cd ~/src && ./install_gtsam.sh
+
 RUN sudo mv /usr/include/flann/ext/lz4.h /usr/include/flann/ext/lz4.h.bak && \
   sudo mv /usr/include/flann/ext/lz4hc.h /usr/include/flann/ext/lz4.hc.bak && \
   sudo ln -s /usr/include/lz4.h /usr/include/flann/ext/lz4.h && \
   sudo ln -s /usr/include/lz4hc.h /usr/include/flann/ext/lz4hc.h
-
-## Get All Code first
-RUN git clone https://github.com/ethz-asl/libnabo.git && \
-  git clone https://github.com/ethz-asl/libpointmatcher.git && \
-  wget https://nchc.dl.sourceforge.net/project/geographiclib/distrib/GeographicLib-1.50.1.tar.gz && \
-  git clone https://bitbucket.org/gtborg/gtsam.git
-
-## build dependencies
-## libnabo 
-RUN cd libnabo && \
-  git checkout tags/1.0.7 && \
-  mkdir build && cd build && \
-  cmake .. && make -j4 && \
-  sudo make install && cd ~/src
-
-## libpointmatcher 
-RUN cd libpointmatcher && \
-  git checkout tags/1.3.1 && \
-  mkdir build && cd build && \
-  cmake .. && make -j4 && \
-  sudo make install && cd ~/src
-
-## Geographic
-RUN tar -zxvf GeographicLib-1.50.1.tar.gz && cd GeographicLib-1.50.1 && \
-  mkdir build && cd build && \
-  cmake .. && make -j4 && \
-  sudo make install && cd ~/src
-
-## gtsam
-RUN cd gtsam && \
-  git checkout tags/4.0.0-alpha2 && \
-  mkdir build && cd build && \
-  cmake -DGTSAM_USE_SYSTEM_EIGEN=ON .. && \
-  make -j4 && \
-  sudo make install 
