@@ -82,6 +82,8 @@ struct ImuMsg {
 
   using Ptr = std::shared_ptr<ImuMsg>;
   using ConstPtr = std::shared_ptr<const ImuMsg>;
+
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 /************ NavSatStatus **************/
@@ -118,18 +120,24 @@ struct NavSatFixMsg {
   uint8_t position_covariance_type;
 };
 
+struct OdomInnerPose {
+  Eigen::Quaterniond orientation;
+  Eigen::Vector3d position;
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+};
+
 struct OdomMsg {
   using Ptr = std::shared_ptr<OdomMsg>;
   using ConstPtr = std::shared_ptr<const OdomMsg>;
+
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   Header header;
   std::string child_frame_id;
 
   struct PoseWithCovariance {
-    struct {
-      Eigen::Vector3d position;
-      Eigen::Quaterniond orientation;
-    } pose;
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+    OdomInnerPose pose;
     double covariance[36];
   } pose;
 

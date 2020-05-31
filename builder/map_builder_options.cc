@@ -226,6 +226,9 @@ MapBuilderOptions& MapBuilder::Initialise(const char* config_file_name) {
                       isam_optimizer_options.use_odom, bool, bool);
     GET_SINGLE_OPTION(back_end_node, "isam_optimizer_options", "use_gps",
                       isam_optimizer_options.use_gps, bool, bool);
+    GET_SINGLE_OPTION(back_end_node, "isam_optimizer_options",
+                      "output_graph_pic",
+                      isam_optimizer_options.output_graph_pic, bool, bool);
 
     auto& loop_detector_setting =
         options_.back_end_options.loop_detector_setting;

@@ -40,6 +40,11 @@ ENV PATH /home/docker/.local/bin:$PATH
 # Avoid first use of sudo warning. c.f. https://askubuntu.com/a/22614/781671
 RUN touch $HOME/.sudo_as_admin_successful
 
+RUN sudo mv /usr/include/flann/ext/lz4.h /usr/include/flann/ext/lz4.h.bak && \
+  sudo mv /usr/include/flann/ext/lz4hc.h /usr/include/flann/ext/lz4.hc.bak && \
+  sudo ln -s /usr/include/lz4.h /usr/include/flann/ext/lz4.h && \
+  sudo ln -s /usr/include/lz4hc.h /usr/include/flann/ext/lz4hc.h
+
 ## Get All Code first
 RUN git clone https://github.com/ethz-asl/libnabo.git && \
   git clone https://github.com/ethz-asl/libpointmatcher.git && \

@@ -262,7 +262,7 @@ class MapBuilder {
   std::unique_ptr<registrator::Interface<PointType>> scan_matcher_ = nullptr;
   std::unique_ptr<std::thread> scan_match_thread_;
   std::vector<std::shared_ptr<Frame<PointType>>> frames_;
-  bool scan_match_thread_running_ = false;
+  std::atomic<bool> scan_match_thread_running_;
   bool got_first_point_cloud_ = false;
 
   // ************************ back end ************************
