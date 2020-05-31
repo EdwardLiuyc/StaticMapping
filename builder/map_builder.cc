@@ -29,6 +29,8 @@
 #include "unsupported/Eigen/MatrixFunctions"
 
 // local headers
+#include "back_end/isam_optimizer.h"
+#include "builder/data_collector.h"
 #include "builder/map_builder.h"
 #include "common/macro_defines.h"
 #include "common/make_unique.h"

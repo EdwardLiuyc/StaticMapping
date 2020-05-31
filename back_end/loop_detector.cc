@@ -24,6 +24,7 @@
 #include <limits>
 
 #include "back_end/loop_detector.h"
+#include "builder/submap.h"
 #include "common/simple_thread_pool.h"
 #include "registrators/icp_pointmatcher.h"
 

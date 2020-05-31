@@ -42,9 +42,7 @@
 
 // local headers
 #include <boost/optional.hpp>
-#include "back_end/isam_optimizer.h"
 #include "back_end/options.h"
-#include "builder/data_collector.h"
 #include "builder/msg_conversion.h"
 #include "builder/multi_resolution_voxel_map.h"
 #include "builder/pose_extrapolator.h"
@@ -54,6 +52,16 @@
 #include "registrators/interface.h"
 
 namespace static_map {
+
+// forward declarations
+template <typename PointT>
+class DataCollector;
+
+namespace back_end {
+template <typename PointT>
+class IsamOptimizer;
+}
+
 namespace front_end {
 
 struct Options {

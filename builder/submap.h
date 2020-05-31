@@ -38,10 +38,7 @@
 #include <vector>
 // local
 #include "builder/frame.h"
-#include "builder/multi_resolution_voxel_map.h"
-#include "builder/random_sample_with_plane_detect.h"
 #include "common/mutex.h"
-#include "registrators/multiview_registrator_lum_pcl.h"
 
 #include <boost/thread/pthread/shared_mutex.hpp>
 
@@ -69,8 +66,6 @@ struct SubmapId {
     return out.str();
   }
 };
-
-using static_map::registrator::MultiviewRegistratorLumPcl;
 
 struct SubmapOptions {
   bool enable_inner_multiview_icp = false;

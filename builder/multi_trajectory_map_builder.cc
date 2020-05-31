@@ -22,6 +22,8 @@
 
 // local
 #include "builder/multi_trajectory_map_builder.h"
+#include "builder/multi_resolution_voxel_map.h"
+#include "builder/trajectory.h"
 #include "common/file_utils.h"
 #include "common/math.h"
 #include "common/pugixml.hpp"

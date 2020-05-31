@@ -23,12 +23,11 @@
 #ifndef BACK_END_LOOP_DETECTOR_H_
 #define BACK_END_LOOP_DETECTOR_H_
 
+#include <Eigen/Eigen>
 // stl
 #include <memory>
 #include <utility>
 #include <vector>
-// local
-#include "builder/submap.h"
 
 #ifdef _USE_TBB_
 #include <tbb/atomic.h>
@@ -36,6 +35,10 @@
 #endif
 
 namespace static_map {
+
+template <typename PointType>
+class Submap;
+
 namespace back_end {
 
 struct LoopDetectorSettings {
