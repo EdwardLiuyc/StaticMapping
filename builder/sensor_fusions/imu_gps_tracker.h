@@ -35,11 +35,17 @@
 #include <memory>
 
 #include "builder/sensor_fusions/interface.h"
-#include "builder/sensors.h"
 #include "common/mutex.h"
 #include "common/simple_time.h"
 
 namespace static_map {
+
+namespace sensors {
+struct ImuMsg;
+struct GpsEnuMsg;
+struct OdomMsg;
+};  // namespace sensors
+
 namespace sensor_fusions {
 
 // use gtsam LM to do the state estimation with imu factors and gps factors

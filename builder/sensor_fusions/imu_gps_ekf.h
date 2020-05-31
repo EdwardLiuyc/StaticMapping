@@ -24,11 +24,16 @@
 #define BUILDER_SENSOR_FUSIONS_IMU_GPS_EKF_H_
 
 #include "builder/sensor_fusions/interface.h"
-#include "builder/sensors.h"
-#include "common/mutex.h"
 #include "common/simple_time.h"
 
 namespace static_map {
+
+namespace sensors {
+struct ImuMsg;
+struct GpsEnuMsg;
+struct OdomMsg;
+};  // namespace sensors
+
 namespace sensor_fusions {
 
 class ImuGpsEkf : public Interface {
