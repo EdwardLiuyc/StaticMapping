@@ -21,11 +21,16 @@
 // SOFTWARE.
 
 #include "builder/submap.h"
+#include "builder/multi_resolution_voxel_map.h"
+#include "builder/random_sample_with_plane_detect.h"
 #include "common/make_unique.h"
 #include "common/point_utils.h"
 #include "common/simple_time.h"
+#include "registrators/multiview_registrator_lum_pcl.h"
 
 namespace static_map {
+
+using static_map::registrator::MultiviewRegistratorLumPcl;
 
 template <typename PointType>
 void Submap<PointType>::InsertFrame(

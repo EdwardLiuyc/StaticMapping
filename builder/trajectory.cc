@@ -22,7 +22,9 @@
 
 #include <utility>
 // local
+#include "builder/submap.h"
 #include "builder/trajectory.h"
+#include "common/pugixml.hpp"
 
 namespace static_map {
 

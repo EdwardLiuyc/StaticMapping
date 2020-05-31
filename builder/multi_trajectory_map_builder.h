@@ -30,9 +30,11 @@
 // local
 #include "back_end/loop_detector.h"
 #include "back_end/multi_trajectory_optimizer.h"
-#include "builder/trajectory.h"
 
 namespace static_map {
+
+template <typename PointT>
+class Trajectory;
 
 struct MultiTrajectoryMapBuilderOptions {
   back_end::LoopDetectorSettings loop_dettect_settings;

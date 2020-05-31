@@ -26,11 +26,15 @@
 #include <memory>
 #include <string>
 #include <vector>
-// local
-#include "builder/submap.h"
-#include "common/pugixml.hpp"
+
+namespace pugi {
+class xml_node;
+}
 
 namespace static_map {
+
+template <typename PointType>
+class Submap;
 
 /*
  * @class Trajectory
@@ -110,7 +114,7 @@ class Trajectory {
   // Modifiers
   inline void push_back(const std::shared_ptr<Submap<PointT>>& submap) {
     CHECK(submap);
-    CHECK(submap->GetId().trajectory_index == id_);
+    // CHECK(submap->GetId().trajectory_index == id_);
 
     boost::upgrade_lock<ReadWriteMutex> locker(mutex_);
     WriteMutexLocker write_locker(locker);
