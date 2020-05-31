@@ -21,8 +21,8 @@
 // SOFTWARE.
 
 #include "builder/sensor_fusions/imu_gps_tracker.h"
+#include "builder/sensors.h"
 #include "common/make_unique.h"
-#include "glog/logging.h"
 
 namespace static_map {
 namespace sensor_fusions {

@@ -23,10 +23,17 @@
 #ifndef BUILDER_SENSOR_FUSIONS_INTERFACE_H_
 #define BUILDER_SENSOR_FUSIONS_INTERFACE_H_
 
-#include "builder/sensors.h"
 #include "glog/logging.h"
 
 namespace static_map {
+
+// forward declare to speed compiling
+namespace sensors {
+struct ImuMsg;
+struct GpsEnuMsg;
+struct OdomMsg;
+};  // namespace sensors
+
 namespace sensor_fusions {
 
 class Interface {
