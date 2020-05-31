@@ -45,15 +45,20 @@
 #include "back_end/loop_detector.h"
 #include "back_end/map_gps_matcher.h"
 #include "back_end/view_graph.h"
-#include "builder/sensors.h"
 #include "builder/submap.h"
 
 namespace static_map {
+// forward declare
+namespace sensors {
+struct ImuMsg;
+}
+
 namespace back_end {
 
 struct IsamOptimizerOptions {
   bool use_odom = false;
   bool use_gps = false;
+  bool output_graph_pic = false;
   int gps_skip_num = 25;
 };
 

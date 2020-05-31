@@ -64,6 +64,8 @@ class Frame : public SimpleFrame<PointType> {
   using PointCloudPtr = typename PointCloudType::Ptr;
   using PointCloudConstPtr = typename PointCloudType::ConstPtr;
 
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   Frame() : SimpleFrame<PointType>() {}
   ~Frame() {}
 

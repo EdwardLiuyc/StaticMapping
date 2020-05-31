@@ -74,7 +74,7 @@ IsamOptimizer<PointT>::IsamOptimizer(const IsamOptimizerOptions &options,
   gtsam::ISAM2DoglegParams dogleg_param;
   dogleg_param.setVerbose(false);
   parameters.setOptimizationParams(dogleg_param);
-  isam_ = common::make_unique<gtsam::ISAM2>(parameters);
+  isam_.reset(new gtsam::ISAM2(parameters));
 
   prior_noise_model_ = NM::Isotropic::Sigma(6, 1.e-6);
   gps_noise_model_ = NM::Isotropic::Sigma(3, 0.15);
@@ -337,8 +337,10 @@ void IsamOptimizer<PointT>::RunFinalOptimazation() {
   gtsam::Values estimate_poses = UpdateAllPose();
 
   // @todo(edward) no static directory
-  view_graph_.SaveTextFile("pcd/graph.txt");
-  view_graph_.SaveImage("pcd/graph.jpg");
+  // view_graph_.SaveTextFile("pcd/graph.txt");
+  if (options_.output_graph_pic) {
+    view_graph_.SaveImage("pcd/graph.jpg");
+  }
 
   if (options_.use_odom && calib_factor_inserted_) {
     // update the calibration result

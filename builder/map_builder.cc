@@ -57,7 +57,8 @@ MapBuilder::MapBuilder()
       use_gps_(false),
       end_all_thread_(false),
       end_managing_memory_(false),
-      submap_processing_done_(false) {}
+      submap_processing_done_(false),
+      scan_match_thread_running_(false) {}
 
 MapBuilder::~MapBuilder() {}
 
@@ -107,9 +108,10 @@ int MapBuilder::InitialiseInside() {
   }
 
   PRINT_INFO("Init isam optimizer.");
-  isam_optimizer_ = common::make_unique<back_end::IsamOptimizer<PointType>>(
+  isam_optimizer_.reset(new back_end::IsamOptimizer<PointType>(
       options_.back_end_options.isam_optimizer_options,
-      options_.back_end_options.loop_detector_setting);
+      options_.back_end_options.loop_detector_setting));
+
   isam_optimizer_->SetTransformOdomToLidar(transform_odom_lidar_);
   isam_optimizer_->SetTrackingToGps(tracking_to_gps_);
 
@@ -138,6 +140,9 @@ int MapBuilder::InitialiseInside() {
   PRINT_INFO("Init threads.");
   scan_match_thread_ = common::make_unique<std::thread>(
       std::bind(&MapBuilder::ScanMatchProcessing, this));
+  while (!scan_match_thread_running_.load()) {
+    SimpleTime::from_sec(0.01).sleep();
+  }
   submap_thread_ = common::make_unique<std::thread>(
       std::bind(&MapBuilder::SubmapProcessing, this));
 
@@ -825,7 +830,7 @@ void MapBuilder::SubmapProcessing() {
       frames_size = frames_.size();
     }
     if (frames_size - current_index < submap_frame_count) {
-      if (!scan_match_thread_running_) {
+      if (!scan_match_thread_running_.load()) {
         PRINT_INFO("no enough frames for new submap, quit");
         break;
       }
@@ -839,7 +844,8 @@ void MapBuilder::SubmapProcessing() {
     }
 
     // Adding new submap
-    auto submap = std::make_shared<Submap<PointType>>(submap_options);
+    std::shared_ptr<Submap<PointType>> submap(
+        new Submap<PointType>(submap_options));
     SubmapId current_id;
     current_id.trajectory_index = current_trajectory_->GetId();
     auto& current_submap_index = current_id.submap_index;
@@ -906,7 +912,7 @@ void MapBuilder::FinishAllComputations() {
         PRINT_COLOR_FMT(BOLD, "%s", progress_info.str().c_str());
         delay = 0;
       }
-    } while (scan_match_thread_running_);
+    } while (scan_match_thread_running_.load());
 
     scan_match_thread_->join();
   }
