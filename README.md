@@ -158,7 +158,10 @@ when finished, just press 'CTRL+C' to terminate the mapping process. NOTICE that
 Finally, you will get a static map like this:  
 <img src="doc/xi1_xi2.png" width="800" />  
 part of it:  
-<img src="doc/detail.png" width="800" />
+<img src="doc/detail.png" width="800" />  
+
+another example indoor(garage):  
+<img src="doc/garage.png" width="800" />
 
 # Document  
 You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` folder.
