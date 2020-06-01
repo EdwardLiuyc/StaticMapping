@@ -38,6 +38,7 @@
 #include <vector>
 // local
 #include "builder/frame.h"
+#include "builder/submap_options.h"
 #include "common/mutex.h"
 
 #include <boost/thread/pthread/shared_mutex.hpp>
@@ -65,20 +66,6 @@ struct SubmapId {
     out << "(" << trajectory_index << "," << submap_index << ")";
     return out.str();
   }
-};
-
-struct SubmapOptions {
-  bool enable_inner_multiview_icp = false;
-  bool enable_voxel_filter = false;
-  bool enable_random_sampleing = false;
-  bool enable_check = true;
-  float random_sampling_rate = 0.5;
-  int32_t frame_count = 5;
-
-  // disk saving function
-  bool enable_disk_saving = false;
-  int32_t disk_saving_delay = 10;  // seconds
-  std::string saving_name_prefix = "submap_";
 };
 
 template <typename PointType>

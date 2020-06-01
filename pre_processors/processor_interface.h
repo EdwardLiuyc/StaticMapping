@@ -42,7 +42,7 @@ class ProcesserInterface : public XmlInterface {
   using PointCloudConstPtr = typename PointCloudType::ConstPtr;
 
   ProcesserInterface() : XmlInterface(), inner_cloud_(nullptr) {}
-  ~ProcesserInterface() {}
+  virtual ~ProcesserInterface() {}
 
   ProcesserInterface(const ProcesserInterface&) = delete;
   ProcesserInterface& operator=(const ProcesserInterface&) = delete;

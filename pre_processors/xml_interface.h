@@ -50,7 +50,8 @@ class XmlInterface {
       float_params_[i] = NULL;
     }
   }
-  ~XmlInterface() {}
+
+  virtual ~XmlInterface() {}
   XmlInterface(const XmlInterface&) = delete;
   XmlInterface& operator=(const XmlInterface&) = delete;
 

@@ -20,25 +20,27 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BACK_END_OPTIONS_H_
-#define BACK_END_OPTIONS_H_
+#ifndef BUILDER_SUBMAP_OPTIONS_H_
+#define BUILDER_SUBMAP_OPTIONS_H_
 
-#include "back_end/isam_optimizer.h"
-#include "back_end/loop_detector_options.h"
-#include "builder/submap_options.h"
-#include "registrators/interface.h"
+#include <string>
 
 namespace static_map {
-namespace back_end {
 
-struct Options {
-  static_map::registrator::MatcherOptions submap_matcher_options;
-  SubmapOptions submap_options;
-  IsamOptimizerOptions isam_optimizer_options;
-  LoopDetectorSettings loop_detector_setting;
+struct SubmapOptions {
+  bool enable_inner_multiview_icp = false;
+  bool enable_voxel_filter = false;
+  bool enable_random_sampleing = false;
+  bool enable_check = true;
+  float random_sampling_rate = 0.5;
+  int32_t frame_count = 5;
+
+  // disk saving function
+  bool enable_disk_saving = false;
+  int32_t disk_saving_delay = 10;  // seconds
+  std::string saving_name_prefix = "submap_";
 };
 
-}  // namespace back_end
 }  // namespace static_map
 
-#endif  // BACK_END_OPTIONS_H_
+#endif  // BUILDER_SUBMAP_OPTIONS_H_

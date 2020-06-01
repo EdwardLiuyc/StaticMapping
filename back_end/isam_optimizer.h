@@ -42,8 +42,7 @@
 #include <utility>
 // local
 #include <boost/optional.hpp>
-#include "back_end/loop_detector.h"
-#include "back_end/map_gps_matcher.h"
+#include "back_end/loop_detector_options.h"
 #include "back_end/view_graph.h"
 #include "builder/submap.h"
 
@@ -54,6 +53,9 @@ struct ImuMsg;
 }
 
 namespace back_end {
+
+template <typename PointT>
+class LoopDetector;
 
 struct IsamOptimizerOptions {
   bool use_odom = false;
@@ -122,7 +124,7 @@ class IsamOptimizer {
   Eigen::Matrix4f tf_odom_lidar_ = Eigen::Matrix4f::Identity();
   Eigen::Matrix4f tf_tracking_gps_ = Eigen::Matrix4f::Identity();
 
-  LoopDetector<PointT> loop_detector_;
+  std::unique_ptr<LoopDetector<PointT>> loop_detector_;
   IsamOptimizerOptions options_;
 
   std::map<int /* frame index*/, EnuPosition> cached_enu_;
