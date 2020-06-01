@@ -20,25 +20,26 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BACK_END_OPTIONS_H_
-#define BACK_END_OPTIONS_H_
-
-#include "back_end/isam_optimizer.h"
-#include "back_end/loop_detector_options.h"
-#include "builder/submap_options.h"
-#include "registrators/interface.h"
+#ifndef BACK_END_LOOP_DETECTOR_OPTIONS_H_
+#define BACK_END_LOOP_DETECTOR_OPTIONS_H_
 
 namespace static_map {
 namespace back_end {
 
-struct Options {
-  static_map::registrator::MatcherOptions submap_matcher_options;
-  SubmapOptions submap_options;
-  IsamOptimizerOptions isam_optimizer_options;
-  LoopDetectorSettings loop_detector_setting;
+struct LoopDetectorSettings {
+  bool use_gps = false;
+  bool use_descriptor = false;
+  bool output_matched_cloud = false;
+  int loop_ignore_threshold = 15;
+  int trying_detect_loop_count = 1;
+  int nearest_history_pos_num = 4;
+  float max_close_loop_distance = 25.f;
+  float max_close_loop_z_distance = 1.f;
+  float m2dp_match_score = 0.99f;
+  float accept_scan_match_score = 0.75f;
 };
 
 }  // namespace back_end
 }  // namespace static_map
 
-#endif  // BACK_END_OPTIONS_H_
+#endif  // BACK_END_LOOP_DETECTOR_OPTIONS_H_

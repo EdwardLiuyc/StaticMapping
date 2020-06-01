@@ -30,6 +30,7 @@
 
 // local headers
 #include "back_end/isam_optimizer.h"
+#include "back_end/loop_detector.h"
 #include "builder/data_collector.h"
 #include "builder/map_builder.h"
 #include "common/macro_defines.h"

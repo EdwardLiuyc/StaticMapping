@@ -30,6 +30,7 @@
 
 // local
 #include "back_end/isam_optimizer.h"
+#include "back_end/loop_detector.h"
 #include "back_end/odom_to_pose_factor.h"
 #include "common/make_unique.h"
 #include "common/math.h"
@@ -66,7 +67,7 @@ template <typename PointT>
 IsamOptimizer<PointT>::IsamOptimizer(const IsamOptimizerOptions &options,
                                      const LoopDetectorSettings &l_d_setting)
     : isam_factor_graph_(new gtsam::NonlinearFactorGraph),
-      loop_detector_(l_d_setting),
+      loop_detector_(new LoopDetector<PointT>(l_d_setting)),
       options_(options) {
   gtsam::ISAM2Params parameters;
   parameters.relinearizeThreshold = 0.01;
@@ -104,7 +105,7 @@ void IsamOptimizer<PointT>::IsamUpdate(const int update_time) {
 template <typename PointT>
 gtsam::Values IsamOptimizer<PointT>::UpdateAllPose() {
   gtsam::Values estimate_poses = isam_->calculateBestEstimate();
-  const auto &frames = loop_detector_.GetFrames();
+  const auto &frames = loop_detector_->GetFrames();
   const int frames_size = frames.size();
   for (int i = 0; i < frames_size; ++i) {
     Eigen::Matrix4f pose =
@@ -125,7 +126,7 @@ void IsamOptimizer<PointT>::AddLoopCloseEdge(
       loop_close_noise, Pose3(transform_tgt_to_src.cast<double>()),
       between(Pose3_(POSE_KEY(target_index)), Pose3_(POSE_KEY(source_index))));
 
-  auto &frames = loop_detector_.GetFrames();
+  auto &frames = loop_detector_->GetFrames();
   frames[target_index]->AddConnectedSubmap(frames[source_index]->GetId());
   view_graph_.AddEdge(target_index, source_index, transform_tgt_to_src);
 }
@@ -135,7 +136,7 @@ void IsamOptimizer<PointT>::AddVertex(
     const int &index, const Eigen::Matrix4f &pose,
     const Eigen::Matrix4f &transform_from_last_pose,
     const NM::Base::shared_ptr &odom_noise) {
-  auto &frames = loop_detector_.GetFrames();
+  auto &frames = loop_detector_->GetFrames();
   gtsam::Pose3 pose_gtsam = gtsam::Pose3(pose.cast<double>());
   gtsam::Pose3 transform_gtsam =
       gtsam::Pose3(transform_from_last_pose.cast<double>());
@@ -170,7 +171,7 @@ void IsamOptimizer<PointT>::AddVertex(
 
 template <typename PointT>
 double IsamOptimizer<PointT>::AnalyseAllFramePoseForMaxRotation() {
-  const auto &frames = loop_detector_.GetFrames();
+  const auto &frames = loop_detector_->GetFrames();
 
   if (frames.size() <= 1) {
     return 0.;
@@ -194,8 +195,8 @@ template <typename PointT>
 void IsamOptimizer<PointT>::AddFrame(
     const std::shared_ptr<Submap<PointT>> &frame, const double match_score) {
   CHECK(frame);
-  auto result = loop_detector_.AddFrame(frame, true);
-  const auto &frames = loop_detector_.GetFrames();
+  auto result = loop_detector_->AddFrame(frame, true);
+  const auto &frames = loop_detector_->GetFrames();
   int frame_index = static_cast<int>(frames.size()) - 1;
   CHECK_EQ(frame_index, result.current_frame_index);
   PRINT_DEBUG_FMT("optimizer inserting a new frame, match score: %lf",
@@ -372,7 +373,7 @@ Eigen::Matrix4d IsamOptimizer<PointT>::GetGpsCoordTransform() {
 template <typename PointT>
 void IsamOptimizer<PointT>::SetTransformOdomToLidar(const Eigen::Matrix4f &t) {
   tf_odom_lidar_ = t;
-  loop_detector_.SetTransformOdomToLidar(t);
+  loop_detector_->SetTransformOdomToLidar(t);
 }
 
 template <typename PointT>

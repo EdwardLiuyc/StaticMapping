@@ -29,6 +29,8 @@
 #include <utility>
 #include <vector>
 
+#include "back_end/loop_detector_options.h"
+
 #ifdef _USE_TBB_
 #include <tbb/atomic.h>
 #include <tbb/concurrent_vector.h>
@@ -40,19 +42,6 @@ template <typename PointType>
 class Submap;
 
 namespace back_end {
-
-struct LoopDetectorSettings {
-  bool use_gps = false;
-  bool use_descriptor = false;
-  bool output_matched_cloud = false;
-  int loop_ignore_threshold = 15;
-  int trying_detect_loop_count = 1;
-  int nearest_history_pos_num = 4;
-  float max_close_loop_distance = 25.f;
-  float max_close_loop_z_distance = 1.f;
-  float m2dp_match_score = 0.99f;
-  float accept_scan_match_score = 0.75f;
-};
 
 template <typename PointT>
 class LoopDetector {
@@ -96,9 +85,8 @@ class LoopDetector {
   DetectResult AddFrame(const std::shared_ptr<Submap<PointT>> &submap,
                         bool do_loop_detect = true);
   void SetSearchWindow(const int start_index, const int end_index);
-  inline std::vector<std::shared_ptr<Submap<PointT>>> &GetFrames() {
-    return all_frames_;
-  }
+  std::vector<std::shared_ptr<Submap<PointT>>> &GetFrames();
+
   /// @brief set static tf link from odom to lidar(cloud frame)
   void SetTransformOdomToLidar(const Eigen::Matrix4f &t);
 
@@ -124,6 +112,12 @@ class LoopDetector {
   int search_window_start_ = -1;
   int search_window_end_ = -1;
 };
+
+template <typename PointT>
+inline std::vector<std::shared_ptr<Submap<PointT>>>
+    &LoopDetector<PointT>::GetFrames() {
+  return all_frames_;
+}
 
 }  // namespace back_end
 }  // namespace static_map
