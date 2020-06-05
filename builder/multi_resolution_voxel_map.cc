@@ -27,6 +27,20 @@
 namespace static_map {
 
 template <typename PointT>
+void MultiResolutionVoxelMap<PointT>::Initialise(const MrvmSettings& settings) {
+  settings_ = settings;
+  CHECK_GT(settings_.max_point_num_in_cell, 0);
+
+  settings_.hit_prob = Clamp(settings_.hit_prob, kMinHitProb, kMaxProb);
+  settings_.miss_prob = Clamp(settings_.miss_prob, kMinProb, kMaxMissProb);
+}
+
+template <typename PointT>
+void MultiResolutionVoxelMap<PointT>::SetOffsetZ(const float& offset) {
+  settings_.z_offset = offset;
+}
+
+template <typename PointT>
 void MultiResolutionVoxelMap<PointT>::InsertPointCloud(
     const MultiResolutionVoxelMap<PointT>::PointCloudPtr& cloud,
     const Eigen::Vector3f& origin) {

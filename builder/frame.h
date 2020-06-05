@@ -74,15 +74,9 @@ class Frame : public SimpleFrame<PointType> {
 
   FrameId id_;
 
-  inline void ToPcdFile(const std::string& filename) override {
-    if (!filename.empty()) {
-      pcl::io::savePCDFileASCII(filename, *this->cloud_);
-    } else {
-      pcl::io::savePCDFileASCII(id_.DebugString() + ".pcd", *this->cloud_);
-    }
-  }
+  void ToPcdFile(const std::string& filename) override;
 
-  PointCloudPtr Cloud() override { return this->cloud_; }
+  PointCloudPtr Cloud() override;
 };
 
 }  // namespace static_map

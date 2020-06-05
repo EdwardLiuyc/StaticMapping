@@ -120,6 +120,8 @@ class MultiResolutionVoxelMap {
   MultiResolutionVoxelMap(const MultiResolutionVoxelMap&) = delete;
   MultiResolutionVoxelMap& operator=(const MultiResolutionVoxelMap&) = delete;
 
+  void Initialise(const MrvmSettings& settings);
+
   void InsertPointCloud(const PointCloudPtr& cloud,
                         const Eigen::Vector3f& origin);
 
@@ -132,38 +134,10 @@ class MultiResolutionVoxelMap {
                           bool compress = true);
 
   // Setters for the inner parameters
-  inline void SetHitProbability(float hit_prob) {
-    settings_.hit_prob = Clamp(hit_prob, kMinHitProb, kMaxProb);
-  }
-  inline void SetMissProbability(float miss_prob) {
-    settings_.miss_prob = Clamp(miss_prob, kMinProb, kMaxMissProb);
-  }
-  inline void SetLowResolution(const float& res) {
-    settings_.low_resolution = res;
-  }
-  inline void SetHighResolution(const float& res) {
-    settings_.high_resolution = res;
-  }
-  inline void SetOffsetZ(const float& offset) { settings_.z_offset = offset; }
+  void SetOffsetZ(const float& offset);
 
-  // Getter for the inner parameters
-  inline float GetHitProbability() const { return settings_.hit_prob; }
-  inline float GetMissProbability() const { return settings_.miss_prob; }
-
-  inline float ProbabilityToOdd(float prob) {
-    return std::log(prob / (1. - prob));
-  }
-  inline float OddToProbability(float odd) {
-    return 1. - 1. / (1. + std::exp(odd));
-  }
-
-  inline void Initialise(const MrvmSettings& settings) {
-    settings_ = settings;
-    CHECK_GT(settings_.max_point_num_in_cell, 0);
-
-    settings_.hit_prob = Clamp(settings_.hit_prob, kMinHitProb, kMaxProb);
-    settings_.miss_prob = Clamp(settings_.miss_prob, kMinProb, kMaxMissProb);
-  }
+  float ProbabilityToOdd(float prob);
+  float OddToProbability(float odd);
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
@@ -184,6 +158,16 @@ class MultiResolutionVoxelMap {
 
   float odds_table_[kTableSize];
 };
+
+template <typename PointT>
+inline float MultiResolutionVoxelMap<PointT>::ProbabilityToOdd(float prob) {
+  return std::log(prob / (1. - prob));
+}
+
+template <typename PointT>
+inline float MultiResolutionVoxelMap<PointT>::OddToProbability(float odd) {
+  return 1. - 1. / (1. + std::exp(odd));
+}
 
 }  // namespace static_map
 

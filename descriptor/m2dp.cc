@@ -165,8 +165,6 @@ double matchTwoM2dpDescriptors(const typename M2dp<PointType>::Descriptor& P,
 
   //   double lamda = 1.;
   //   score = std::pow( std::atanh(score), 2 ) - lamda / ( N - 3 );
-  // 这里做了一个简单的取绝对值处理，因为相关性有时候会出现接近 -1 的值
-  // 目前考虑点云不会有负相关的情况，绝对值够大就表示点云相似性够好
   return std::fabs(score);
 }
 
