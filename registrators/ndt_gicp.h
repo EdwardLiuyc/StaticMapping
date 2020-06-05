@@ -32,7 +32,7 @@
 #include "pcl/search/impl/search.hpp"
 
 #include "common/macro_defines.h"
-#include "registrators/registrator_interface.h"
+#include "registrators/interface.h"
 
 namespace static_map {
 namespace registrator {
@@ -45,6 +45,8 @@ class NdtWithGicp : public Interface<PointType> {
   explicit NdtWithGicp(bool using_voxel_filter = true,
                        double voxel_resolution = 0.2);
   ~NdtWithGicp() = default;
+
+  PROHIBIT_COPY_AND_ASSIGN(NdtWithGicp);
 
   typedef boost::shared_ptr<NdtWithGicp<PointType> > Ptr;
   typedef boost::shared_ptr<const NdtWithGicp<PointType> > ConstPtr;

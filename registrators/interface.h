@@ -21,7 +21,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#pragma once
+#ifndef REGISTRATORS_INTERFACE_H_
+#define REGISTRATORS_INTERFACE_H_
 
 #include <pcl/io/pcd_io.h>
 #include <pcl/point_types.h>
@@ -58,37 +59,19 @@ class Interface {
   typedef typename PointCloudTarget::ConstPtr PointCloudTargetConstPtr;
 
   Interface() = default;
-  ~Interface() = default;
+  virtual ~Interface() {}
 
-  virtual void setInputSource(const PointCloudSourcePtr& cloud) {
-    if (!cloud) {
-      source_cloud_ = nullptr;
-      return;
-    }
-    if (cloud->empty()) {
-      PRINT_WARNING("cloud is empty.");
-      return;
-    }
-    source_cloud_ = cloud;
-  }
+  PROHIBIT_COPY_AND_ASSIGN(Interface);
 
-  virtual void setInputTarget(const PointCloudTargetPtr& cloud) {
-    if (!cloud) {
-      target_cloud_ = nullptr;
-      return;
-    }
-    if (cloud->empty()) {
-      PRINT_WARNING("cloud is empty.");
-      return;
-    }
-    target_cloud_ = cloud;
-  }
-
+  // @todo(edward) change the function names ( naming rules )
+  virtual void setInputSource(const PointCloudSourcePtr& cloud);
+  virtual void setInputTarget(const PointCloudTargetPtr& cloud);
   virtual double getFitnessScore() { return final_score_; }
   virtual InlierPointPairs getInlierPointPairs() { return point_pairs_; }
 
   // need to be implemented by child class
-  virtual bool align(const Eigen::Matrix4f& guess, Eigen::Matrix4f& result) = 0;
+  virtual bool align(const Eigen::Matrix4f& guess,
+                     Eigen::Matrix4f& result) = 0;  // NOLINT
 
  protected:
   double final_score_;
@@ -100,6 +83,34 @@ class Interface {
   InlierPointPairs point_pairs_;
 };
 
+template <typename PointType>
+void Interface<PointType>::setInputSource(
+    const typename Interface<PointType>::PointCloudSourcePtr& cloud) {
+  if (!cloud) {
+    source_cloud_ = nullptr;
+    return;
+  }
+  if (cloud->empty()) {
+    PRINT_WARNING("cloud is empty.");
+    return;
+  }
+  source_cloud_ = cloud;
+}
+
+template <typename PointType>
+void Interface<PointType>::setInputTarget(
+    const typename Interface<PointType>::PointCloudTargetPtr& cloud) {
+  if (!cloud) {
+    target_cloud_ = nullptr;
+    return;
+  }
+  if (cloud->empty()) {
+    PRINT_WARNING("cloud is empty.");
+    return;
+  }
+  target_cloud_ = cloud;
+}
+
 }  // namespace registrator
 }  // namespace static_map
 
@@ -108,3 +119,5 @@ class Interface {
   using typename Interface<PointType>::PointCloudTarget;    \
   using typename Interface<PointType>::PointCloudSourcePtr; \
   using typename Interface<PointType>::PointCloudTargetPtr;
+
+#endif  // REGISTRATORS_INTERFACE_H_

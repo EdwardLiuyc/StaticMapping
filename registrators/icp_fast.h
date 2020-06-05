@@ -20,13 +20,14 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#pragma once
+#ifndef REGISTRATORS_ICP_FAST_H_
+#define REGISTRATORS_ICP_FAST_H_
 
 #include <memory>
 #include <vector>
 
 #include "nabo/nabo.h"
-#include "registrators/registrator_interface.h"
+#include "registrators/interface.h"
 
 namespace static_map {
 namespace registrator {
@@ -39,7 +40,10 @@ class IcpFast : public Interface<PointType> {
  public:
   USE_REGISTRATOR_CLOUDS;
 
-  IcpFast() { this->type_ = kFastIcp; }
+  IcpFast();
+  ~IcpFast() = default;
+
+  PROHIBIT_COPY_AND_ASSIGN(IcpFast);
 
   void setInputSource(const PointCloudSourcePtr& cloud) override;
   void setInputTarget(const PointCloudTargetPtr& cloud) override;
@@ -53,3 +57,5 @@ class IcpFast : public Interface<PointType> {
 
 }  // namespace registrator
 }  // namespace static_map
+
+#endif  // REGISTRATORS_ICP_FAST_H_

@@ -46,7 +46,7 @@ NdtWithGicp<PointType>::NdtWithGicp(bool using_voxel_filter,
 
 template <typename PointType>
 bool NdtWithGicp<PointType>::align(const Eigen::Matrix4f& guess,
-                                   Eigen::Matrix4f& result) {
+                                   Eigen::Matrix4f& result) {  // NOLINT
   if (using_voxel_filter_) {
     if (!down_sampled_source_cloud_) {
       down_sampled_source_cloud_ = boost::make_shared<PointCloudSource>();

@@ -20,11 +20,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#pragma once
-
-#include "registrators/registrator_interface.h"
+#ifndef REGISTRATORS_NDT_H_
+#define REGISTRATORS_NDT_H_
 
 #include "pclomp/ndt_omp_impl.hpp"
+#include "registrators/interface.h"
 
 namespace static_map {
 namespace registrator {
@@ -40,6 +40,8 @@ class Ndt : public Interface<PointType> {
   Ndt();
   ~Ndt();
 
+  PROHIBIT_COPY_AND_ASSIGN(Ndt);
+
   bool align(const Eigen::Matrix4f& guess, Eigen::Matrix4f& result) override;
 
  private:
@@ -48,3 +50,5 @@ class Ndt : public Interface<PointType> {
 
 }  // namespace registrator
 }  // namespace static_map
+
+#endif  // REGISTRATORS_NDT_H_
