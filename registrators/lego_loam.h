@@ -26,7 +26,7 @@
 
 #include "pre_processors/filter_ground_removal2.h"
 #include "pre_processors/filter_range_image.h"
-#include "registrators/registrator_interface.h"
+#include "registrators/interface.h"
 
 namespace static_map {
 namespace registrator {

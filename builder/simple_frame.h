@@ -33,7 +33,7 @@
 #include "common/simple_time.h"
 #include "descriptor/m2dp.h"
 #include "glog/logging.h"
-#include "registrators/registrator_interface.h"
+#include "registrators/interface.h"
 
 namespace static_map {
 

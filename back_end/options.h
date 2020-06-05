@@ -26,7 +26,7 @@
 #include "back_end/isam_optimizer.h"
 #include "back_end/loop_detector.h"
 #include "builder/submap.h"
-#include "registrators/registrator_interface.h"
+#include "registrators/interface.h"
 
 namespace static_map {
 namespace back_end {

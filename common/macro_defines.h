@@ -217,3 +217,15 @@ using static_map::splited_file_name;
                 << NONE_FORMAT << (DATA_TYPE)TARGET << std::endl;            \
     }                                                                        \
   }
+
+#define PROHIBIT_COPY(TypeName) TypeName(const TypeName&) = delete
+
+#define PROHIBIT_ASSIGN(TypeName) TypeName& operator=(const TypeName&) = delete
+
+#define PROHIBIT_MOVE(TypeName)  \
+  TypeName(TypeName&&) = delete; \
+  TypeName& operator=(TypeName&&) = delete
+
+#define PROHIBIT_COPY_AND_ASSIGN(TypeName) \
+  PROHIBIT_COPY(TypeName);                 \
+  PROHIBIT_ASSIGN(TypeName)

@@ -39,7 +39,7 @@ Ndt<PointType>::~Ndt() {}
 
 template <typename PointType>
 bool Ndt<PointType>::align(const Eigen::Matrix4f& guess,
-                           Eigen::Matrix4f& result) {
+                           Eigen::Matrix4f& result) {  // NOLINT
   if (!this->source_cloud_ || !this->target_cloud_) {
     return false;
   }

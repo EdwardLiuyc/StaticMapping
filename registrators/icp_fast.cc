@@ -32,7 +32,6 @@
 
 #include "common/macro_defines.h"
 #include "common/math.h"
-#include "nabo/nabo.h"
 #include "registrators/icp_fast.h"
 
 namespace static_map {
@@ -536,6 +535,11 @@ bool CheckConvergence(const std::vector<Eigen::Quaterniond>& rotations,
 }
 
 template <typename PointT>
+IcpFast<PointT>::IcpFast() : Interface<PointT>() {
+  this->type_ = kFastIcp;
+}
+
+template <typename PointT>
 void IcpFast<PointT>::setInputSource(const PointCloudSourcePtr& cloud) {
   source_cloud_.reset(new BuildData);
   source_cloud_->FromPointCloud<PointT>(cloud);
@@ -593,7 +597,7 @@ void IcpFast<PointT>::setInputTarget(const PointCloudTargetPtr& cloud) {
 
 template <typename PointT>
 bool IcpFast<PointT>::align(const Eigen::Matrix4f& guess,
-                            Eigen::Matrix4f& result) {
+                            Eigen::Matrix4f& result) {  // NOLINT
   const int target_points_count = target_cloud_->points.cols();
   const Eigen::Vector3d target_mean =
       target_cloud_->points.rowwise().sum() / target_points_count;

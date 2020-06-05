@@ -51,7 +51,7 @@
 #include "builder/sensor_fusions/imu_gps_tracker.h"
 #include "builder/trajectory.h"
 #include "pre_processors/filter_factory.h"
-#include "registrators/registrator_interface.h"
+#include "registrators/interface.h"
 
 namespace static_map {
 namespace front_end {

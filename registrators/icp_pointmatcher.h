@@ -27,7 +27,7 @@
 #include <memory>
 #include <string>
 #include "builder/msg_conversion.h"
-#include "registrators/registrator_interface.h"
+#include "registrators/interface.h"
 
 namespace static_map {
 namespace registrator {
