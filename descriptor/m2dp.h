@@ -46,7 +46,7 @@ class M2dp {
   typedef typename PointCloudSource::Ptr PointCloudSourcePtr;
   typedef typename PointCloudSource::ConstPtr PointCloudSourceConstPtr;
 
-  typedef Eigen::VectorXf Descriptor;
+  using Descriptor = Eigen::VectorXf;
 
   M2dp(double r = 0.1, double max_distance = 100., int32_t t = 16,
        int32_t p = 4, int32_t q = 16);
@@ -54,7 +54,7 @@ class M2dp {
 
   bool setInputCloud(const PointCloudSourcePtr& source);
 
-  inline Descriptor getFinalDescriptor() { return descriptor_; }
+  Descriptor getFinalDescriptor();
 
  private:
   // part III.B in paper
@@ -74,6 +74,12 @@ class M2dp {
   Eigen::MatrixXf A_;
   Descriptor descriptor_;
 };
+
+template <typename PointType>
+inline typename M2dp<PointType>::Descriptor
+M2dp<PointType>::getFinalDescriptor() {
+  return descriptor_;
+}
 
 // return the match score ( 0, 1 )
 template <typename PointType>

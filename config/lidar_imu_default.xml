@@ -105,7 +105,8 @@
         nearest_history_pos_num="5" />
     </back_end_options>
     <output_mrvm_settings
-      output_average="true"
+      output_average="false"
+      output_rgb="true"
       prob_threshold="0.57" 
       low_resolution="1." 
       high_resolution="0.1"
