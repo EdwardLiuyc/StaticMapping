@@ -90,7 +90,7 @@ git clone https://github.com/EdwardLiuyc/StaticMapping.git
 cd StaticMapping
 
 ## start the docker container
-docker run -it --rm -v --net=host `pwd`:'/home/docker/src/StaticMapping' \
+docker run -it --rm -v `pwd`:'/home/docker/src/StaticMapping' \
   registry.cn-hangzhou.aliyuncs.com/edward_slam/static_mapping:master_bionic_latest /bin/bash
 
 ## in the container 
