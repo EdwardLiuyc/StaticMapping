@@ -55,6 +55,11 @@
         enable_ndt="false" 
         use_voxel_filter="true" 
         voxel_filter_resolution="0.2">
+        <registrator_options>
+          <param name="dist_outlier_ratio"> 0.75 </param>
+          <param name="knn_normal_estimate"> 8 </param>
+          <param name="max_iteration"> 80 </param>
+        </registrator_options>
         <inner_filters>
           <filter name="GroundRemoval2" >
             <param type="1" name="r_min"> 0.1 </param>

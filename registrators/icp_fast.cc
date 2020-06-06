@@ -20,6 +20,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#include "registrators/icp_fast.h"
+
 #include <algorithm>
 #include <cstdlib>
 #include <ctime>
@@ -32,15 +34,12 @@
 
 #include "common/macro_defines.h"
 #include "common/math.h"
-#include "registrators/icp_fast.h"
 
 namespace static_map {
 namespace registrator {
 
 constexpr int kNormalEstimationKnn = 7;
 constexpr int kDim = 3;
-constexpr int kMaxIterationNum = 100;
-constexpr double kDistOutlierRatio = 0.7;
 
 using Matrix = Eigen::MatrixXd;
 using Vector = Eigen::VectorXd;
@@ -537,6 +536,14 @@ bool CheckConvergence(const std::vector<Eigen::Quaterniond>& rotations,
 template <typename PointT>
 IcpFast<PointT>::IcpFast() : Interface<PointT>() {
   this->type_ = kFastIcp;
+  REG_REGISTRATOR_INNER_OPTION("knn_normal_estimate",
+                               OptionItemDataType::kInt32,
+                               options_.knn_for_normal_estimate);
+  REG_REGISTRATOR_INNER_OPTION("max_iteration", OptionItemDataType::kInt32,
+                               options_.max_iteration);
+  REG_REGISTRATOR_INNER_OPTION("dist_outlier_ratio",
+                               OptionItemDataType::kFloat32,
+                               options_.dist_outlier_ratio);
 }
 
 template <typename PointT>
@@ -634,7 +641,7 @@ bool IcpFast<PointT>::align(const Eigen::Matrix4f& guess,
     const Matches matches(FindClosests(nns_kdtree_, step_cloud));
 
     // step2 reject outliers (outliers with weight 0)
-    const double limit = matches.GetDistsQuantile(kDistOutlierRatio);
+    const double limit = matches.GetDistsQuantile(options_.dist_outlier_ratio);
     const Matrix output_weights =
         (matches.dists.array() <= limit).cast<double>();
 
@@ -656,7 +663,7 @@ bool IcpFast<PointT>::align(const Eigen::Matrix4f& guess,
     if (CheckConvergence(rotations_iter, translations_iter)) {
       break;
     }
-    if (iterator >= kMaxIterationNum) {
+    if (iterator >= options_.max_iteration) {
       break;
     }
   }
@@ -666,7 +673,7 @@ bool IcpFast<PointT>::align(const Eigen::Matrix4f& guess,
     TransformData(&init_source_cloud, T_iter);
     const Matches matches(FindClosests(nns_kdtree_, init_source_cloud));
 
-    const double limit = matches.GetDistsQuantile(kDistOutlierRatio);
+    const double limit = matches.GetDistsQuantile(options_.dist_outlier_ratio);
     const Matrix output_weights =
         (matches.dists.array() <= limit).cast<double>();
     ErrorElements error_elements(init_source_cloud, *target_cloud_,

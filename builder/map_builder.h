@@ -57,14 +57,7 @@ namespace static_map {
 namespace front_end {
 
 struct Options {
-  struct {
-    registrator::Type type = static_map::registrator::Type::kIcpPM;
-    bool enable_ndt = false;
-    bool use_voxel_filter = true;
-    double voxel_filter_resolution = 0.1;
-    // for inner filters
-    pugi::xml_node inner_filters_node;
-  } scan_matcher_options;
+  static_map::registrator::MatcherOptions scan_matcher_options;
 
   // for imu
   struct {
@@ -259,7 +252,7 @@ class MapBuilder {
   pre_processers::filter::Factory<PointType> filter_factory_;
   // frond end
   std::unique_ptr<PoseExtrapolator> extrapolator_ = nullptr;
-  std::unique_ptr<registrator::Interface<PointType>> scan_matcher_ = nullptr;
+  std::shared_ptr<registrator::Interface<PointType>> scan_matcher_ = nullptr;
   std::unique_ptr<std::thread> scan_match_thread_;
   std::vector<std::shared_ptr<Frame<PointType>>> frames_;
   std::atomic<bool> scan_match_thread_running_;
@@ -268,7 +261,6 @@ class MapBuilder {
   // ************************ back end ************************
   // submaps
   std::unique_ptr<std::thread> submap_thread_;
-  std::unique_ptr<registrator::Interface<PointType>> submap_marcher_ = nullptr;
   std::unique_ptr<back_end::IsamOptimizer<PointType>> isam_optimizer_;
 
   // show the result in RVIZ(ros) or other platform
