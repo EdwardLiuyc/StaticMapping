@@ -25,7 +25,6 @@
 
 #include "registrators/icp_fast.h"
 #include "registrators/icp_pointmatcher.h"
-#include "registrators/lego_loam.h"
 #include "registrators/ndt.h"
 #include "registrators/ndt_gicp.h"
 
@@ -43,11 +42,6 @@ std::shared_ptr<Interface<PointType>> CreateMatcher(
     case registrator::kNdtWithGicp:
       matcher.reset(new NdtWithGicp<PointType>);
       break;
-    case registrator::kLegoLoam:
-      matcher.reset(new LegoLoam<PointType>);
-      dynamic_cast<LegoLoam<PointType>*>(matcher.get())
-          ->InitialiseFiltersFromXmlNode(options.inner_filters_node);
-      break;
     case registrator::kNdt:
       matcher.reset(new Ndt<PointType>);
       break;
@@ -55,8 +49,9 @@ std::shared_ptr<Interface<PointType>> CreateMatcher(
       matcher.reset(new registrator::IcpFast<PointType>());
       break;
     case registrator::kLibicp:
-      LOG(FATAL) << "The registrator using libicp is deprecated. please choose "
-                    "another type";
+    case registrator::kLegoLoam:
+      LOG(FATAL) << "The registrator using libicp & lego-loam is deprecated. "
+                    "please choose another type";
       return nullptr;
     default:
       PRINT_ERROR("Wrong type");

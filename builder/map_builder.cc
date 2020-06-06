@@ -36,18 +36,8 @@
 #include "common/pugixml.hpp"
 #include "cost_functions/odom_map_match.h"
 #include "descriptor/m2dp.h"
-#include "registrators/icp_fast.h"
-#include "registrators/icp_pointmatcher.h"
-#include "registrators/lego_loam.h"
-#include "registrators/ndt.h"
-#include "registrators/ndt_gicp.h"
 
 namespace static_map {
-
-using registrator::IcpUsingPointMatcher;
-using registrator::LegoLoam;
-using registrator::Ndt;
-using registrator::NdtWithGicp;
 
 namespace {
 constexpr int kOdomMsgMaxSize = 10000;
