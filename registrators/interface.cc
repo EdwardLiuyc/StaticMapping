@@ -41,10 +41,7 @@ std::shared_ptr<Interface<PointType>> CreateMatcher(
       matcher.reset(new IcpUsingPointMatcher<PointType>);
       break;
     case registrator::kNdtWithGicp:
-      matcher.reset(new NdtWithGicp<PointType>(
-          options.use_voxel_filter, options.voxel_filter_resolution));
-      dynamic_cast<NdtWithGicp<PointType>*>(matcher.get())
-          ->enableNdt(options.enable_ndt);
+      matcher.reset(new NdtWithGicp<PointType>);
       break;
     case registrator::kLegoLoam:
       matcher.reset(new LegoLoam<PointType>);
@@ -72,6 +69,7 @@ std::shared_ptr<Interface<PointType>> CreateMatcher(
   if (verbose) {
     matcher->PrintOptions();
   }
+  matcher->InitWithOptions();
   return matcher;
 }
 

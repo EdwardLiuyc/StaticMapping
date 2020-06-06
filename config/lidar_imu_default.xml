@@ -21,25 +21,6 @@
       <filter name="RandomSampler" >
         <param type="1" name="sampling_rate"> 0.35 </param>
       </filter>
-      <!-- <filter name="StatisticRemoval" /> -->
-      <!-- <filter name="RangeImage">
-        <param type="1" name="offset_x"> -1. </param>
-        <param type="1" name="offset_y"> 0. </param>
-        <param type="1" name="offset_z"> -1. </param>
-        <param type="1" name="top_angle"> 30. </param>
-        <param type="1" name="btm_angle"> -20. </param>
-        <param type="0" name="vertical_line_num"> 60 </param>
-      </filter> -->
-      <!-- <filter name="GroundRemoval2" >
-        <param type="1" name="r_min"> 0.1 </param>
-        <param type="1" name="start_ground_height"> -1.8 </param>
-        <param type="1" name="long_line_threshold"> 10 </param>
-        <param type="1" name="max_slope"> 0.12 </param>
-        <param type="1" name="max_error"> 0.1 </param>
-        <param type="1" name="max_dist_to_line"> 0.10 </param>
-        <param type="1" name="max_start_height"> 0.6 </param>
-        <param type="0" name="thread_num"> 4 </param>
-      </filter> -->
     </filters>
     <front_end_options accumulate_cloud_num="151">
       <!-- matcher type  
@@ -50,12 +31,8 @@
         4: lego loam (in test)
         5: ndt (in test)
         6: fast icp (in test) -->
-      <scan_matcher_options 
-        type="6" 
-        enable_ndt="false" 
-        use_voxel_filter="true" 
-        voxel_filter_resolution="0.2">
-        <registrator_options>
+      <scan_matcher_options type="6" >
+        <registrator_options type = "6">
           <param name="dist_outlier_ratio"> 0.75 </param>
           <param name="knn_normal_estimate"> 8 </param>
           <param name="max_iteration"> 80 </param>

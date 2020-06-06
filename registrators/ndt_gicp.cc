@@ -26,12 +26,25 @@ namespace static_map {
 namespace registrator {
 
 template <typename PointType>
-NdtWithGicp<PointType>::NdtWithGicp(bool using_voxel_filter,
-                                    double voxel_resolution)
-    : Interface<PointType>(),
-      voxel_resolution_(voxel_resolution),
-      using_voxel_filter_(using_voxel_filter) {
+NdtWithGicp<PointType>::NdtWithGicp() : Interface<PointType>() {
   this->type_ = kNdtWithGicp;
+
+  REG_REGISTRATOR_INNER_OPTION("use_ndt", OptionItemDataType::kInt32,
+                               options_.use_ndt);
+  REG_REGISTRATOR_INNER_OPTION("using_voxel_filter", OptionItemDataType::kInt32,
+                               options_.using_voxel_filter);
+  REG_REGISTRATOR_INNER_OPTION("voxel_resolution", OptionItemDataType::kFloat32,
+                               options_.voxel_resolution);
+}
+
+template <typename PointType>
+void NdtWithGicp<PointType>::InitWithOptions() {
+  LOG(INFO) << "Init ";
+  approximate_voxel_filter_.setLeafSize(options_.voxel_resolution,
+                                        options_.voxel_resolution,
+                                        options_.voxel_resolution);
+
+  // TODO(edward) add more configs
   ndt_.setTransformationEpsilon(0.01);
   ndt_.setStepSize(0.1);
   ndt_.setResolution(1.);
@@ -39,15 +52,12 @@ NdtWithGicp<PointType>::NdtWithGicp(bool using_voxel_filter,
 
   gicp_.setRotationEpsilon(1e-3);
   gicp_.setMaximumIterations(35);
-
-  approximate_voxel_filter_.setLeafSize(voxel_resolution_, voxel_resolution_,
-                                        voxel_resolution_);
 }
 
 template <typename PointType>
 bool NdtWithGicp<PointType>::align(const Eigen::Matrix4f& guess,
                                    Eigen::Matrix4f& result) {  // NOLINT
-  if (using_voxel_filter_) {
+  if (options_.using_voxel_filter) {
     if (!down_sampled_source_cloud_) {
       down_sampled_source_cloud_ = boost::make_shared<PointCloudSource>();
     }
@@ -68,7 +78,7 @@ bool NdtWithGicp<PointType>::align(const Eigen::Matrix4f& guess,
   PointCloudSourcePtr output_cloud(new PointCloudSource);
   Eigen::Matrix4f ndt_guess = guess;
   double ndt_score = 0.9;
-  if (use_ndt_) {
+  if (options_.use_ndt) {
     ndt_.setInputSource(down_sampled_source_cloud_);
     ndt_.setInputTarget(down_sampled_target_cloud_);
     ndt_.align(*output_cloud, guess);
