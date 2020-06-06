@@ -166,6 +166,11 @@ void Interface<PointType>::InitWithXml(const pugi::xml_node& node) {
             param_node.text().as_float();
         break;
 
+      case OptionItemDataType::kBool:
+        *reinterpret_cast<bool*>(inner_options_.at(param_name).data_ptr) =
+            param_node.text().as_bool();
+        break;
+
       default:
         break;
     }
@@ -207,6 +212,11 @@ void Interface<PointType>::PrintOptions() {
       case OptionItemDataType::kFloat32:
         std::cout << std::setprecision(6)
                   << *reinterpret_cast<float*>(option_item.data_ptr);
+        break;
+
+      case OptionItemDataType::kBool:
+        std::cout << std::boolalpha
+                  << *reinterpret_cast<bool*>(option_item.data_ptr);
         break;
 
       default:
