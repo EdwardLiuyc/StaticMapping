@@ -39,21 +39,17 @@ namespace registrator {
 
 template <typename PointType>
 class NdtWithGicp : public Interface<PointType> {
+ public:
   USE_REGISTRATOR_CLOUDS;
 
- public:
-  explicit NdtWithGicp(bool using_voxel_filter = true,
-                       double voxel_resolution = 0.2);
+  NdtWithGicp();
   ~NdtWithGicp() = default;
 
   PROHIBIT_COPY_AND_ASSIGN(NdtWithGicp);
 
-  typedef boost::shared_ptr<NdtWithGicp<PointType> > Ptr;
-  typedef boost::shared_ptr<const NdtWithGicp<PointType> > ConstPtr;
-
   bool align(const Eigen::Matrix4f& guess, Eigen::Matrix4f& result) override;
 
-  inline void enableNdt(bool use_ndt) { use_ndt_ = use_ndt; }
+  void InitWithOptions() override;
 
  private:
   pcl::NormalDistributionsTransform<PointType, PointType> ndt_;
@@ -63,9 +59,12 @@ class NdtWithGicp : public Interface<PointType> {
   PointCloudTargetPtr down_sampled_target_cloud_ = nullptr;
 
   pcl::ApproximateVoxelGrid<PointType> approximate_voxel_filter_;
-  double voxel_resolution_;
-  bool using_voxel_filter_;
-  bool use_ndt_ = true;
+
+  struct {
+    float voxel_resolution = 0.2;
+    bool using_voxel_filter = true;
+    bool use_ndt = true;
+  } options_;
 };
 }  // namespace registrator
 }  // namespace static_map

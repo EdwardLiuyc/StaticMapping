@@ -31,24 +31,24 @@ void ReadMatcherOptions(
     static_map::registrator::MatcherOptions* const options) {
   GET_SINGLE_OPTION(father_node, node_name.c_str(), "type", options->type, int,
                     registrator::Type);
-  GET_SINGLE_OPTION(father_node, node_name.c_str(), "enable_ndt",
-                    options->enable_ndt, bool, bool);
-  GET_SINGLE_OPTION(father_node, node_name.c_str(), "use_voxel_filter",
-                    options->use_voxel_filter, bool, bool);
-  GET_SINGLE_OPTION(father_node, node_name.c_str(), "voxel_filter_resolution",
-                    options->voxel_filter_resolution, float, float);
   GET_SINGLE_OPTION(father_node, node_name.c_str(), "accepted_min_score",
                     options->accepted_min_score, float, float);
 
   if (!father_node.child(node_name.c_str()).empty()) {
-    auto scan_matcher_options_node = father_node.child(node_name.c_str());
-    if (!scan_matcher_options_node.child("inner_filters").empty()) {
-      options->inner_filters_node =
-          scan_matcher_options_node.child("inner_filters");
+    auto matcher_options_node = father_node.child(node_name.c_str());
+    if (!matcher_options_node.child("inner_filters").empty()) {
+      options->inner_filters_node = matcher_options_node.child("inner_filters");
     }
-    if (!scan_matcher_options_node.child("registrator_options").empty()) {
-      options->registrator_options =
-          scan_matcher_options_node.child("registrator_options");
+    for (auto registrator_options_node =
+             matcher_options_node.child("registrator_options");
+         registrator_options_node;
+         registrator_options_node =
+             registrator_options_node.next_sibling("registrator_options")) {
+      if (registrator_options_node.attribute("type").as_int() ==
+          options->type) {
+        options->registrator_options = registrator_options_node;
+        break;
+      }
     }
   }
 }

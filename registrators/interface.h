@@ -53,7 +53,7 @@ struct InlierPointPairs {
   size_t pairs_num;
 };
 
-enum class OptionItemDataType : uint8_t { kInt32, kFloat32 };
+enum class OptionItemDataType : uint8_t { kInt32, kFloat32, kBool };
 
 struct InnerOptionItem {
   OptionItemDataType data_type;
@@ -62,9 +62,6 @@ struct InnerOptionItem {
 
 struct MatcherOptions {
   Type type = static_map::registrator::Type::kIcpPM;
-  bool enable_ndt = false;
-  bool use_voxel_filter = true;
-  double voxel_filter_resolution = 0.1;
   float accepted_min_score = 0.7;
   // for inner filters
   pugi::xml_node registrator_options;
@@ -96,6 +93,8 @@ class Interface {
   */
   void InitWithXml(const pugi::xml_node& node);
 
+  virtual void InitWithOptions() {}
+
   void PrintOptions();
 
   // @todo(edward) change the function names ( naming rules )
@@ -110,13 +109,10 @@ class Interface {
 
  protected:
   double final_score_;
-
+  Type type_ = kNoType;
   PointCloudSourcePtr source_cloud_ = nullptr;
   PointCloudTargetPtr target_cloud_ = nullptr;
-
-  Type type_ = kNoType;
   InlierPointPairs point_pairs_;
-
   std::unordered_map<std::string, InnerOptionItem> inner_options_;
 };
 
