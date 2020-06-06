@@ -42,7 +42,7 @@ enum Type {
   kIcpPM,
   kLibicp,  // deprecated
   kNdtWithGicp,
-  kLegoLoam,
+  kLegoLoam,  // deprecated
   kNdt,
   kFastIcp,
   kTypeCount
@@ -92,6 +92,8 @@ class Interface {
   </registrator>
   */
   void InitWithXml(const pugi::xml_node& node);
+
+  void InitInnerFiltersWithXml(const pugi::xml_node& node);
 
   virtual void InitWithOptions() {}
 
@@ -168,6 +170,28 @@ void Interface<PointType>::InitWithXml(const pugi::xml_node& node) {
         break;
     }
   }
+}
+
+template <typename PointType>
+void Interface<PointType>::InitInnerFiltersWithXml(const pugi::xml_node& node) {
+  // TODO(edward) inner filters
+  if (node.empty()) {
+    PRINT_INFO("Init filters with default parameters.");
+    return;
+  }
+  // CHECK_EQ(std::string(node.name()), "inner_filters");
+  // for (auto filter_node = node.child("filter"); filter_node;
+  //      filter_node = filter_node.next_sibling("filter")) {
+  //   std::string filter_name = filter_node.attribute("name").as_string();
+  //   if (filter_name == "GroundRemoval2") {
+  //     ground_removal_filter_.InitFromXmlNode(filter_node);
+  //   } else if (filter_name == "RangeImage") {
+  //     range_image_filter_.InitFromXmlNode(filter_node);
+  //   }
+  // }
+
+  // ground_removal_filter_.DisplayAllParams();
+  // range_image_filter_.DisplayAllParams();
 }
 
 template <typename PointType>
