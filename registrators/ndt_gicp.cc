@@ -29,9 +29,9 @@ template <typename PointType>
 NdtWithGicp<PointType>::NdtWithGicp() : Interface<PointType>() {
   this->type_ = kNdtWithGicp;
 
-  REG_REGISTRATOR_INNER_OPTION("use_ndt", OptionItemDataType::kInt32,
+  REG_REGISTRATOR_INNER_OPTION("use_ndt", OptionItemDataType::kBool,
                                options_.use_ndt);
-  REG_REGISTRATOR_INNER_OPTION("using_voxel_filter", OptionItemDataType::kInt32,
+  REG_REGISTRATOR_INNER_OPTION("using_voxel_filter", OptionItemDataType::kBool,
                                options_.using_voxel_filter);
   REG_REGISTRATOR_INNER_OPTION("voxel_resolution", OptionItemDataType::kFloat32,
                                options_.voxel_resolution);
