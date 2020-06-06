@@ -49,8 +49,10 @@ using registrator::LegoLoam;
 using registrator::Ndt;
 using registrator::NdtWithGicp;
 
+namespace {
 constexpr int kOdomMsgMaxSize = 10000;
 constexpr int kSubmapResSize = 100;
+}  // namespace
 
 MapBuilder::MapBuilder()
     : use_imu_(false),
@@ -63,44 +65,10 @@ MapBuilder::MapBuilder()
 MapBuilder::~MapBuilder() {}
 
 int MapBuilder::InitialiseInside() {
-  if (scan_matcher_ != nullptr || submap_marcher_ != nullptr) {
-    return -1;
-  }
-
   PRINT_INFO("Init scan matchers.");
-  // init front end (scan to scan matcher)
-  auto& scan_matcher_options = options_.front_end_options.scan_matcher_options;
-  switch (scan_matcher_options.type) {
-    case registrator::kIcpPM:
-      scan_matcher_ = common::make_unique<IcpUsingPointMatcher<PointType>>();
-      break;
-    case registrator::kLibicp:
-      LOG(FATAL) << "The registrator using libicp is deprecated. please choose "
-                    "another type";
-      break;
-    case registrator::kNdtWithGicp:
-      scan_matcher_ = common::make_unique<NdtWithGicp<PointType>>(
-          scan_matcher_options.use_voxel_filter,
-          scan_matcher_options.voxel_filter_resolution);
-      dynamic_cast<NdtWithGicp<PointType>*>(scan_matcher_.get())
-          ->enableNdt(scan_matcher_options.enable_ndt);
-      break;
-    case registrator::kLegoLoam:
-      scan_matcher_ = common::make_unique<LegoLoam<PointType>>();
-      dynamic_cast<LegoLoam<PointType>*>(scan_matcher_.get())
-          ->InitialiseFiltersFromXmlNode(
-              scan_matcher_options.inner_filters_node);
-      break;
-    case registrator::kNdt:
-      scan_matcher_ = common::make_unique<Ndt<PointType>>();
-      break;
-    case registrator::kFastIcp:
-      scan_matcher_.reset(new registrator::IcpFast<PointType>());
-      break;
-    default:
-      PRINT_ERROR("Wrong type");
-      return -1;
-  }
+  scan_matcher_ = registrator::CreateMatcher<PointType>(
+      options_.front_end_options.scan_matcher_options, true);
+  CHECK(scan_matcher_) << "scan match failed to init.";
 
   use_imu_ = options_.front_end_options.imu_options.enabled;
   if (use_imu_) {
@@ -483,32 +451,9 @@ void MapBuilder::SubmapPairMatch(const int source_index,
   // target_submap->ClearCloudInFrames();
 
   // init back end(submap to submap matcher)
-  std::shared_ptr<registrator::Interface<PointType>> matcher;
-  auto& submap_matcher_options =
-      options_.back_end_options.submap_matcher_options;
-  switch (submap_matcher_options.type) {
-    case registrator::kIcpPM:
-      matcher =
-          std::make_shared<registrator::IcpUsingPointMatcher<PointType>>();
-      break;
-    case registrator::kLibicp:
-      LOG(FATAL) << "The registrator using libicp is deprecated. please choose "
-                    "another type";
-      break;
-    case registrator::kNdtWithGicp:
-      matcher = std::make_shared<NdtWithGicp<PointType>>(
-          submap_matcher_options.use_voxel_filter,
-          submap_matcher_options.voxel_filter_resolution);
-      dynamic_cast<NdtWithGicp<PointType>*>(matcher.get())
-          ->enableNdt(submap_matcher_options.enable_ndt);
-      break;
-    case registrator::kFastIcp:
-      matcher = std::make_shared<registrator::IcpFast<PointType>>();
-      break;
-    default:
-      PRINT_ERROR("Wrong type");
-      return;
-  }
+  auto matcher = registrator::CreateMatcher<PointType>(
+      options_.back_end_options.submap_matcher_options, false);
+  CHECK(matcher);
 
   matcher->setInputSource(source_submap->Cloud());
   matcher->setInputTarget(target_submap->Cloud());

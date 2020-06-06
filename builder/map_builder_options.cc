@@ -25,6 +25,35 @@
 
 namespace static_map {
 
+namespace {
+void ReadMatcherOptions(
+    const pugi::xml_node& father_node, const std::string& node_name,
+    static_map::registrator::MatcherOptions* const options) {
+  GET_SINGLE_OPTION(father_node, node_name.c_str(), "type", options->type, int,
+                    registrator::Type);
+  GET_SINGLE_OPTION(father_node, node_name.c_str(), "enable_ndt",
+                    options->enable_ndt, bool, bool);
+  GET_SINGLE_OPTION(father_node, node_name.c_str(), "use_voxel_filter",
+                    options->use_voxel_filter, bool, bool);
+  GET_SINGLE_OPTION(father_node, node_name.c_str(), "voxel_filter_resolution",
+                    options->voxel_filter_resolution, float, float);
+  GET_SINGLE_OPTION(father_node, node_name.c_str(), "accepted_min_score",
+                    options->accepted_min_score, float, float);
+
+  if (!father_node.child(node_name.c_str()).empty()) {
+    auto scan_matcher_options_node = father_node.child(node_name.c_str());
+    if (!scan_matcher_options_node.child("inner_filters").empty()) {
+      options->inner_filters_node =
+          scan_matcher_options_node.child("inner_filters");
+    }
+    if (!scan_matcher_options_node.child("registrator_options").empty()) {
+      options->registrator_options =
+          scan_matcher_options_node.child("registrator_options");
+    }
+  }
+}
+}  // namespace
+
 void CheckOptions(const MapBuilderOptions& options) {
   CHECK_GE(options.back_end_options.submap_options.frame_count, 2)
       << "A submap must constain at least 2 frames" << std::endl;
@@ -124,31 +153,13 @@ MapBuilderOptions& MapBuilder::Initialise(const char* config_file_name) {
   // front end options
   auto front_end_node = static_map_node.child("front_end_options");
   if (!front_end_node.empty()) {
-    auto& scan_matcher_options =
-        options_.front_end_options.scan_matcher_options;
-    GET_SINGLE_OPTION(front_end_node, "scan_matcher_options", "type",
-                      scan_matcher_options.type, int, registrator::Type);
-    GET_SINGLE_OPTION(front_end_node, "scan_matcher_options", "enable_ndt",
-                      scan_matcher_options.enable_ndt, bool, bool);
-    GET_SINGLE_OPTION(front_end_node, "scan_matcher_options",
-                      "use_voxel_filter", scan_matcher_options.use_voxel_filter,
-                      bool, bool);
-    GET_SINGLE_OPTION(
-        front_end_node, "scan_matcher_options", "voxel_filter_resolution",
-        scan_matcher_options.voxel_filter_resolution, float, float);
+    ReadMatcherOptions(front_end_node, "scan_matcher_options",
+                       &options_.front_end_options.scan_matcher_options);
 
     auto& front_end_options = options_.front_end_options;
     GET_SINGLE_OPTION(static_map_node, "front_end_options",
                       "accumulate_cloud_num",
                       front_end_options.accumulate_cloud_num, int, int);
-
-    if (!front_end_node.child("scan_matcher_options").empty() &&
-        !front_end_node.child("scan_matcher_options")
-             .child("inner_filters")
-             .empty()) {
-      scan_matcher_options.inner_filters_node =
-          front_end_node.child("scan_matcher_options").child("inner_filters");
-    }
 
     auto& motion_filter_options = options_.front_end_options.motion_filter;
     GET_SINGLE_OPTION(front_end_node, "motion_filter", "translation_range",
@@ -182,21 +193,8 @@ MapBuilderOptions& MapBuilder::Initialise(const char* config_file_name) {
   // back end options
   auto back_end_node = static_map_node.child("back_end_options");
   if (!back_end_node.empty()) {
-    auto& submap_matcher_options =
-        options_.back_end_options.submap_matcher_options;
-    GET_SINGLE_OPTION(back_end_node, "submap_matcher_options", "type",
-                      submap_matcher_options.type, int, registrator::Type);
-    GET_SINGLE_OPTION(back_end_node, "submap_matcher_options", "enable_ndt",
-                      submap_matcher_options.enable_ndt, bool, bool);
-    GET_SINGLE_OPTION(back_end_node, "submap_matcher_options",
-                      "use_voxel_filter",
-                      submap_matcher_options.use_voxel_filter, bool, bool);
-    GET_SINGLE_OPTION(
-        back_end_node, "submap_matcher_options", "voxel_filter_resolution",
-        submap_matcher_options.voxel_filter_resolution, float, float);
-    GET_SINGLE_OPTION(back_end_node, "submap_matcher_options",
-                      "accepted_min_score",
-                      submap_matcher_options.accepted_min_score, float, float);
+    ReadMatcherOptions(back_end_node, "submap_matcher_options",
+                       &options_.back_end_options.submap_matcher_options);
 
     auto& submap_options = options_.back_end_options.submap_options;
     GET_SINGLE_OPTION(back_end_node, "submap_options", "frame_count",

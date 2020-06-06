@@ -32,14 +32,7 @@ namespace static_map {
 namespace back_end {
 
 struct Options {
-  struct SubmapMatcherOptions {
-    static_map::registrator::Type type = static_map::registrator::Type::kIcpPM;
-    bool use_voxel_filter = true;
-    bool enable_ndt = false;
-    float voxel_filter_resolution = 0.1;
-    float accepted_min_score = 0.8;
-  } submap_matcher_options;
-
+  static_map::registrator::MatcherOptions submap_matcher_options;
   SubmapOptions submap_options;
   IsamOptimizerOptions isam_optimizer_options;
   LoopDetectorSettings loop_detector_setting;
