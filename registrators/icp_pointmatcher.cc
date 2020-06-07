@@ -111,8 +111,9 @@ void IcpUsingPointMatcher<PointType>::setInputTarget(
 }
 
 template <typename PointType>
-bool IcpUsingPointMatcher<PointType>::align(const Eigen::Matrix4f& guess,
-                                            Eigen::Matrix4f& result) {
+bool IcpUsingPointMatcher<PointType>::align(
+    const Eigen::Matrix4f& guess,
+    Eigen::Matrix4f& result) {  // NOLINT
   // **** compute the transform ****
   result = inner_->pm_icp_
                .compute(*(inner_->reading_cloud_), *(inner_->reference_cloud_),
@@ -145,11 +146,11 @@ bool IcpUsingPointMatcher<PointType>::align(const Eigen::Matrix4f& guess,
   CHECK(matched_read.rows() == matched_ref.rows() &&
         matched_read.cols() == matched_ref.cols() && matched_read.rows() == 3);
 
-  Interface<PointType>::point_pairs_.ref_points =
-      matched_ref.transpose().cast<float>();
-  Interface<PointType>::point_pairs_.read_points =
-      matched_read.transpose().cast<float>();
-  Interface<PointType>::point_pairs_.pairs_num = matched_read.cols();
+  // Interface<PointType>::point_pairs_.ref_points =
+  //     matched_ref.transpose().cast<float>();
+  // Interface<PointType>::point_pairs_.read_points =
+  //     matched_read.transpose().cast<float>();
+  // Interface<PointType>::point_pairs_.pairs_num = matched_read.cols();
 
   // compute mean distance
   const PM::Matrix dist = (matched_read - matched_ref).colwise().norm();
