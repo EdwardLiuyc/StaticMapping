@@ -48,11 +48,6 @@ enum Type {
   kTypeCount
 };
 
-struct InlierPointPairs {
-  Eigen::Matrix<float, Eigen::Dynamic, 3> ref_points, read_points;
-  size_t pairs_num;
-};
-
 enum class OptionItemDataType : uint8_t { kInt32, kFloat32, kBool };
 
 struct InnerOptionItem {
@@ -103,7 +98,6 @@ class Interface {
   virtual void setInputSource(const PointCloudSourcePtr& cloud);
   virtual void setInputTarget(const PointCloudTargetPtr& cloud);
   virtual double getFitnessScore() { return final_score_; }
-  virtual InlierPointPairs getInlierPointPairs() { return point_pairs_; }
 
   // need to be implemented by child class
   virtual bool align(const Eigen::Matrix4f& guess,
@@ -114,7 +108,6 @@ class Interface {
   Type type_ = kNoType;
   PointCloudSourcePtr source_cloud_ = nullptr;
   PointCloudTargetPtr target_cloud_ = nullptr;
-  InlierPointPairs point_pairs_;
   std::unordered_map<std::string, InnerOptionItem> inner_options_;
 };
 

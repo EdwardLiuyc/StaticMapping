@@ -64,101 +64,44 @@ class SimpleFrame {
 
   ~SimpleFrame() = default;
 
-  virtual void ToPcdFile(const std::string& filename) {
-    if (cloud_ == nullptr || cloud_->empty()) {
-      return;
-    }
-    if (!filename.empty()) {
-      pcl::io::savePCDFileBinaryCompressed(filename, *cloud_);
-    } else {
-      pcl::io::savePCDFileBinaryCompressed("simple_frame.pcd", *cloud_);
-    }
-  }
-  inline Eigen::Matrix3f GlobalRotation() const {
-    return Eigen::Matrix3f(global_pose_.block(0, 0, 3, 3));
-  }
-  inline Eigen::Vector3f GlobalTranslation() const {
-    return Eigen::Vector3f(global_pose_.block(0, 3, 3, 1));
-  }
-  inline Eigen::Matrix3f LocalRotation() const {
-    return Eigen::Matrix3f(local_pose_.block(0, 0, 3, 3));
-  }
-  inline Eigen::Vector3f LocalTranslation() const {
-    return Eigen::Vector3f(local_pose_.block(0, 3, 3, 1));
-  }
+  Eigen::Matrix3f GlobalRotation() const;
+  Eigen::Vector3f GlobalTranslation() const;
+  Eigen::Matrix3f LocalRotation() const;
+  Eigen::Vector3f LocalTranslation() const;
 
-  inline Eigen::Matrix4f GlobalPose() const { return global_pose_; }
-  inline void SetGlobalPose(const Eigen::Matrix4f& t) {
-    global_pose_ = t;
-    common::NormalizeRotation(global_pose_);
-  }
-  inline Eigen::VectorXf GlobalPoseIn6Dof() {
-    return common::TransformToVector6(global_pose_);
-  }
+  Eigen::VectorXf GlobalPoseIn6Dof() const;
+  Eigen::Matrix4f GlobalPose() const;
+  Eigen::Matrix4f LocalPose() const;
 
-  inline Eigen::Matrix4f LocalPose() const { return local_pose_; }
-  inline void SetLocalPose(const Eigen::Matrix4f& t) {
-    local_pose_ = t;
-    common::NormalizeRotation(local_pose_);
-  }
+  void SetGlobalPose(const Eigen::Matrix4f& t);
+  void SetLocalPose(const Eigen::Matrix4f& t);
 
   // cloud
   virtual PointCloudPtr Cloud() = 0;
-  inline void SetCloud(const PointCloudPtr& cloud) { cloud_ = cloud; }
-  inline void ClearCloud() {
-    if (cloud_) {
-      cloud_->clear();
-      cloud_->points.shrink_to_fit();
-    }
-  }
+  virtual void ToPcdFile(const std::string& filename);
+  void SetCloud(const PointCloudPtr& cloud);
+  void ClearCloud();
 
   // descriptor (m2dp)
-  inline typename descriptor::M2dp<PointType>::Descriptor GetDescriptor()
-      const {
-    return descriptor_;
-  }
-  inline void SetDescriptor(
-      const typename descriptor::M2dp<PointType>::Descriptor& d) {
-    descriptor_ = d;
-  }
-  inline void CalculateDescriptor() {
-    descriptor::M2dp<PointType> m2dp;
-    if (m2dp.setInputCloud(cloud_)) {
-      descriptor_ = m2dp.getFinalDescriptor();
-    } else {
-      PRINT_ERROR("did not get a descriptor for the frame.");
-    }
-  }
+  typename descriptor::M2dp<PointType>::Descriptor GetDescriptor() const;
+  void SetDescriptor(const typename descriptor::M2dp<PointType>::Descriptor& d);
+  void CalculateDescriptor();
 
   // transform between last&next
-  virtual void SetTransformToNext(const Eigen::Matrix4f& t) {
-    transform_to_next_frame_ = t;
-  }
-  virtual void SetTransformFromLast(const Eigen::Matrix4f& t) {
-    transform_from_last_frame_ = t;
-  }
-  inline Eigen::Matrix4f TransformToNext() const {
-    return transform_to_next_frame_;
-  }
-  inline Eigen::Matrix4f TransformFromLast() const {
-    return transform_from_last_frame_;
-  }
+  virtual void SetTransformToNext(const Eigen::Matrix4f& t);
+  virtual void SetTransformFromLast(const Eigen::Matrix4f& t);
+  Eigen::Matrix4f TransformToNext() const;
+  Eigen::Matrix4f TransformFromLast() const;
 
   // enu
-  inline void SetRelatedGpsInENU(const EnuPosition& enu) { related_enu_ = enu; }
-  inline EnuPosition GetRelatedGpsInENU() {
-    CHECK(HasGps());
-    return related_enu_.value();
-  }
-  inline bool HasGps() { return related_enu_.is_initialized(); }
+  void SetRelatedGpsInENU(const EnuPosition& enu);
+  EnuPosition GetRelatedGpsInENU();
+  bool HasGps() const;
 
   // odom
-  inline void SetRelatedOdom(const OdomPose& odom) {
-    related_odom_ = odom;
-    got_related_odom_ = true;
-  }
-  inline OdomPose GetRelatedOdom() { return related_odom_; }
-  inline bool HasOdom() { return got_related_odom_; }
+  void SetRelatedOdom(const OdomPose& odom);
+  OdomPose GetRelatedOdom() const;
+  bool HasOdom() const;
 
   inline SimpleTime GetTimeStamp() { return stamp_; }
   inline void SetTimeStamp(const SimpleTime& time) { stamp_ = time; }
@@ -176,17 +119,13 @@ class SimpleFrame {
 
   boost::optional<EnuPosition> related_enu_;
 
+  // @todo(edward) using boost/std optional to do this
   OdomPose related_odom_;
   bool got_related_odom_;
 };
 
-// using registrator::InlierPointPairs;
-// template <typename PointT>
-// InlierPointPairs GetPointPairs(
-//     const std::shared_ptr<SimpleFrame<PointT>>& first_frame,
-//     const std::shared_ptr<SimpleFrame<PointT>>& last_frame, double
-//     max_distance, int sample = 1);
-
 }  // namespace static_map
+
+#include "builder/simple_frame_impl.h"
 
 #endif  // BUILDER_SIMPLE_FRAME_H_
