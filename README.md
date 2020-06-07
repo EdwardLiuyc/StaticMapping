@@ -174,6 +174,7 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - **mapping using kitti data**
 - **using docker to build and run**
 - **use enu instead of utm in multi-traj situation**
+- seperate map_builder class into several smaller classes
 - move inline funtion definitions out of the class declaration
 - add options for registrators, like the filters
 - more robust normal estimate for fast icp

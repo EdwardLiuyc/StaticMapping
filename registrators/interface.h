@@ -64,7 +64,7 @@ struct MatcherOptions {
   Type type = static_map::registrator::Type::kIcpPM;
   float accepted_min_score = 0.7;
   // for inner filters
-  pugi::xml_node registrator_options;
+  pugi::xml_node registrator_options_node;
   pugi::xml_node inner_filters_node;
 };
 

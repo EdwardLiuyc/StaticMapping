@@ -58,8 +58,8 @@ std::shared_ptr<Interface<PointType>> CreateMatcher(
       return nullptr;
   }
 
-  if (!options.registrator_options.empty()) {
-    matcher->InitWithXml(options.registrator_options);
+  if (!options.registrator_options_node.empty()) {
+    matcher->InitWithXml(options.registrator_options_node);
   }
   if (verbose) {
     matcher->PrintOptions();
