@@ -229,6 +229,10 @@ class MapBuilder {
   // ********************* data & options *********************
   std::unique_ptr<DataCollector<PointType>> data_collector_;
   MapBuilderOptions options_;
+  /// @notice if you want to access some xml_node later in the process,
+  /// the doc (xml tree) must be still in the memory
+  /// so, make it a member
+  pugi::xml_document options_xml_doc_;
   // odoms
   std::vector<sensors::OdomMsg::Ptr> odom_msgs_;
   sensors::OdomMsg init_odom_msg_;

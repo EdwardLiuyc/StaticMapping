@@ -46,7 +46,8 @@ void ReadMatcherOptions(
              registrator_options_node.next_sibling("registrator_options")) {
       if (registrator_options_node.attribute("type").as_int() ==
           options->type) {
-        options->registrator_options = registrator_options_node;
+        options->registrator_options_node =
+            pugi::xml_node(registrator_options_node.internal_object());
         break;
       }
     }
@@ -79,12 +80,11 @@ MapBuilderOptions& MapBuilder::Initialise(const char* config_file_name) {
     use_default_config = true;
   }
 
-  pugi::xml_document doc;
-  if (!use_default_config && !doc.load_file(config_file_name)) {
+  if (!use_default_config && !options_xml_doc_.load_file(config_file_name)) {
     PRINT_WARNING("Failed to load target file. using default config.");
     use_default_config = true;
   }
-  pugi::xml_node doc_node = doc.child("edward_liu");
+  pugi::xml_node doc_node = options_xml_doc_.child("edward_liu");
   if (!use_default_config && doc_node.empty()) {
     PRINT_WARNING("Wrong node. using default config.");
     use_default_config = true;

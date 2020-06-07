@@ -441,8 +441,14 @@ void MapBuilder::SubmapPairMatch(const int source_index,
   // target_submap->ClearCloudInFrames();
 
   // init back end(submap to submap matcher)
-  auto matcher = registrator::CreateMatcher<PointType>(
-      options_.back_end_options.submap_matcher_options, false);
+  std::shared_ptr<registrator::Interface<PointType>> matcher;
+  {
+    common::MutexLocker locker(&mutex_);
+    // Creating a Matcher has some opertation on an instance of pugi::xml_node
+    // and we do not known if it's threadsafe, so add a locker
+    matcher = registrator::CreateMatcher<PointType>(
+        options_.back_end_options.submap_matcher_options, false);
+  }
   CHECK(matcher);
 
   matcher->setInputSource(source_submap->Cloud());
