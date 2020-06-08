@@ -24,6 +24,7 @@
 #include <gtsam/navigation/GPSFactor.h>
 #include <gtsam/nonlinear/DoglegOptimizer.h>
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
+#include <gtsam/slam/expressions.h>
 
 #include <algorithm>
 #include <vector>
@@ -31,7 +32,6 @@
 // local
 #include "back_end/isam_optimizer.h"
 #include "back_end/loop_detector.h"
-#include "back_end/odom_to_pose_factor.h"
 #include "common/make_unique.h"
 #include "common/math.h"
 
@@ -111,7 +111,7 @@ gtsam::Values IsamOptimizer<PointT>::UpdateAllPose() {
     Eigen::Matrix4d pose =
         estimate_poses.at<gtsam::Pose3>(POSE_KEY(i)).matrix();
     frames[i]->SetGlobalPose(pose);
-    view_graph_.AddVertex(i, pose.cast<float>());
+    view_graph_.AddVertex(i, pose);
   }
 
   return estimate_poses;
@@ -123,13 +123,12 @@ void IsamOptimizer<PointT>::AddLoopCloseEdge(
     const Eigen::Matrix4d &transform_tgt_to_src,
     const NM::Base::shared_ptr &loop_close_noise) {
   isam_factor_graph_->addExpressionFactor(
-      loop_close_noise, Pose3(transform_tgt_to_src.cast<double>()),
+      loop_close_noise, Pose3(transform_tgt_to_src),
       between(Pose3_(POSE_KEY(target_index)), Pose3_(POSE_KEY(source_index))));
 
   auto &frames = loop_detector_->GetFrames();
   frames[target_index]->AddConnectedSubmap(frames[source_index]->GetId());
-  view_graph_.AddEdge(target_index, source_index,
-                      transform_tgt_to_src.cast<float>());
+  view_graph_.AddEdge(target_index, source_index, transform_tgt_to_src);
 }
 
 template <typename PointT>
@@ -138,11 +137,10 @@ void IsamOptimizer<PointT>::AddVertex(
     const Eigen::Matrix4d &transform_from_last_pose,
     const NM::Base::shared_ptr &odom_noise) {
   auto &frames = loop_detector_->GetFrames();
-  gtsam::Pose3 pose_gtsam = gtsam::Pose3(pose.cast<double>());
-  gtsam::Pose3 transform_gtsam =
-      gtsam::Pose3(transform_from_last_pose.cast<double>());
+  gtsam::Pose3 pose_gtsam = gtsam::Pose3(pose);
+  gtsam::Pose3 transform_gtsam = gtsam::Pose3(transform_from_last_pose);
   initial_estimate_.insert(POSE_KEY(index), pose_gtsam);
-  view_graph_.AddVertex(index, pose.cast<float>());
+  view_graph_.AddVertex(index, pose);
   if (index == 0) {
     // first index
     // the pose should be set constant
@@ -164,8 +162,7 @@ void IsamOptimizer<PointT>::AddVertex(
         between(Pose3_(POSE_KEY(index - 1)), Pose3_(POSE_KEY(index))));
 
     frames[index - 1]->AddConnectedSubmap(frames[index]->GetId());
-    view_graph_.AddEdge(index - 1, index,
-                        transform_from_last_pose.cast<float>());
+    view_graph_.AddEdge(index - 1, index, transform_from_last_pose);
   }
 
   IsamUpdate();
@@ -243,7 +240,7 @@ void IsamOptimizer<PointT>::AddFrame(
     auto map_origin_in_gps = Pose3_(GPS_COORD_KEY);
     auto pose = Pose3_(POSE_KEY(index));
     const gtsam::Point3 tracking_gps_translation(
-        tf_tracking_gps_.block(0, 3, 3, 1).cast<double>());
+        tf_tracking_gps_.block(0, 3, 3, 1));
     isam_factor_graph_->addExpressionFactor(
         gps_noise_model_, gtsam::Point3(enu),
         gtsam::transform_from(gtsam::compose(map_origin_in_gps, pose),
@@ -275,13 +272,6 @@ void IsamOptimizer<PointT>::AddFrame(
   IsamUpdate();
   CHECK(isam_->valueExists(POSE_KEY(frame_index)));
   UpdateAllPose();
-  // gtsam::Values estimate_poses = isam_->calculateEstimate();
-  // Eigen::Matrix4d current_pose =
-  //     estimate_poses.at<gtsam::Pose3>(POSE_KEY(frame_index))
-  //         .matrix()
-  //         .cast<float>();
-  // frame->SetGlobalPose(current_pose);
-  // view_graph_.AddVertex(frame_index, current_pose);
 }
 
 template <typename PointT>
@@ -302,7 +292,7 @@ void IsamOptimizer<PointT>::SolveGpsCorrdAlone() {
       gps_coord_transform_, Pose3_(gps_key));
   NM::Diagonal::shared_ptr pose_noise = NM::Isotropic::Sigma(6, 1.e-2);
   const gtsam::Point3 tracking_gps_translation(
-      tf_tracking_gps_.block(0, 3, 3, 1).cast<double>());
+      tf_tracking_gps_.block(0, 3, 3, 1));
 
   for (const auto &index_enu : cached_enu_) {
     const auto index = index_enu.first;

@@ -241,56 +241,40 @@ int main(int argc, char** argv) {
   // @todo(edward) merge these 2 situation into 1
   if (urdf_file.empty()) {
     tf::TransformListener listener;
-    map_builder->SetTrackingToLidar(
-        static_map_ros::LoopUpTransfrom(tracking_frame, cloud_frame_id,
-                                        listener)
-            .cast<float>());
+    map_builder->SetTrackingToLidar(static_map_ros::LoopUpTransfrom(
+        tracking_frame, cloud_frame_id, listener));
     if (use_imu) {
       map_builder->SetTrackingToImu(static_map_ros::LoopUpTransfrom(
-                                        tracking_frame, imu_frame_id, listener)
-                                        .cast<float>());
+          tracking_frame, imu_frame_id, listener));
     }
     if (use_odom) {
-      map_builder->SetTransformOdomToLidar(
-          static_map_ros::LoopUpTransfrom(odom_frame_id, cloud_frame_id,
-                                          listener)
-              .cast<float>());
-      map_builder->SetTrackingToOdom(
-          static_map_ros::LoopUpTransfrom(tracking_frame, odom_frame_id,
-                                          listener)
-              .cast<float>());
+      map_builder->SetTransformOdomToLidar(static_map_ros::LoopUpTransfrom(
+          odom_frame_id, cloud_frame_id, listener));
+      map_builder->SetTrackingToOdom(static_map_ros::LoopUpTransfrom(
+          tracking_frame, odom_frame_id, listener));
     }
     if (use_gps) {
       map_builder->SetTrackingToGps(static_map_ros::LoopUpTransfrom(
-                                        tracking_frame, gps_frame_id, listener)
-                                        .cast<float>());
+          tracking_frame, gps_frame_id, listener));
     }
   } else {
     tf2_ros::Buffer tf_buffer;
     static_map_ros::ReadStaticTransformsFromUrdf(urdf_file, &tf_buffer);
-    map_builder->SetTrackingToLidar(
-        static_map_ros::LoopUpTransfrom(tracking_frame, cloud_frame_id,
-                                        tf_buffer)
-            .cast<float>());
+    map_builder->SetTrackingToLidar(static_map_ros::LoopUpTransfrom(
+        tracking_frame, cloud_frame_id, tf_buffer));
     if (use_imu) {
       map_builder->SetTrackingToImu(static_map_ros::LoopUpTransfrom(
-                                        tracking_frame, imu_frame_id, tf_buffer)
-                                        .cast<float>());
+          tracking_frame, imu_frame_id, tf_buffer));
     }
     if (use_odom) {
-      map_builder->SetTransformOdomToLidar(
-          static_map_ros::LoopUpTransfrom(odom_frame_id, cloud_frame_id,
-                                          tf_buffer)
-              .cast<float>());
-      map_builder->SetTrackingToOdom(
-          static_map_ros::LoopUpTransfrom(tracking_frame, odom_frame_id,
-                                          tf_buffer)
-              .cast<float>());
+      map_builder->SetTransformOdomToLidar(static_map_ros::LoopUpTransfrom(
+          odom_frame_id, cloud_frame_id, tf_buffer));
+      map_builder->SetTrackingToOdom(static_map_ros::LoopUpTransfrom(
+          tracking_frame, odom_frame_id, tf_buffer));
     }
     if (use_gps) {
       map_builder->SetTrackingToGps(static_map_ros::LoopUpTransfrom(
-                                        tracking_frame, gps_frame_id, tf_buffer)
-                                        .cast<float>());
+          tracking_frame, gps_frame_id, tf_buffer));
     }
   }
 

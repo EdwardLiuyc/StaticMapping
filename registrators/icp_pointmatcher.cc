@@ -146,12 +146,6 @@ bool IcpUsingPointMatcher<PointType>::Align(
   CHECK(matched_read.rows() == matched_ref.rows() &&
         matched_read.cols() == matched_ref.cols() && matched_read.rows() == 3);
 
-  // Interface<PointType>::point_pairs_.ref_points =
-  //     matched_ref.transpose().cast<float>();
-  // Interface<PointType>::point_pairs_.read_points =
-  //     matched_read.transpose().cast<float>();
-  // Interface<PointType>::point_pairs_.pairs_num = matched_read.cols();
-
   // compute mean distance
   const PM::Matrix dist = (matched_read - matched_ref).colwise().norm();
   // replace that by squaredNorm() to save computation time

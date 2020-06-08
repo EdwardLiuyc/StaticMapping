@@ -191,7 +191,7 @@ int MultiTrajectoryMapBuilder::LoadTrajectoryFromFile(
       pose_6d[4] = s_node.attribute("ry").as_double();
       pose_6d[5] = s_node.attribute("rz").as_double();
       Eigen::Matrix4d pose = common::Vector6ToTransform(pose_6d);
-      submap->SetGlobalPose(pose.cast<float>());
+      submap->SetGlobalPose(pose);
       // connections
       std::string connections = s_node.attribute("connections").as_string();
       auto connected_ids = ConnectionsStrToIds(connections);

@@ -138,7 +138,6 @@ class MapBuilder {
   using ShowPathFunction =
       std::function<void(const std::vector<Eigen::Matrix4d>&)>;
 
-  using TransformMatrix = Eigen::Matrix4f;
   using Ptr = std::shared_ptr<MapBuilder>;
   using ConstPtr = std::shared_ptr<const MapBuilder>;
 
@@ -181,19 +180,19 @@ class MapBuilder {
   /// @brief if enable gps, will calculate the transform from map to gps (enu)
   void EnableUsingGps(bool flag);
   /// @brief set static tf link from tracking frame to imu
-  void SetTrackingToImu(const Eigen::Matrix4f& t);
+  void SetTrackingToImu(const Eigen::Matrix4d& t);
   /// @brief set static tf link from tracking frame to odometry
-  void SetTrackingToOdom(const Eigen::Matrix4f& t);
+  void SetTrackingToOdom(const Eigen::Matrix4d& t);
   /// @brief set static tf link from tracking frame to lidar
-  void SetTrackingToLidar(const Eigen::Matrix4f& t);
+  void SetTrackingToLidar(const Eigen::Matrix4d& t);
   /// @brief set static tf link from tracking frame to gps
-  void SetTrackingToGps(const Eigen::Matrix4f& t);
+  void SetTrackingToGps(const Eigen::Matrix4d& t);
 
   /// @todo(edward) remove these two functions, using tracking frame instead
   /// @brief set static tf link from odom to lidar(cloud frame)
-  void SetTransformOdomToLidar(const Eigen::Matrix4f& t);
+  void SetTransformOdomToLidar(const Eigen::Matrix4d& t);
   /// @brief set static tf link from imu to lidar(cloud frame)
-  void SetTransformImuToLidar(const Eigen::Matrix4f& t);
+  void SetTransformImuToLidar(const Eigen::Matrix4d& t);
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
@@ -246,13 +245,13 @@ class MapBuilder {
   sensors::OdomMsg init_odom_msg_;
   // we assume that there is only one lidar
   // even if we have several lidars, we still use the fused cloud only
-  Eigen::Matrix4f transform_odom_lidar_;
-  Eigen::Matrix4f transform_imu_lidar_;
-  Eigen::Matrix4f tracking_to_imu_;
-  Eigen::Matrix4f tracking_to_odom_;
-  Eigen::Matrix4f tracking_to_lidar_;
+  Eigen::Matrix4d transform_odom_lidar_;
+  Eigen::Matrix4d transform_imu_lidar_;
+  Eigen::Matrix4d tracking_to_imu_;
+  Eigen::Matrix4d tracking_to_odom_;
+  Eigen::Matrix4d tracking_to_lidar_;
   // can not use the inversion of the transform
-  Eigen::Matrix4f tracking_to_gps_;
+  Eigen::Matrix4d tracking_to_gps_;
   bool use_imu_;
   bool use_odom_;
   bool use_gps_;

@@ -619,8 +619,7 @@ bool IcpFast<PointT>::Align(const Eigen::Matrix4d& guess,
       NNS::create(target_cloud_->points, kDim, NNS::KDTREE_LINEAR_HEAP));
 
   BuildData init_source_cloud = *source_cloud_;
-  Eigen::Matrix4d T_target_mean_init_guess =
-      T_target_mean.inverse() * guess.cast<double>();
+  Eigen::Matrix4d T_target_mean_init_guess = T_target_mean.inverse() * guess;
   TransformData(&init_source_cloud, T_target_mean_init_guess);
 
   // initialise all iter status

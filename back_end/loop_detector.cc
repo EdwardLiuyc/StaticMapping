@@ -227,7 +227,7 @@ typename LoopDetector<PointT>::DetectResult LoopDetector<PointT>::AddFrame(
       Eigen::Matrix4d transform;
       if (CloseLoop(pair.first, pair.second, &transform, &constraint_score)) {
         result.close_pair.push_back(pair);
-        result.transform.push_back(transform.cast<float>());
+        result.transform.push_back(transform);
         result.constraint_score.push_back(constraint_score);
       }
     }
@@ -272,7 +272,7 @@ bool LoopDetector<PointT>::CloseLoop(const int target_id, const int source_id,
   registrator::IcpUsingPointMatcher<PointT> scan_matcher;
   scan_matcher.SetInputSource(all_frames_[source_id]->Cloud());
   scan_matcher.SetInputTarget(all_frames_[target_id]->Cloud());
-  scan_matcher.Align(init_guess.cast<double>(), *result);
+  scan_matcher.Align(init_guess, *result);
   const double match_score = scan_matcher.GetFitnessScore();
   if (match_score > settings_.accept_scan_match_score) {
     // match score = exp(-score)
