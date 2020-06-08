@@ -78,20 +78,21 @@ Of course this 'untwisting' only works for non-dynamic environments.
 #include <glog/logging.h>
 #include <unistd.h>
 
+#include "common/file_utils.h"
 #include "ros_node/kitti_reader.h"
 
 namespace static_map {
 
 void KittiReader::SetPointCloudDataPath(const std::string &path) {
   point_cloud_data_path_ = path;
-  CHECK_NE(access(point_cloud_data_path_.c_str(), F_OK), -1);
+  CHECK(common::FileExist(point_cloud_data_path_));
 }
 
 MapBuilder::PointCloudPtr KittiReader::ReadFromBin(const int index) {
   char filename[256] = {0};
   snprintf(filename, sizeof(filename), "%s/%06d.bin",
            point_cloud_data_path_.c_str(), index);
-  if (access(filename, F_OK) == -1) {
+  if (!common::FileExist(filename)) {
     return nullptr;
   }
 

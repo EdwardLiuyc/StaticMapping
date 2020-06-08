@@ -87,8 +87,8 @@ class Trajectory {
   void shrink_to_fit();
 
   // Trajectory APIs
-  inline void SetId(int id) { id_ = id; }
-  inline int GetId() { return id_; }
+  void SetId(int id) { id_ = id; }
+  int GetId() const { return id_; }
   void SetEnuOffset(const double x, const double y);
   void ToXmlNode(pugi::xml_node* map_node);
   void SetSavePath(const std::string& path);

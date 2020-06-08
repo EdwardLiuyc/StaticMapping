@@ -26,9 +26,11 @@
 
 namespace static_map {
 
+namespace {
 inline Eigen::Quaterniond Rotation(const PoseExtrapolator::RigidPose3d& pose) {
   return Eigen::Quaterniond(Eigen::Matrix3d(pose.block(0, 0, 3, 3)));
 }
+}  // namespace
 
 PoseExtrapolator::PoseExtrapolator(const SimpleTime pose_queue_duration,
                                    double imu_gravity_time_constant)
