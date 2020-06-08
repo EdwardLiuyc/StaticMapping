@@ -58,11 +58,9 @@ class FrameBase {
       : global_pose_(Eigen::Matrix4f::Identity()),
         local_pose_(Eigen::Matrix4f::Identity()),
         transform_from_last_frame_(Eigen::Matrix4f::Identity()),
-        transform_to_next_frame_(Eigen::Matrix4f::Identity()),
-        related_odom_(OdomPose::Zero()),
-        got_related_odom_(false) {}
+        transform_to_next_frame_(Eigen::Matrix4f::Identity()) {}
 
-  ~FrameBase() = default;
+  virtual ~FrameBase() = default;
 
   Eigen::Matrix3f GlobalRotation() const;
   Eigen::Vector3f GlobalTranslation() const;
@@ -118,10 +116,7 @@ class FrameBase {
   typename descriptor::M2dp<PointType>::Descriptor descriptor_;
 
   boost::optional<EnuPosition> related_enu_;
-
-  // @todo(edward) using boost/std optional to do this
-  OdomPose related_odom_;
-  bool got_related_odom_;
+  boost::optional<OdomPose> related_odom_;
 };
 
 }  // namespace static_map

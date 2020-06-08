@@ -30,7 +30,39 @@
 
 namespace static_map {
 
+bool SubmapId::operator==(const SubmapId& other) const {
+  return std::forward_as_tuple(trajectory_index, submap_index) ==
+         std::forward_as_tuple(other.trajectory_index, other.submap_index);
+}
+
+bool SubmapId::operator!=(const SubmapId& other) const {
+  return !operator==(other);
+}
+
+bool SubmapId::operator<(const SubmapId& other) const {
+  return std::forward_as_tuple(trajectory_index, submap_index) <
+         std::forward_as_tuple(other.trajectory_index, other.submap_index);
+}
+
+std::string SubmapId::DebugString() const {
+  std::ostringstream out;
+  out << "(" << trajectory_index << "," << submap_index << ")";
+  return out.str();
+}
+
 using static_map::registrator::MultiviewRegistratorLumPcl;
+
+template <typename PointType>
+Submap<PointType>::Submap(const SubmapOptions& options)
+    : FrameBase<PointType>(),
+      options_(options),
+      save_filename_(""),
+      full_(false),
+      is_cloud_in_memory_(false),
+      got_matched_transform_to_next_(false),
+      cloud_inactive_time_(0) {
+  this->cloud_.reset(new PointCloudType);
+}
 
 template <typename PointType>
 void Submap<PointType>::InsertFrame(

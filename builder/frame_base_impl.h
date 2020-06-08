@@ -103,17 +103,17 @@ inline bool FrameBase<PointType>::HasGps() const {
 template <typename PointType>
 inline void FrameBase<PointType>::SetRelatedOdom(const OdomPose& odom) {
   related_odom_ = odom;
-  got_related_odom_ = true;
 }
 
 template <typename PointType>
 inline OdomPose FrameBase<PointType>::GetRelatedOdom() const {
-  return related_odom_;
+  CHECK(HasOdom());
+  return related_odom_.value();
 }
 
 template <typename PointType>
 inline bool FrameBase<PointType>::HasOdom() const {
-  return got_related_odom_;
+  return related_odom_.is_initialized();
 }
 
 template <typename PointType>

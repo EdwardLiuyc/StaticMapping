@@ -49,23 +49,10 @@ struct SubmapId {
   int32_t trajectory_index;
   int32_t submap_index;
 
-  bool operator==(const SubmapId& other) const {
-    return std::forward_as_tuple(trajectory_index, submap_index) ==
-           std::forward_as_tuple(other.trajectory_index, other.submap_index);
-  }
-
-  bool operator!=(const SubmapId& other) const { return !operator==(other); }
-
-  bool operator<(const SubmapId& other) const {
-    return std::forward_as_tuple(trajectory_index, submap_index) <
-           std::forward_as_tuple(other.trajectory_index, other.submap_index);
-  }
-
-  std::string DebugString() const {
-    std::ostringstream out;
-    out << "(" << trajectory_index << "," << submap_index << ")";
-    return out.str();
-  }
+  bool operator==(const SubmapId& other) const;
+  bool operator!=(const SubmapId& other) const;
+  bool operator<(const SubmapId& other) const;
+  std::string DebugString() const;
 };
 
 template <typename PointType>
@@ -82,20 +69,10 @@ class Submap : public FrameBase<PointType> {
   using ReadMutexLocker = boost::shared_lock<ReadWriteMutex>;
   using WriteMutexLocker = boost::upgrade_to_unique_lock<ReadWriteMutex>;
 
-  explicit Submap(const SubmapOptions& options)
-      : FrameBase<PointType>(),
-        options_(options),
-        save_filename_(""),
-        full_(false),
-        is_cloud_in_memory_(false),
-        got_matched_transform_to_next_(false),
-        cloud_inactive_time_(0) {
-    this->cloud_.reset(new PointCloudType);
-  }
+  explicit Submap(const SubmapOptions& options);
   ~Submap();
 
-  Submap(const Submap<PointType>&) = delete;
-  Submap& operator=(const Submap<PointType>&) = delete;
+  PROHIBIT_COPY_AND_ASSIGN(Submap);
 
   /// @brief Set the submap ID include trajectory index and submap index
   void SetId(const SubmapId& id);
