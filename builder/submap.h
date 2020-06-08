@@ -69,7 +69,7 @@ struct SubmapId {
 };
 
 template <typename PointType>
-class Submap : public SimpleFrame<PointType> {
+class Submap : public FrameBase<PointType> {
  public:
   using PointCloudType = pcl::PointCloud<PointType>;
   using PointCloudPtr = typename PointCloudType::Ptr;
@@ -83,7 +83,7 @@ class Submap : public SimpleFrame<PointType> {
   using WriteMutexLocker = boost::upgrade_to_unique_lock<ReadWriteMutex>;
 
   explicit Submap(const SubmapOptions& options)
-      : SimpleFrame<PointType>(),
+      : FrameBase<PointType>(),
         options_(options),
         save_filename_(""),
         full_(false),

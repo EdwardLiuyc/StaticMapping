@@ -26,7 +26,7 @@
 // stl
 #include <string>
 // local
-#include "builder/simple_frame.h"
+#include "builder/frame_base.h"
 
 namespace static_map {
 
@@ -58,7 +58,7 @@ struct FrameId {
 };
 
 template <typename PointType>
-class Frame : public SimpleFrame<PointType> {
+class Frame : public FrameBase<PointType> {
  public:
   using PointCloudType = pcl::PointCloud<PointType>;
   using PointCloudPtr = typename PointCloudType::Ptr;
@@ -66,7 +66,7 @@ class Frame : public SimpleFrame<PointType> {
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  Frame() : SimpleFrame<PointType>() {}
+  Frame() : FrameBase<PointType>() {}
   ~Frame() {}
 
   Frame(const Frame&) = delete;
