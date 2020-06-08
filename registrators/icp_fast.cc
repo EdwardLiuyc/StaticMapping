@@ -547,13 +547,13 @@ IcpFast<PointT>::IcpFast() : Interface<PointT>() {
 }
 
 template <typename PointT>
-void IcpFast<PointT>::setInputSource(const PointCloudSourcePtr& cloud) {
+void IcpFast<PointT>::SetInputSource(const PointCloudSourcePtr& cloud) {
   source_cloud_.reset(new BuildData);
   source_cloud_->FromPointCloud<PointT>(cloud);
 }
 
 template <typename PointT>
-void IcpFast<PointT>::setInputTarget(const PointCloudTargetPtr& cloud) {
+void IcpFast<PointT>::SetInputTarget(const PointCloudTargetPtr& cloud) {
   // it is the reference cloud
   target_cloud_.reset(new BuildData);
   target_cloud_->FromPointCloud<PointT>(cloud);
@@ -603,7 +603,7 @@ void IcpFast<PointT>::setInputTarget(const PointCloudTargetPtr& cloud) {
 }
 
 template <typename PointT>
-bool IcpFast<PointT>::align(const Eigen::Matrix4d& guess,
+bool IcpFast<PointT>::Align(const Eigen::Matrix4d& guess,
                             Eigen::Matrix4d& result) {  // NOLINT
   const int target_points_count = target_cloud_->points.cols();
   const Eigen::Vector3d target_mean =

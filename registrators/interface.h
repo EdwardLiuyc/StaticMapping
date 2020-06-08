@@ -94,13 +94,12 @@ class Interface {
 
   void PrintOptions();
 
-  // @todo(edward) change the function names ( naming rules )
-  virtual void setInputSource(const PointCloudSourcePtr& cloud);
-  virtual void setInputTarget(const PointCloudTargetPtr& cloud);
-  virtual double getFitnessScore() { return final_score_; }
+  virtual void SetInputSource(const PointCloudSourcePtr& cloud);
+  virtual void SetInputTarget(const PointCloudTargetPtr& cloud);
+  virtual double GetFitnessScore() { return final_score_; }
 
   // need to be implemented by child class
-  virtual bool align(const Eigen::Matrix4d& guess,
+  virtual bool Align(const Eigen::Matrix4d& guess,
                      Eigen::Matrix4d& result) = 0;  // NOLINT
 
  protected:
@@ -112,7 +111,7 @@ class Interface {
 };
 
 template <typename PointType>
-void Interface<PointType>::setInputSource(
+void Interface<PointType>::SetInputSource(
     const typename Interface<PointType>::PointCloudSourcePtr& cloud) {
   if (!cloud) {
     source_cloud_ = nullptr;
@@ -126,7 +125,7 @@ void Interface<PointType>::setInputSource(
 }
 
 template <typename PointType>
-void Interface<PointType>::setInputTarget(
+void Interface<PointType>::SetInputTarget(
     const typename Interface<PointType>::PointCloudTargetPtr& cloud) {
   if (!cloud) {
     target_cloud_ = nullptr;

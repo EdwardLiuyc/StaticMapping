@@ -357,20 +357,20 @@ void MapBuilder::ScanMatchProcessing() {
     common::NormalizeRotation(guess);
 
     // motion compensation using guess
-    scan_matcher_->setInputTarget(target_cloud);
+    scan_matcher_->SetInputTarget(target_cloud);
     if (options_.front_end_options.motion_compensation_options.enable &&
         options_.front_end_options.motion_compensation_options.use_average) {
       PointCloudType compensated_source_cloud;
       MotionCompensation(source_cloud, source_cloud_delta_time,
                          guess.cast<float>(), &compensated_source_cloud);
-      scan_matcher_->setInputSource(compensated_source_cloud.makeShared());
+      scan_matcher_->SetInputSource(compensated_source_cloud.makeShared());
     } else {
-      scan_matcher_->setInputSource(source_cloud);
+      scan_matcher_->SetInputSource(source_cloud);
     }
     Eigen::Matrix4d align_result = Eigen::Matrix4d::Identity();
     {
       REGISTER_BLOCK("scan match");
-      scan_matcher_->align(guess, align_result);
+      scan_matcher_->Align(guess, align_result);
     }
 
     if (options_.front_end_options.motion_compensation_options.enable) {
@@ -409,17 +409,17 @@ void MapBuilder::ScanMatchProcessing() {
          accu_angles >= options_.front_end_options.motion_filter.angle_range)) {
       // re-align if nessary
       if (!first_in_accumulate) {
-        scan_matcher_->setInputSource(source_cloud);
-        scan_matcher_->setInputTarget(history_cloud);
+        scan_matcher_->SetInputSource(source_cloud);
+        scan_matcher_->SetInputTarget(history_cloud);
         Eigen::Matrix4d tmp_result;
-        scan_matcher_->align(accumulative_transform, tmp_result);
+        scan_matcher_->Align(accumulative_transform, tmp_result);
         accumulative_transform = tmp_result.cast<double>();
       }
 
       final_transform *= accumulative_transform;
       pose_source = final_transform;
       InsertFrameForSubmap(source_cloud, final_transform.cast<float>(),
-                           scan_matcher_->getFitnessScore());
+                           scan_matcher_->GetFitnessScore());
 
       accumulative_transform = Pose3d::Identity();
       history_cloud = source_cloud;
@@ -454,15 +454,15 @@ void MapBuilder::SubmapPairMatch(const int source_index,
   }
   CHECK(matcher);
 
-  matcher->setInputSource(source_submap->Cloud());
-  matcher->setInputTarget(target_submap->Cloud());
+  matcher->SetInputSource(source_submap->Cloud());
+  matcher->SetInputTarget(target_submap->Cloud());
   Eigen::Matrix4d result = Eigen::Matrix4d::Identity();
   Eigen::Matrix4f guess =
       target_submap->GetFrames()[0]->GlobalPose().inverse() *
       source_submap->GetFrames()[0]->GlobalPose();
-  matcher->align(guess.cast<double>(), result);
+  matcher->Align(guess.cast<double>(), result);
   common::NormalizeRotation(result);
-  double submap_match_score = matcher->getFitnessScore();
+  double submap_match_score = matcher->GetFitnessScore();
   // PRINT_DEBUG_FMT("submap match score: %lf", submap_match_score);
   source_submap->match_score_to_previous_submap_ = submap_match_score;
   if (submap_match_score >=

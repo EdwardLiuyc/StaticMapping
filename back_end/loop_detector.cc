@@ -270,10 +270,10 @@ bool LoopDetector<PointT>::CloseLoop(const int target_id, const int source_id,
   }
 
   registrator::IcpUsingPointMatcher<PointT> scan_matcher;
-  scan_matcher.setInputSource(all_frames_[source_id]->Cloud());
-  scan_matcher.setInputTarget(all_frames_[target_id]->Cloud());
-  scan_matcher.align(init_guess.cast<double>(), *result);
-  const double match_score = scan_matcher.getFitnessScore();
+  scan_matcher.SetInputSource(all_frames_[source_id]->Cloud());
+  scan_matcher.SetInputTarget(all_frames_[target_id]->Cloud());
+  scan_matcher.Align(init_guess.cast<double>(), *result);
+  const double match_score = scan_matcher.GetFitnessScore();
   if (match_score > settings_.accept_scan_match_score) {
     // match score = exp(-score)
     // so, score = -log_e(match_score)

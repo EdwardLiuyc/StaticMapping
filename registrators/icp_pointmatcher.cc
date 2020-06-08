@@ -87,7 +87,7 @@ IcpUsingPointMatcher<PointType>::~IcpUsingPointMatcher() {
 }
 
 template <typename PointType>
-void IcpUsingPointMatcher<PointType>::setInputSource(
+void IcpUsingPointMatcher<PointType>::SetInputSource(
     const PointCloudSourcePtr& cloud) {
   if (!cloud || cloud->empty()) {
     PRINT_ERROR("Empty cloud.");
@@ -99,7 +99,7 @@ void IcpUsingPointMatcher<PointType>::setInputSource(
 }
 
 template <typename PointType>
-void IcpUsingPointMatcher<PointType>::setInputTarget(
+void IcpUsingPointMatcher<PointType>::SetInputTarget(
     const PointCloudTargetPtr& cloud) {
   if (!cloud || cloud->empty()) {
     PRINT_ERROR("Empty cloud.");
@@ -111,7 +111,7 @@ void IcpUsingPointMatcher<PointType>::setInputTarget(
 }
 
 template <typename PointType>
-bool IcpUsingPointMatcher<PointType>::align(
+bool IcpUsingPointMatcher<PointType>::Align(
     const Eigen::Matrix4d& guess,
     Eigen::Matrix4d& result) {  // NOLINT
   // **** compute the transform ****
