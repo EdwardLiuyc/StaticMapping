@@ -47,7 +47,7 @@ class NdtWithGicp : public Interface<PointType> {
 
   PROHIBIT_COPY_AND_ASSIGN(NdtWithGicp);
 
-  bool align(const Eigen::Matrix4f& guess, Eigen::Matrix4f& result) override;
+  bool align(const Eigen::Matrix4d& guess, Eigen::Matrix4d& result) override;
 
   void InitWithOptions() override;
 

@@ -112,13 +112,13 @@ void IcpUsingPointMatcher<PointType>::setInputTarget(
 
 template <typename PointType>
 bool IcpUsingPointMatcher<PointType>::align(
-    const Eigen::Matrix4f& guess,
-    Eigen::Matrix4f& result) {  // NOLINT
+    const Eigen::Matrix4d& guess,
+    Eigen::Matrix4d& result) {  // NOLINT
   // **** compute the transform ****
   result = inner_->pm_icp_
                .compute(*(inner_->reading_cloud_), *(inner_->reference_cloud_),
                         guess.cast<FloatType>())
-               .cast<float>();
+               .cast<double>();
 
   // **** compute the final score ****
   PM::DataPoints data_out(*(inner_->reading_cloud_));

@@ -100,8 +100,8 @@ class Interface {
   virtual double getFitnessScore() { return final_score_; }
 
   // need to be implemented by child class
-  virtual bool align(const Eigen::Matrix4f& guess,
-                     Eigen::Matrix4f& result) = 0;  // NOLINT
+  virtual bool align(const Eigen::Matrix4d& guess,
+                     Eigen::Matrix4d& result) = 0;  // NOLINT
 
  protected:
   double final_score_;

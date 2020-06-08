@@ -93,8 +93,8 @@ class LoopDetector {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
  protected:
-  bool CloseLoop(const int first_id, const int last_id, Eigen::Matrix4f *result,
-                 double *score);
+  bool CloseLoop(const int first_id, const int last_id,
+                 Eigen::Matrix4d *const result, double *score);
 
  private:
   std::vector<std::shared_ptr<Submap<PointT>>> all_frames_;

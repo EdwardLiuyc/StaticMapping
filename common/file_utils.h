@@ -29,20 +29,11 @@
 namespace static_map {
 namespace common {
 
-// @todo(edward) move to .cc file
-inline bool FileExist(const std::string& name) {
-  return (access(name.c_str(), F_OK) != -1);
-}
+/// @brief Check if the file (or folder) exists
+bool FileExist(const std::string& name);
 
-inline std::string FilePath(const std::string& file) {
-  size_t found = file.find_last_of("/");
-  std::string file_path = "";
-  if (found != std::string::npos) {
-    file_path = file.substr(0, found);
-    file_path += "/";
-  }
-  return file_path;
-}
+/// @brief Extract the folder where the file is in
+std::string FilePath(const std::string& file);
 
 }  // namespace common
 }  // namespace static_map

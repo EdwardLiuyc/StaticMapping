@@ -38,8 +38,8 @@ template <typename PointType>
 Ndt<PointType>::~Ndt() {}
 
 template <typename PointType>
-bool Ndt<PointType>::align(const Eigen::Matrix4f& guess,
-                           Eigen::Matrix4f& result) {  // NOLINT
+bool Ndt<PointType>::align(const Eigen::Matrix4d& guess,
+                           Eigen::Matrix4d& result) {  // NOLINT
   if (!this->source_cloud_ || !this->target_cloud_) {
     return false;
   }
@@ -47,10 +47,11 @@ bool Ndt<PointType>::align(const Eigen::Matrix4f& guess,
   inner_matcher_.setInputTarget(this->target_cloud_);
 
   PointCloudTargetPtr aligned_cloud(new PointCloudTarget);
-  inner_matcher_.align(*aligned_cloud, guess);
+  inner_matcher_.align(*aligned_cloud, guess.cast<float>());
 
   this->final_score_ = inner_matcher_.getFitnessScore();
-  result = inner_matcher_.getFinalTransformation();
+  const Eigen::Matrix4f result_f = inner_matcher_.getFinalTransformation();
+  result = result_f.cast<double>();
 
   return true;
 }

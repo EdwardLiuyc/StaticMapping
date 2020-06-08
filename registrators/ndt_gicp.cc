@@ -55,8 +55,8 @@ void NdtWithGicp<PointType>::InitWithOptions() {
 }
 
 template <typename PointType>
-bool NdtWithGicp<PointType>::align(const Eigen::Matrix4f& guess,
-                                   Eigen::Matrix4f& result) {  // NOLINT
+bool NdtWithGicp<PointType>::align(const Eigen::Matrix4d& guess,
+                                   Eigen::Matrix4d& result) {  // NOLINT
   if (options_.using_voxel_filter) {
     if (!down_sampled_source_cloud_) {
       down_sampled_source_cloud_ = boost::make_shared<PointCloudSource>();
@@ -76,12 +76,12 @@ bool NdtWithGicp<PointType>::align(const Eigen::Matrix4f& guess,
   }
 
   PointCloudSourcePtr output_cloud(new PointCloudSource);
-  Eigen::Matrix4f ndt_guess = guess;
+  Eigen::Matrix4f ndt_guess = guess.cast<float>();
   double ndt_score = 0.9;
   if (options_.use_ndt) {
     ndt_.setInputSource(down_sampled_source_cloud_);
     ndt_.setInputTarget(down_sampled_target_cloud_);
-    ndt_.align(*output_cloud, guess);
+    ndt_.align(*output_cloud, guess.cast<float>());
     ndt_score = ndt_.getFitnessScore();
 
     ndt_guess = ndt_.getFinalTransformation();
@@ -100,7 +100,7 @@ bool NdtWithGicp<PointType>::align(const Eigen::Matrix4f& guess,
     final_guess = gicp_.getFinalTransformation();
 
     this->final_score_ = std::exp(-icp_score);
-    result = final_guess;
+    result = final_guess.cast<double>();
     return true;
   } else {
     result = guess;

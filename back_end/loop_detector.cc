@@ -203,10 +203,10 @@ typename LoopDetector<PointT>::DetectResult LoopDetector<PointT>::AddFrame(
 #ifdef _USE_TBB_
     auto pair_close_loop = [&](const std::pair<int, int>& p) {
       double constraint_score = 0.;
-      Eigen::Matrix4f transform;
+      Eigen::Matrix4d transform;
       if (CloseLoop(p.first, p.second, &transform, &constraint_score)) {
         result.close_pair.push_back(p);
-        result.transform.push_back(transform);
+        result.transform.push_back(transform.cast<float>());
         result.constraint_score.push_back(constraint_score);
       }
     };
@@ -224,10 +224,10 @@ typename LoopDetector<PointT>::DetectResult LoopDetector<PointT>::AddFrame(
 #else
     for (auto& pair : maybe_close_pair) {
       double constraint_score = 0.;
-      Eigen::Matrix4f transform;
+      Eigen::Matrix4d transform;
       if (CloseLoop(pair.first, pair.second, &transform, &constraint_score)) {
         result.close_pair.push_back(pair);
-        result.transform.push_back(transform);
+        result.transform.push_back(transform.cast<float>());
         result.constraint_score.push_back(constraint_score);
       }
     }
@@ -253,7 +253,8 @@ void LoopDetector<PointT>::SetSearchWindow(const int start_index,
 
 template <typename PointT>
 bool LoopDetector<PointT>::CloseLoop(const int target_id, const int source_id,
-                                     Eigen::Matrix4f* result, double* score) {
+                                     Eigen::Matrix4d* const result,
+                                     double* score) {
   // PRINT_INFO("Trying to close loop ...");
   CHECK(all_frames_.size() > target_id && all_frames_.size() > source_id);
   Eigen::Matrix4f init_guess = all_frames_[target_id]->GlobalPose().inverse() *
@@ -271,7 +272,7 @@ bool LoopDetector<PointT>::CloseLoop(const int target_id, const int source_id,
   registrator::IcpUsingPointMatcher<PointT> scan_matcher;
   scan_matcher.setInputSource(all_frames_[source_id]->Cloud());
   scan_matcher.setInputTarget(all_frames_[target_id]->Cloud());
-  scan_matcher.align(init_guess, *result);
+  scan_matcher.align(init_guess.cast<double>(), *result);
   const double match_score = scan_matcher.getFitnessScore();
   if (match_score > settings_.accept_scan_match_score) {
     // match score = exp(-score)
