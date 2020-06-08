@@ -23,11 +23,13 @@
 #ifndef BUILDER_RANDOM_SAMPLE_WITH_PLANE_DETECT_H_
 #define BUILDER_RANDOM_SAMPLE_WITH_PLANE_DETECT_H_
 
+// @todo(edward) need to be refactored later!!!
+
 // stl
 #include <algorithm>
 #include <vector>
 // local
-#include "builder/plane_detector.h"
+#include "pre_processors/plane_detector.h"
 
 namespace static_map {
 
