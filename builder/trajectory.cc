@@ -38,7 +38,7 @@ void Trajectory<PointT>::ToXmlNode(pugi::xml_node* map_node) {
     pugi::xml_node submap_node = t_node.append_child("Submap");
     submap_node.append_attribute("id") = submap->GetId().submap_index;
     submap_node.append_attribute("file") = submap->SavedFileName().c_str();
-    Eigen::VectorXf pose_6d = submap->GlobalPoseIn6Dof();
+    const Eigen::VectorXd pose_6d = submap->GlobalPoseIn6Dof();
     submap_node.append_attribute("tx") = pose_6d[0];
     submap_node.append_attribute("ty") = pose_6d[1];
     submap_node.append_attribute("tz") = pose_6d[2];

@@ -89,7 +89,8 @@ void MultiTrajectoryOptimizer<PointT>::AddSubmap(
   const int t_index = id.trajectory_index;
   trajectories_[t_index].push_back(submap);
 
-  auto result = loop_detector_.AddFrame(submap, do_loop_detect);
+  typename LoopDetector<PointT>::DetectResult result =
+      loop_detector_.AddFrame(submap, do_loop_detect);
   AddVertex(SubmapIdToUint64(id), submap->GlobalPose());
 
   if (result.close_succeed) {
@@ -99,7 +100,8 @@ void MultiTrajectoryOptimizer<PointT>::AddSubmap(
       const SubmapId target_id = frames[result.close_pair[i].first]->GetId();
       const SubmapId source_id = frames[result.close_pair[i].second]->GetId();
       CHECK_NE(target_id.trajectory_index, source_id.trajectory_index);
-      const Eigen::Matrix4f transform = result.transform[i];
+      const Eigen::Matrix4d transform =
+          result.transform[i].template cast<double>();
       AddSubmapConnection(target_id, source_id, transform, true);
     }
     PRINT_INFO_FMT(BOLD "Add %d loop closure edges." NONE_FORMAT, edge_size);
@@ -109,7 +111,7 @@ void MultiTrajectoryOptimizer<PointT>::AddSubmap(
 template <typename PointT>
 void MultiTrajectoryOptimizer<PointT>::AddSubmapConnection(
     const SubmapId& target, const SubmapId& source,
-    const Eigen::Matrix4f& transform, bool is_loop_constraint) {
+    const Eigen::Matrix4d& transform, bool is_loop_constraint) {
   PRINT_DEBUG_FMT("target_id : %s, source_id: %s", target.DebugString().c_str(),
                   source.DebugString().c_str());
   if (is_loop_constraint) {
@@ -133,7 +135,8 @@ void MultiTrajectoryOptimizer<PointT>::AddSubmapConnection(
       transform_gtsam, noise_model);
 
   view_graph_.AddEdge(static_cast<int64_t>(target_index),
-                      static_cast<int64_t>(source_index), transform);
+                      static_cast<int64_t>(source_index),
+                      transform.cast<float>());
 
   isam_->update(*isam_factor_graph_);
   isam_->update();
@@ -143,7 +146,7 @@ void MultiTrajectoryOptimizer<PointT>::AddSubmapConnection(
 
 template <typename PointT>
 void MultiTrajectoryOptimizer<PointT>::AddVertex(const uint64_t index,
-                                                 const Eigen::Matrix4f& pose) {
+                                                 const Eigen::Matrix4d& pose) {
   gtsam::Pose3 pose_gtsam = gtsam::Pose3(pose.cast<double>());
   initial_estimate_.insert(SUBMAP_KEY(index), pose_gtsam);
   uint64_t pair_id = index;
@@ -154,7 +157,7 @@ void MultiTrajectoryOptimizer<PointT>::AddVertex(const uint64_t index,
                                             pose_gtsam, prior_noise_model_);
   }
 
-  view_graph_.AddVertex(index, pose);
+  view_graph_.AddVertex(index, pose.cast<float>());
   isam_->update(*isam_factor_graph_, initial_estimate_);
   isam_->update();
   initial_estimate_.clear();
@@ -178,10 +181,10 @@ void MultiTrajectoryOptimizer<PointT>::RunFinalOptimizing() {
   for (auto& pair : trajectories_) {
     for (auto& submap : pair.second) {
       const uint64_t index = SubmapIdToUint64(submap->GetId());
-      Eigen::Matrix4f pose =
-          result.at<gtsam::Pose3>(SUBMAP_KEY(index)).matrix().cast<float>();
+      Eigen::Matrix4d pose =
+          result.at<gtsam::Pose3>(SUBMAP_KEY(index)).matrix();
       submap->SetGlobalPose(pose);
-      view_graph_.AddVertex(index, pose);
+      view_graph_.AddVertex(index, pose.cast<float>());
     }
   }
   // view_graph_.SaveTextFile("pcd/graph.txt");
