@@ -1,3 +1,4 @@
+
 // MIT License
 
 // Copyright (c) 2019 Edward Liu
@@ -20,35 +21,24 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef REGISTRATORS_NDT_H_
-#define REGISTRATORS_NDT_H_
-
-#include "pclomp/ndt_omp_impl.hpp"
-#include "registrators/interface.h"
+#include "common/file_utils.h"
 
 namespace static_map {
-namespace registrator {
+namespace common {
 
-template <typename PointType>
-class Ndt : public Interface<PointType> {
- public:
-  USE_REGISTRATOR_CLOUDS;
+bool FileExist(const std::string& name) {
+  return (access(name.c_str(), F_OK) != -1);
+}
 
-  using NdtRegistrator =
-      pclomp::NormalDistributionsTransform<PointType, PointType>;
+std::string FilePath(const std::string& file) {
+  size_t found = file.find_last_of("/");
+  std::string file_path = "";
+  if (found != std::string::npos) {
+    file_path = file.substr(0, found);
+    file_path += "/";
+  }
+  return file_path;
+}
 
-  Ndt();
-  ~Ndt();
-
-  PROHIBIT_COPY_AND_ASSIGN(Ndt);
-
-  bool align(const Eigen::Matrix4d& guess, Eigen::Matrix4d& result) override;
-
- private:
-  NdtRegistrator inner_matcher_;
-};
-
-}  // namespace registrator
+}  // namespace common
 }  // namespace static_map
-
-#endif  // REGISTRATORS_NDT_H_

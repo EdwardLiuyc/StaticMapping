@@ -603,8 +603,8 @@ void IcpFast<PointT>::setInputTarget(const PointCloudTargetPtr& cloud) {
 }
 
 template <typename PointT>
-bool IcpFast<PointT>::align(const Eigen::Matrix4f& guess,
-                            Eigen::Matrix4f& result) {  // NOLINT
+bool IcpFast<PointT>::align(const Eigen::Matrix4d& guess,
+                            Eigen::Matrix4d& result) {  // NOLINT
   const int target_points_count = target_cloud_->points.cols();
   const Eigen::Vector3d target_mean =
       target_cloud_->points.rowwise().sum() / target_points_count;
@@ -686,7 +686,7 @@ bool IcpFast<PointT>::align(const Eigen::Matrix4f& guess,
     this->final_score_ = std::exp(-average_dist);
   }
 
-  result = (T_target_mean * T_iter * T_target_mean_init_guess).cast<float>();
+  result = T_target_mean * T_iter * T_target_mean_init_guess;
   return true;
 }
 

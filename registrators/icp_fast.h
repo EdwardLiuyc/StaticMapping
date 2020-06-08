@@ -53,7 +53,7 @@ class IcpFast : public Interface<PointType> {
 
   void setInputSource(const PointCloudSourcePtr& cloud) override;
   void setInputTarget(const PointCloudTargetPtr& cloud) override;
-  bool align(const Eigen::Matrix4f& guess, Eigen::Matrix4f& result) override;
+  bool align(const Eigen::Matrix4d& guess, Eigen::Matrix4d& result) override;
 
  private:
   std::shared_ptr<BuildData> source_cloud_;

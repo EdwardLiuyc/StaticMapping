@@ -367,17 +367,17 @@ void MapBuilder::ScanMatchProcessing() {
     } else {
       scan_matcher_->setInputSource(source_cloud);
     }
-    Eigen::Matrix4f align_result = Eigen::Matrix4f::Identity();
+    Eigen::Matrix4d align_result = Eigen::Matrix4d::Identity();
     {
       REGISTER_BLOCK("scan match");
-      scan_matcher_->align(guess.cast<float>(), align_result);
+      scan_matcher_->align(guess, align_result);
     }
 
     if (options_.front_end_options.motion_compensation_options.enable) {
-      Eigen::Matrix4f average_transform = align_result;
+      Eigen::Matrix4f average_transform = align_result.cast<float>();
       if (options_.front_end_options.motion_compensation_options.use_average) {
         std::vector<Eigen::Matrix4f> transforms;
-        transforms.push_back(align_result);
+        transforms.push_back(align_result.cast<float>());
         transforms.push_back(guess.cast<float>());
         average_transform = AverageTransforms(transforms);
       }
@@ -411,8 +411,8 @@ void MapBuilder::ScanMatchProcessing() {
       if (!first_in_accumulate) {
         scan_matcher_->setInputSource(source_cloud);
         scan_matcher_->setInputTarget(history_cloud);
-        Eigen::Matrix4f tmp_result;
-        scan_matcher_->align(accumulative_transform.cast<float>(), tmp_result);
+        Eigen::Matrix4d tmp_result;
+        scan_matcher_->align(accumulative_transform, tmp_result);
         accumulative_transform = tmp_result.cast<double>();
       }
 
@@ -456,18 +456,18 @@ void MapBuilder::SubmapPairMatch(const int source_index,
 
   matcher->setInputSource(source_submap->Cloud());
   matcher->setInputTarget(target_submap->Cloud());
-  Eigen::Matrix4f result = Eigen::Matrix4f::Identity();
+  Eigen::Matrix4d result = Eigen::Matrix4d::Identity();
   Eigen::Matrix4f guess =
       target_submap->GetFrames()[0]->GlobalPose().inverse() *
       source_submap->GetFrames()[0]->GlobalPose();
-  matcher->align(guess, result);
+  matcher->align(guess.cast<double>(), result);
   common::NormalizeRotation(result);
   double submap_match_score = matcher->getFitnessScore();
   // PRINT_DEBUG_FMT("submap match score: %lf", submap_match_score);
   source_submap->match_score_to_previous_submap_ = submap_match_score;
   if (submap_match_score >=
       options_.back_end_options.submap_matcher_options.accepted_min_score) {
-    target_submap->SetMatchedTransformedToNext(result);
+    target_submap->SetMatchedTransformedToNext(result.cast<float>());
   } else {
     // do nothing
     // keep the former transform
@@ -729,7 +729,7 @@ void MapBuilder::OutputPath() {
 
 void MapBuilder::SubmapMemoryManaging() {
   if (!options_.back_end_options.submap_options.enable_disk_saving) {
-    PRINT_INFO("No need to manage submap memory, exit the thread.");
+    // PRINT_INFO("No need to manage submap memory, exit the thread.");
     return;
   }
 

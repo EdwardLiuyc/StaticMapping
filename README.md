@@ -221,6 +221,7 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - full support for all kinds of pointcloud
 - totally independent with ROS
 - try sqlite to manage submap memory
+- isam optimizer should not be involved with pointcloud type
 
 # Tried
 - tried folly, libcds (intending to used instead of tbb) but they are not very freindly to use and not like stl containers
