@@ -42,9 +42,9 @@ class IcpUsingPointMatcher : public Interface<PointType> {
   explicit IcpUsingPointMatcher(const std::string& ymal_file = "");
   ~IcpUsingPointMatcher();
 
-  void setInputSource(const PointCloudSourcePtr& cloud) override;
-  void setInputTarget(const PointCloudTargetPtr& cloud) override;
-  bool align(const Eigen::Matrix4d& guess, Eigen::Matrix4d& result) override;
+  void SetInputSource(const PointCloudSourcePtr& cloud) override;
+  void SetInputTarget(const PointCloudTargetPtr& cloud) override;
+  bool Align(const Eigen::Matrix4d& guess, Eigen::Matrix4d& result) override;
 
  protected:
   void loadDefaultConfig();

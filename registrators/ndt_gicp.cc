@@ -55,7 +55,7 @@ void NdtWithGicp<PointType>::InitWithOptions() {
 }
 
 template <typename PointType>
-bool NdtWithGicp<PointType>::align(const Eigen::Matrix4d& guess,
+bool NdtWithGicp<PointType>::Align(const Eigen::Matrix4d& guess,
                                    Eigen::Matrix4d& result) {  // NOLINT
   if (options_.using_voxel_filter) {
     if (!down_sampled_source_cloud_) {

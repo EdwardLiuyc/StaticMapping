@@ -42,7 +42,7 @@ class Ndt : public Interface<PointType> {
 
   PROHIBIT_COPY_AND_ASSIGN(Ndt);
 
-  bool align(const Eigen::Matrix4d& guess, Eigen::Matrix4d& result) override;
+  bool Align(const Eigen::Matrix4d& guess, Eigen::Matrix4d& result) override;
 
  private:
   NdtRegistrator inner_matcher_;
