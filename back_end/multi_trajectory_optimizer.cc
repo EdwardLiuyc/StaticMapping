@@ -120,7 +120,7 @@ void MultiTrajectoryOptimizer<PointT>::AddSubmapConnection(
     CHECK(target_submap->GetId() == target);
     target_submap->AddConnectedSubmap(source);
   }
-  gtsam::Pose3 transform_gtsam = gtsam::Pose3(transform.cast<double>());
+  gtsam::Pose3 transform_gtsam = gtsam::Pose3(transform);
   gtsam::noiseModel::Base::shared_ptr noise_model;
   if (is_loop_constraint) {
     noise_model = loop_closure_model_;
@@ -135,8 +135,7 @@ void MultiTrajectoryOptimizer<PointT>::AddSubmapConnection(
       transform_gtsam, noise_model);
 
   view_graph_.AddEdge(static_cast<int64_t>(target_index),
-                      static_cast<int64_t>(source_index),
-                      transform.cast<float>());
+                      static_cast<int64_t>(source_index), transform);
 
   isam_->update(*isam_factor_graph_);
   isam_->update();
@@ -147,7 +146,7 @@ void MultiTrajectoryOptimizer<PointT>::AddSubmapConnection(
 template <typename PointT>
 void MultiTrajectoryOptimizer<PointT>::AddVertex(const uint64_t index,
                                                  const Eigen::Matrix4d& pose) {
-  gtsam::Pose3 pose_gtsam = gtsam::Pose3(pose.cast<double>());
+  gtsam::Pose3 pose_gtsam = gtsam::Pose3(pose);
   initial_estimate_.insert(SUBMAP_KEY(index), pose_gtsam);
   uint64_t pair_id = index;
   uint32_t* submap_id = reinterpret_cast<uint32_t*>(&pair_id);
@@ -157,7 +156,7 @@ void MultiTrajectoryOptimizer<PointT>::AddVertex(const uint64_t index,
                                             pose_gtsam, prior_noise_model_);
   }
 
-  view_graph_.AddVertex(index, pose.cast<float>());
+  view_graph_.AddVertex(index, pose);
   isam_->update(*isam_factor_graph_, initial_estimate_);
   isam_->update();
   initial_estimate_.clear();
@@ -184,7 +183,7 @@ void MultiTrajectoryOptimizer<PointT>::RunFinalOptimizing() {
       Eigen::Matrix4d pose =
           result.at<gtsam::Pose3>(SUBMAP_KEY(index)).matrix();
       submap->SetGlobalPose(pose);
-      view_graph_.AddVertex(index, pose.cast<float>());
+      view_graph_.AddVertex(index, pose);
     }
   }
   // view_graph_.SaveTextFile("pcd/graph.txt");

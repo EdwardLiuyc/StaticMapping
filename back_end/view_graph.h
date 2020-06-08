@@ -47,20 +47,20 @@ class ViewGraph {
   ViewGraph(const ViewGraph &) = delete;
   ViewGraph &operator=(const ViewGraph &) = delete;
 
-  // @todo matrix4f pitfalls
+  // @todo matrix4d pitfalls
   using Connect =
-      std::pair<int64_t /* index */, Eigen::Matrix4f /* Transform */>;
+      std::pair<int64_t /* index */, Eigen::Matrix4d /* Transform */>;
   struct GraphItem {
-    Eigen::Matrix4f self_pose;
+    Eigen::Matrix4d self_pose;
     std::vector<Connect> connections;
 
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   };
 
   /// @breif add a new vertex if not exist, or update the pose
-  void AddVertex(const int64_t index, const Eigen::Matrix4f &pose);
+  void AddVertex(const int64_t index, const Eigen::Matrix4d &pose);
   /// @brief connect a -> b with t(transform in matrix)
-  void AddEdge(const int64_t a, const int64_t b, const Eigen::Matrix4f &t);
+  void AddEdge(const int64_t a, const int64_t b, const Eigen::Matrix4d &t);
   /// @brief save the grapg into a text file
   void SaveTextFile(const std::string &filename);
   /// @brief save the graph into a png image file (using OpenCV)

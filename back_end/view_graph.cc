@@ -33,7 +33,7 @@ namespace static_map {
 namespace back_end {
 
 void ViewGraph::AddEdge(const int64_t a, const int64_t b,
-                        const Eigen::Matrix4f &t) {
+                        const Eigen::Matrix4d &t) {
   if (graph_map_.find(a) == graph_map_.end() ||
       graph_map_.find(b) == graph_map_.end()) {
     PRINT_ERROR("Cannot find the index a or b in the map.");
@@ -42,7 +42,7 @@ void ViewGraph::AddEdge(const int64_t a, const int64_t b,
   graph_map_[a].connections.push_back(std::make_pair(b, t));
 }
 
-void ViewGraph::AddVertex(const int64_t index, const Eigen::Matrix4f &pose) {
+void ViewGraph::AddVertex(const int64_t index, const Eigen::Matrix4d &pose) {
   if (graph_map_.find(index) == graph_map_.end()) {
     graph_map_.emplace(index, GraphItem());
   }
@@ -101,7 +101,7 @@ void ViewGraph::SaveImage(const std::string &filename,
   image_bbox /= resolution;
   // std::cout << image_bbox << std::endl;
 
-  auto pose_to_image = [&](const Eigen::Matrix4f &pose) -> std::pair<int, int> {
+  auto pose_to_image = [&](const Eigen::Matrix4d &pose) -> std::pair<int, int> {
     Eigen::Vector2d image_position(pose(0, 3), pose(1, 3));
     image_position[0] -= min_bounding_[0];
     image_position[1] = max_bounding_[1] - image_position[1];

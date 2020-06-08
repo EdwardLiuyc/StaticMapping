@@ -73,9 +73,8 @@ int MapBuilder::InitialiseInside() {
       options_.back_end_options.isam_optimizer_options,
       options_.back_end_options.loop_detector_setting));
 
-  isam_optimizer_->SetTransformOdomToLidar(
-      transform_odom_lidar_.cast<double>());
-  isam_optimizer_->SetTrackingToGps(tracking_to_gps_.cast<double>());
+  isam_optimizer_->SetTransformOdomToLidar(transform_odom_lidar_);
+  isam_optimizer_->SetTrackingToGps(tracking_to_gps_);
 
   DataCollectorOptions data_collector_options;
   data_collector_options.accumulate_cloud_num =
@@ -112,19 +111,19 @@ int MapBuilder::InitialiseInside() {
   return 0;
 }
 
-void MapBuilder::SetTransformOdomToLidar(const Eigen::Matrix4f& t) {
+void MapBuilder::SetTransformOdomToLidar(const Eigen::Matrix4d& t) {
   transform_odom_lidar_ = t;
   PRINT_INFO("Got tf : odom -> lidar ");
   common::PrintTransform(t);
 }
 
-void MapBuilder::SetTransformImuToLidar(const Eigen::Matrix4f& t) {
+void MapBuilder::SetTransformImuToLidar(const Eigen::Matrix4d& t) {
   transform_imu_lidar_ = t;
   PRINT_INFO("Got tf : imu -> lidar ");
   common::PrintTransform(t);
 }
 
-void MapBuilder::SetTrackingToImu(const Eigen::Matrix4f& t) {
+void MapBuilder::SetTrackingToImu(const Eigen::Matrix4d& t) {
   tracking_to_imu_ = t;
   // CHECK the transform
   PRINT_INFO("Got tf : tracking -> imu ");
@@ -135,19 +134,19 @@ void MapBuilder::SetTrackingToImu(const Eigen::Matrix4f& t) {
          "the acceleration calculation should be wrong!";
 }
 
-void MapBuilder::SetTrackingToGps(const Eigen::Matrix4f& t) {
+void MapBuilder::SetTrackingToGps(const Eigen::Matrix4d& t) {
   tracking_to_gps_ = t;
   PRINT_INFO("Got tf : tracking -> gps ");
   common::PrintTransform(t);
 }
 
-void MapBuilder::SetTrackingToOdom(const Eigen::Matrix4f& t) {
+void MapBuilder::SetTrackingToOdom(const Eigen::Matrix4d& t) {
   tracking_to_odom_ = t;
   PRINT_INFO("Got tf : tracking -> odometry ");
   common::PrintTransform(t);
 }
 
-void MapBuilder::SetTrackingToLidar(const Eigen::Matrix4f& t) {
+void MapBuilder::SetTrackingToLidar(const Eigen::Matrix4d& t) {
   tracking_to_lidar_ = t;
   PRINT_INFO("Got tf : tracking -> lidar ");
   common::PrintTransform(t);
@@ -173,8 +172,7 @@ void MapBuilder::InsertImuMsg(const sensors::ImuMsg::Ptr& imu_msg) {
     return;
   }
 
-  const Eigen::Matrix3d rotation =
-      common::Rotation(tracking_to_imu_).cast<double>();
+  const Eigen::Matrix3d rotation = common::Rotation(tracking_to_imu_);
   Eigen::Vector3d new_acc = rotation * imu_msg->linear_acceleration;
   Eigen::Vector3d new_angular_velocity = rotation * imu_msg->angular_velocity;
 
@@ -210,7 +208,7 @@ void MapBuilder::InsertOdomMsg(const sensors::OdomMsg::Ptr& odom_msg) {
     const Eigen::Matrix4d init_pose = init_odom_msg_.PoseInMatrix();
     Eigen::Matrix4d relative_pose = init_pose.inverse() *
                                     odom_msg->PoseInMatrix() *
-                                    tracking_to_odom_.inverse().cast<double>();
+                                    tracking_to_odom_.inverse();
     odom_msg->SetPose(relative_pose);
     odom_msgs_.push_back(odom_msg);
   }
@@ -259,9 +257,10 @@ void MapBuilder::InsertFrameForSubmap(const PointCloudPtr& cloud_ptr,
   frames_.push_back(frame);
 }
 
+namespace {
 void MotionCompensation(const MapBuilder::PointCloudPtr& raw_cloud,
                         const float delta_time,
-                        const Eigen::Matrix4f& delta_transform,
+                        const Eigen::Matrix4d& delta_transform,
                         MapBuilder::PointCloudType* const output_cloud) {
   CHECK(raw_cloud);
   CHECK(output_cloud);
@@ -273,14 +272,14 @@ void MotionCompensation(const MapBuilder::PointCloudPtr& raw_cloud,
   for (size_t i = 0; i < cloud_size; ++i) {
     const auto& point = raw_cloud->points[i];
     float delta_factor = static_cast<float>(i) / static_cast<float>(cloud_size);
-    const Eigen::Matrix4f transform = common::InterpolateTransform(
-        Eigen::Matrix4f::Identity().eval(), delta_transform, delta_factor);
-    const Eigen::Vector3f new_point_start =
+    const Eigen::Matrix4d transform = common::InterpolateTransform(
+        Eigen::Matrix4d::Identity().eval(), delta_transform, delta_factor);
+    const Eigen::Vector3d new_point_start =
         transform.block(0, 0, 3, 3) *
-            Eigen::Vector3f(point.x, point.y, point.z) +
+            Eigen::Vector3d(point.x, point.y, point.z) +
         transform.block(0, 3, 3, 1);
 
-    const Eigen::Vector3f new_point_current =
+    const Eigen::Vector3d new_point_current =
         delta_transform.block(0, 0, 3, 3).inverse() *
         (new_point_start - delta_transform.block(0, 3, 3, 1));
     MapBuilder::PointType new_point;
@@ -291,20 +290,21 @@ void MotionCompensation(const MapBuilder::PointCloudPtr& raw_cloud,
     output_cloud->points.push_back(new_point);
   }
 }
+}  // namespace
 
-Eigen::Matrix4f AverageTransforms(
-    const std::vector<Eigen::Matrix4f>& transforms) {
+Eigen::Matrix4d AverageTransforms(
+    const std::vector<Eigen::Matrix4d>& transforms) {
   CHECK(!transforms.empty());
-  Eigen::Vector3f angles(0, 0, 0);
-  Eigen::Vector3f translation(0, 0, 0);
-  for (Eigen::Matrix4f transform : transforms) {
+  Eigen::Vector3d angles(0, 0, 0);
+  Eigen::Vector3d translation(0, 0, 0);
+  for (Eigen::Matrix4d transform : transforms) {
     translation += transform.block(0, 3, 3, 1);
     angles += common::RotationMatrixToEulerAngles(
-        Eigen::Matrix3f(transform.block(0, 0, 3, 3)));
+        Eigen::Matrix3d(transform.block(0, 0, 3, 3)));
   }
   translation /= static_cast<float>(transforms.size());
   angles /= static_cast<float>(transforms.size());
-  Eigen::Matrix4f result = Eigen::Matrix4f::Identity();
+  Eigen::Matrix4d result = Eigen::Matrix4d::Identity();
   result.block(0, 0, 3, 3) = common::EulerAnglesToRotationMatrix(angles);
   result.block(0, 3, 3, 1) = translation;
 
@@ -362,8 +362,8 @@ void MapBuilder::ScanMatchProcessing() {
     if (options_.front_end_options.motion_compensation_options.enable &&
         options_.front_end_options.motion_compensation_options.use_average) {
       PointCloudType compensated_source_cloud;
-      MotionCompensation(source_cloud, source_cloud_delta_time,
-                         guess.cast<float>(), &compensated_source_cloud);
+      MotionCompensation(source_cloud, source_cloud_delta_time, guess,
+                         &compensated_source_cloud);
       scan_matcher_->SetInputSource(compensated_source_cloud.makeShared());
     } else {
       scan_matcher_->SetInputSource(source_cloud);
@@ -375,11 +375,11 @@ void MapBuilder::ScanMatchProcessing() {
     }
 
     if (options_.front_end_options.motion_compensation_options.enable) {
-      Eigen::Matrix4f average_transform = align_result.cast<float>();
+      Eigen::Matrix4d average_transform = align_result;
       if (options_.front_end_options.motion_compensation_options.use_average) {
-        std::vector<Eigen::Matrix4f> transforms;
-        transforms.push_back(align_result.cast<float>());
-        transforms.push_back(guess.cast<float>());
+        std::vector<Eigen::Matrix4d> transforms;
+        transforms.push_back(align_result);
+        transforms.push_back(guess);
         average_transform = AverageTransforms(transforms);
       }
       // motion compensation using align result
@@ -389,8 +389,8 @@ void MapBuilder::ScanMatchProcessing() {
       *source_cloud = compensated_source_cloud;
     }
 
-    pose_source = pose_target * align_result.cast<double>();
-    accumulative_transform *= align_result.cast<double>();
+    pose_source = pose_target * align_result;
+    accumulative_transform *= align_result;
     if (extrapolator_) {
       extrapolator_->AddPose(source_time, pose_source);
     }
@@ -414,7 +414,7 @@ void MapBuilder::ScanMatchProcessing() {
         scan_matcher_->SetInputTarget(history_cloud);
         Eigen::Matrix4d tmp_result;
         scan_matcher_->Align(accumulative_transform, tmp_result);
-        accumulative_transform = tmp_result.cast<double>();
+        accumulative_transform = tmp_result;
       }
 
       final_transform *= accumulative_transform;
@@ -532,7 +532,7 @@ void MapBuilder::ConnectAllSubmap() {
       poses.reserve(current_trajectory_->size());
       for (auto& submap : *current_trajectory_) {
         if (submap->GetId().submap_index <= current_finished_index) {
-          poses.push_back(submap->GlobalPose().cast<double>());
+          poses.push_back(submap->GlobalPose());
         }
       }
       show_path_function_(poses);
@@ -585,8 +585,7 @@ void MapBuilder::ConnectAllSubmap() {
         break;
       case kOnlineCalib:
         PRINT_INFO("Update tf(odom->lidar) from online calibration.");
-        transform_odom_lidar_ =
-            isam_optimizer_->GetTransformOdomToLidar().cast<float>();
+        transform_odom_lidar_ = isam_optimizer_->GetTransformOdomToLidar();
         break;
       case kOfflineCalib:
         PRINT_INFO("Update tf(odom->lidar) from offline calibration.");
@@ -685,7 +684,7 @@ void MapBuilder::OutputPath() {
     // map path
     for (auto& frame : submap->GetFrames()) {
       pcl::_PointXYZI path_point;
-      Eigen::Matrix4d pose = frame->GlobalPose().cast<double>();
+      Eigen::Matrix4d pose = frame->GlobalPose();
       Eigen::Vector6<double> global_pose_6d = common::TransformToVector6(pose);
       path_point.x = global_pose_6d[0];
       path_point.y = global_pose_6d[1];
@@ -884,7 +883,7 @@ void MapBuilder::OfflineCalibrationOdomToLidar() {
   std::vector<Eigen::Vector3d> map_path_directions;
   std::vector<OdomPose> odom_poses;
 
-  Eigen::Matrix4f init_estimate = transform_odom_lidar_;
+  Eigen::Matrix4d init_estimate = transform_odom_lidar_;
   PointCloudType path_and_odom_cloud;
   for (auto& submap : *current_trajectory_) {
     if (!submap->HasOdom()) {
@@ -892,7 +891,7 @@ void MapBuilder::OfflineCalibrationOdomToLidar() {
     }
 
     PointType path_point;
-    Eigen::Vector3d path_position = submap->GlobalTranslation().cast<double>();
+    Eigen::Vector3d path_position = submap->GlobalTranslation();
     path_point.x = path_position[0];
     path_point.y = path_position[1];
     path_point.z = path_position[2];
@@ -902,7 +901,7 @@ void MapBuilder::OfflineCalibrationOdomToLidar() {
     // refer to
     // https://stackoverflow.com/questions/1568568/how-to-convert-euler-angles-to-directional-vector
     // get the directional vector of a rotation matrix
-    Eigen::Matrix3d path_roation = submap->GlobalRotation().cast<double>();
+    Eigen::Matrix3d path_roation = submap->GlobalRotation();
     Eigen::Vector3d eulers = common::RotationMatrixToEulerAngles(path_roation);
     Eigen::Vector3d direction(std::cos(eulers[2]) * std::cos(eulers[1]),
                               std::sin(eulers[2]) * std::cos(eulers[1]),
@@ -932,7 +931,7 @@ void MapBuilder::OfflineCalibrationOdomToLidar() {
 
   const int size = map_path_positions.size();
   // @todo add a init estimate based-on tf_odom_lidar
-  Eigen::Vector6<float> init_estimate_6d =
+  Eigen::Vector6<double> init_estimate_6d =
       common::TransformToVector6(init_estimate);
   double t[] = {init_estimate_6d[0], init_estimate_6d[1], init_estimate_6d[2]};
   double r[] = {init_estimate_6d[3], init_estimate_6d[4], init_estimate_6d[5]};
@@ -982,8 +981,8 @@ void MapBuilder::OfflineCalibrationOdomToLidar() {
   }
 
   // update the tf connection
-  transform_odom_lidar_.block<3, 3>(0, 0) = rotation.cast<float>();
-  transform_odom_lidar_.block<3, 1>(0, 3) = translation.cast<float>();
+  transform_odom_lidar_.block<3, 3>(0, 0) = rotation;
+  transform_odom_lidar_.block<3, 1>(0, 3) = translation;
   PRINT_INFO("odom -> lidar match result :");
   common::PrintTransform(transform_odom_lidar_);
 }
@@ -1138,7 +1137,7 @@ void MapBuilder::SaveMapPackage() {
       Eigen::Vector2d offseted_bb_max = part.bb_max + part_offset;
       for (auto& trajectory : trajectories_) {
         for (auto& submap : *trajectory) {
-          Eigen::Vector3d position = submap->GlobalTranslation().cast<double>();
+          const Eigen::Vector3d position = submap->GlobalTranslation();
           if (inside_bbox(position, offseted_bb_min, offseted_bb_max)) {
             part.inside_submaps.push_back(submap);
           }

@@ -50,8 +50,7 @@ bool Ndt<PointType>::Align(const Eigen::Matrix4d& guess,
   inner_matcher_.align(*aligned_cloud, guess.cast<float>());
 
   this->final_score_ = inner_matcher_.getFitnessScore();
-  const Eigen::Matrix4f result_f = inner_matcher_.getFinalTransformation();
-  result = result_f.cast<double>();
+  result = inner_matcher_.getFinalTransformation().template cast<double>();
 
   return true;
 }
