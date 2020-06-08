@@ -20,8 +20,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BUILDER_SIMPLE_FRAME_H_
-#define BUILDER_SIMPLE_FRAME_H_
+#ifndef BUILDER_FRAME_BASE_H_
+#define BUILDER_FRAME_BASE_H_
 // third_party
 #include <Eigen/Eigen>
 // stl
@@ -41,20 +41,20 @@ using EnuPosition = Eigen::Vector3d;
 using OdomPose = Eigen::Matrix4d;
 
 /*
- * @class SimpleFrame
+ * @class FrameBase
  * @brief base class for all frames, such as frame, submap,
  * a simple frame has its global pose(in map), local pose, cloud and
  * descriptor
  * @todo using double matrices instead of float ones
  */
 template <typename PointType>
-class SimpleFrame {
+class FrameBase {
  public:
   using PointCloudType = pcl::PointCloud<PointType>;
   using PointCloudPtr = typename PointCloudType::Ptr;
   using PointCloudConstPtr = typename PointCloudType::ConstPtr;
 
-  SimpleFrame()
+  FrameBase()
       : global_pose_(Eigen::Matrix4f::Identity()),
         local_pose_(Eigen::Matrix4f::Identity()),
         transform_from_last_frame_(Eigen::Matrix4f::Identity()),
@@ -62,7 +62,7 @@ class SimpleFrame {
         related_odom_(OdomPose::Zero()),
         got_related_odom_(false) {}
 
-  ~SimpleFrame() = default;
+  ~FrameBase() = default;
 
   Eigen::Matrix3f GlobalRotation() const;
   Eigen::Vector3f GlobalTranslation() const;
@@ -126,6 +126,6 @@ class SimpleFrame {
 
 }  // namespace static_map
 
-#include "builder/simple_frame_impl.h"
+#include "builder/frame_base_impl.h"
 
-#endif  // BUILDER_SIMPLE_FRAME_H_
+#endif  // BUILDER_FRAME_BASE_H_
