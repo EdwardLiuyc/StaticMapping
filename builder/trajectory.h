@@ -57,8 +57,7 @@ class Trajectory {
   Trajectory() {}
   ~Trajectory() {}
 
-  Trajectory(const Trajectory<PointT>&) = delete;
-  Trajectory& operator=(const Trajectory<PointT>&) = delete;
+  PROHIBIT_COPY_AND_ASSIGN(Trajectory);
 
   using Ptr = std::shared_ptr<Trajectory<PointT>>;
 
@@ -70,61 +69,22 @@ class Trajectory {
       typename std::vector<std::shared_ptr<Submap<PointT>>>::iterator;
   using const_iterator =
       typename std::vector<std::shared_ptr<Submap<PointT>>>::const_iterator;
+
   // Element access
-  inline std::shared_ptr<Submap<PointT>> at(size_t n) {
-    ReadMutexLocker locker(mutex_);
-    return submaps_.at(n);
-  }
-  inline std::shared_ptr<Submap<PointT>>& operator[](size_t n) {
-    ReadMutexLocker locker(mutex_);
-    return submaps_[n];
-  }
-  inline std::shared_ptr<Submap<PointT>>& front() {
-    ReadMutexLocker locker(mutex_);
-    return submaps_.front();
-  }
-  inline std::shared_ptr<Submap<PointT>>& back() {
-    ReadMutexLocker locker(mutex_);
-    return submaps_.back();
-  }
-
+  std::shared_ptr<Submap<PointT>> at(size_t n);
+  std::shared_ptr<Submap<PointT>>& operator[](size_t n);
+  std::shared_ptr<Submap<PointT>>& front();
+  std::shared_ptr<Submap<PointT>>& back();
   // Iterators
-  inline iterator begin() {
-    ReadMutexLocker locker(mutex_);
-    return submaps_.begin();
-  }
-  inline iterator end() {
-    ReadMutexLocker locker(mutex_);
-    return submaps_.end();
-  }
+  iterator begin();
+  iterator end();
   // Capacity
-  size_t size() {
-    ReadMutexLocker locker(mutex_);
-    return submaps_.size();
-  }
-  bool empty() {
-    ReadMutexLocker locker(mutex_);
-    return submaps_.empty();
-  }
-  inline void reserve(size_t n) {
-    ReadMutexLocker locker(mutex_);
-    submaps_.reserve(n);
-  }
-
+  size_t size();
+  bool empty();
+  void reserve(size_t n);
   // Modifiers
-  inline void push_back(const std::shared_ptr<Submap<PointT>>& submap) {
-    CHECK(submap);
-    // CHECK(submap->GetId().trajectory_index == id_);
-
-    boost::upgrade_lock<ReadWriteMutex> locker(mutex_);
-    WriteMutexLocker write_locker(locker);
-    submaps_.push_back(submap);
-  }
-  inline void shrink_to_fit() {
-    boost::upgrade_lock<ReadWriteMutex> locker(mutex_);
-    WriteMutexLocker write_locker(locker);
-    submaps_.shrink_to_fit();
-  }
+  void push_back(const std::shared_ptr<Submap<PointT>>& submap);
+  void shrink_to_fit();
 
   // Trajectory APIs
   inline void SetId(int id) { id_ = id; }
@@ -140,9 +100,83 @@ class Trajectory {
   std::vector<std::shared_ptr<Submap<PointT>>> submaps_;
 
   int id_;
+  // @todo(edward) change to enu offset
   double enu_offset_x_ = 0.;
   double enu_offset_y_ = 0.;
 };
+
+template <typename PointT>
+inline std::shared_ptr<Submap<PointT>> Trajectory<PointT>::at(size_t n) {
+  ReadMutexLocker locker(mutex_);
+  return submaps_.at(n);
+}
+
+template <typename PointT>
+inline std::shared_ptr<Submap<PointT>>& Trajectory<PointT>::operator[](
+    size_t n) {
+  ReadMutexLocker locker(mutex_);
+  return submaps_[n];
+}
+
+template <typename PointT>
+inline std::shared_ptr<Submap<PointT>>& Trajectory<PointT>::front() {
+  ReadMutexLocker locker(mutex_);
+  return submaps_.front();
+}
+
+template <typename PointT>
+inline std::shared_ptr<Submap<PointT>>& Trajectory<PointT>::back() {
+  ReadMutexLocker locker(mutex_);
+  return submaps_.back();
+}
+
+template <typename PointT>
+inline typename Trajectory<PointT>::iterator Trajectory<PointT>::begin() {
+  ReadMutexLocker locker(mutex_);
+  return submaps_.begin();
+}
+
+template <typename PointT>
+inline typename Trajectory<PointT>::iterator Trajectory<PointT>::end() {
+  ReadMutexLocker locker(mutex_);
+  return submaps_.end();
+}
+
+template <typename PointT>
+inline size_t Trajectory<PointT>::size() {
+  ReadMutexLocker locker(mutex_);
+  return submaps_.size();
+}
+
+template <typename PointT>
+inline bool Trajectory<PointT>::empty() {
+  ReadMutexLocker locker(mutex_);
+  return submaps_.empty();
+}
+
+template <typename PointT>
+inline void Trajectory<PointT>::reserve(size_t n) {
+  ReadMutexLocker locker(mutex_);
+  submaps_.reserve(n);
+}
+
+template <typename PointT>
+inline void Trajectory<PointT>::push_back(
+    const std::shared_ptr<Submap<PointT>>& submap) {
+  CHECK(submap);
+  // CHECK(submap->GetId().trajectory_index == id_);
+
+  boost::upgrade_lock<ReadWriteMutex> locker(mutex_);
+  WriteMutexLocker write_locker(locker);
+  submaps_.push_back(submap);
+}
+
+template <typename PointT>
+inline void Trajectory<PointT>::shrink_to_fit() {
+  boost::upgrade_lock<ReadWriteMutex> locker(mutex_);
+  WriteMutexLocker write_locker(locker);
+  submaps_.shrink_to_fit();
+}
 
 }  // namespace static_map
 
