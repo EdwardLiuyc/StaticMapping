@@ -38,6 +38,7 @@
 // local
 #include "builder/map_builder.h"
 #include "builder/msg_conversion.h"
+#include "common/file_utils.h"
 #include "common/performance/simple_prof.h"
 #include "common/simple_time.h"
 #include "ros_node/kitti_reader.h"
@@ -168,7 +169,7 @@ int main(int argc, char** argv) {
   // ros bag
   std::string bag_file = "";
   pcl::console::parse_argument(argc, argv, "-bag", bag_file);
-  if (::access(bag_file.c_str(), F_OK) == -1) {
+  if (!bag_file.empty() && !static_map::common::FileExist(bag_file)) {
     PRINT_WARNING_FMT("%s does not exist.", bag_file.c_str());
     bag_file = "";
   }
@@ -176,7 +177,7 @@ int main(int argc, char** argv) {
   // kitti data set
   std::string kitti_path = "";
   pcl::console::parse_argument(argc, argv, "-kitti", kitti_path);
-  if (!kitti_path.empty() && ::access(kitti_path.c_str(), F_OK) == -1) {
+  if (!kitti_path.empty() && !static_map::common::FileExist(kitti_path)) {
     PRINT_WARNING_FMT("%s does not exist.", kitti_path.c_str());
     kitti_path = "";
   }

@@ -228,10 +228,6 @@ struct Int3D {
   int x, y, z;
 };
 
-std::vector<Eigen::Vector3i> VoxelCasting(const Eigen::Vector3f& ray_start,
-                                          const Eigen::Vector3f& ray_end,
-                                          const float& step_size);
-
 std::vector<Eigen::Vector3i> VoxelCastingBresenham(
     const Eigen::Vector3f& ray_start, const Eigen::Vector3f& ray_end,
     const float& step_size);
