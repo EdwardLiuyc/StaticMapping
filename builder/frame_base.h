@@ -55,24 +55,24 @@ class FrameBase {
   using PointCloudConstPtr = typename PointCloudType::ConstPtr;
 
   FrameBase()
-      : global_pose_(Eigen::Matrix4f::Identity()),
-        local_pose_(Eigen::Matrix4f::Identity()),
-        transform_from_last_frame_(Eigen::Matrix4f::Identity()),
-        transform_to_next_frame_(Eigen::Matrix4f::Identity()) {}
+      : global_pose_(Eigen::Matrix4d::Identity()),
+        local_pose_(Eigen::Matrix4d::Identity()),
+        transform_from_last_frame_(Eigen::Matrix4d::Identity()),
+        transform_to_next_frame_(Eigen::Matrix4d::Identity()) {}
 
   virtual ~FrameBase() = default;
 
-  Eigen::Matrix3f GlobalRotation() const;
-  Eigen::Vector3f GlobalTranslation() const;
-  Eigen::Matrix3f LocalRotation() const;
-  Eigen::Vector3f LocalTranslation() const;
+  Eigen::Matrix3d GlobalRotation() const;
+  Eigen::Vector3d GlobalTranslation() const;
+  Eigen::Matrix3d LocalRotation() const;
+  Eigen::Vector3d LocalTranslation() const;
 
-  Eigen::VectorXf GlobalPoseIn6Dof() const;
-  Eigen::Matrix4f GlobalPose() const;
-  Eigen::Matrix4f LocalPose() const;
+  Eigen::VectorXd GlobalPoseIn6Dof() const;
+  Eigen::Matrix4d GlobalPose() const;
+  Eigen::Matrix4d LocalPose() const;
 
-  void SetGlobalPose(const Eigen::Matrix4f& t);
-  void SetLocalPose(const Eigen::Matrix4f& t);
+  void SetGlobalPose(const Eigen::Matrix4d& t);
+  void SetLocalPose(const Eigen::Matrix4d& t);
 
   // cloud
   virtual PointCloudPtr Cloud() = 0;
@@ -86,10 +86,10 @@ class FrameBase {
   void CalculateDescriptor();
 
   // transform between last&next
-  virtual void SetTransformToNext(const Eigen::Matrix4f& t);
-  virtual void SetTransformFromLast(const Eigen::Matrix4f& t);
-  Eigen::Matrix4f TransformToNext() const;
-  Eigen::Matrix4f TransformFromLast() const;
+  virtual void SetTransformToNext(const Eigen::Matrix4d& t);
+  virtual void SetTransformFromLast(const Eigen::Matrix4d& t);
+  Eigen::Matrix4d TransformToNext() const;
+  Eigen::Matrix4d TransformFromLast() const;
 
   // enu
   void SetRelatedGpsInENU(const EnuPosition& enu);
@@ -107,10 +107,10 @@ class FrameBase {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
  protected:
-  Eigen::Matrix4f global_pose_;
-  Eigen::Matrix4f local_pose_;
-  Eigen::Matrix4f transform_from_last_frame_;
-  Eigen::Matrix4f transform_to_next_frame_;
+  Eigen::Matrix4d global_pose_;
+  Eigen::Matrix4d local_pose_;
+  Eigen::Matrix4d transform_from_last_frame_;
+  Eigen::Matrix4d transform_to_next_frame_;
   PointCloudPtr cloud_;
   SimpleTime stamp_;
   typename descriptor::M2dp<PointType>::Descriptor descriptor_;

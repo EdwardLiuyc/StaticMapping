@@ -26,61 +26,61 @@
 namespace static_map {
 
 template <typename PointType>
-inline Eigen::Matrix3f FrameBase<PointType>::GlobalRotation() const {
-  return Eigen::Matrix3f(global_pose_.block(0, 0, 3, 3));
+inline Eigen::Matrix3d FrameBase<PointType>::GlobalRotation() const {
+  return Eigen::Matrix3d(global_pose_.block(0, 0, 3, 3));
 }
 template <typename PointType>
-inline Eigen::Vector3f FrameBase<PointType>::GlobalTranslation() const {
-  return Eigen::Vector3f(global_pose_.block(0, 3, 3, 1));
+inline Eigen::Vector3d FrameBase<PointType>::GlobalTranslation() const {
+  return Eigen::Vector3d(global_pose_.block(0, 3, 3, 1));
 }
 template <typename PointType>
-inline Eigen::Matrix3f FrameBase<PointType>::LocalRotation() const {
-  return Eigen::Matrix3f(local_pose_.block(0, 0, 3, 3));
+inline Eigen::Matrix3d FrameBase<PointType>::LocalRotation() const {
+  return Eigen::Matrix3d(local_pose_.block(0, 0, 3, 3));
 }
 template <typename PointType>
-inline Eigen::Vector3f FrameBase<PointType>::LocalTranslation() const {
-  return Eigen::Vector3f(local_pose_.block(0, 3, 3, 1));
+inline Eigen::Vector3d FrameBase<PointType>::LocalTranslation() const {
+  return Eigen::Vector3d(local_pose_.block(0, 3, 3, 1));
 }
 template <typename PointType>
-inline Eigen::Matrix4f FrameBase<PointType>::GlobalPose() const {
+inline Eigen::Matrix4d FrameBase<PointType>::GlobalPose() const {
   return global_pose_;
 }
 template <typename PointType>
-inline void FrameBase<PointType>::SetGlobalPose(const Eigen::Matrix4f& t) {
+inline void FrameBase<PointType>::SetGlobalPose(const Eigen::Matrix4d& t) {
   global_pose_ = t;
   common::NormalizeRotation(global_pose_);
 }
 template <typename PointType>
-inline Eigen::VectorXf FrameBase<PointType>::GlobalPoseIn6Dof() const {
+inline Eigen::VectorXd FrameBase<PointType>::GlobalPoseIn6Dof() const {
   return common::TransformToVector6(global_pose_);
 }
 template <typename PointType>
-inline Eigen::Matrix4f FrameBase<PointType>::LocalPose() const {
+inline Eigen::Matrix4d FrameBase<PointType>::LocalPose() const {
   return local_pose_;
 }
 template <typename PointType>
-inline void FrameBase<PointType>::SetLocalPose(const Eigen::Matrix4f& t) {
+inline void FrameBase<PointType>::SetLocalPose(const Eigen::Matrix4d& t) {
   local_pose_ = t;
   common::NormalizeRotation(local_pose_);
 }
 
 template <typename PointType>
-void FrameBase<PointType>::SetTransformToNext(const Eigen::Matrix4f& t) {
+void FrameBase<PointType>::SetTransformToNext(const Eigen::Matrix4d& t) {
   transform_to_next_frame_ = t;
 }
 
 template <typename PointType>
-void FrameBase<PointType>::SetTransformFromLast(const Eigen::Matrix4f& t) {
+void FrameBase<PointType>::SetTransformFromLast(const Eigen::Matrix4d& t) {
   transform_from_last_frame_ = t;
 }
 
 template <typename PointType>
-inline Eigen::Matrix4f FrameBase<PointType>::TransformToNext() const {
+inline Eigen::Matrix4d FrameBase<PointType>::TransformToNext() const {
   return transform_to_next_frame_;
 }
 
 template <typename PointType>
-inline Eigen::Matrix4f FrameBase<PointType>::TransformFromLast() const {
+inline Eigen::Matrix4d FrameBase<PointType>::TransformFromLast() const {
   return transform_from_last_frame_;
 }
 

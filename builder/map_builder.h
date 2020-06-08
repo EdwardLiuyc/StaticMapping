@@ -208,7 +208,7 @@ class MapBuilder {
   void ScanMatchProcessing();
   /// @brief it ia a new frame in current submap, with input cloud and pose
   void InsertFrameForSubmap(const PointCloudPtr& cloud_ptr,
-                            const Eigen::Matrix4f& global_pose,
+                            const Eigen::Matrix4d& global_pose,
                             const double match_score);
   /// @brief thread for all operations on submaps
   void SubmapProcessing();

@@ -73,8 +73,9 @@ int MapBuilder::InitialiseInside() {
       options_.back_end_options.isam_optimizer_options,
       options_.back_end_options.loop_detector_setting));
 
-  isam_optimizer_->SetTransformOdomToLidar(transform_odom_lidar_);
-  isam_optimizer_->SetTrackingToGps(tracking_to_gps_);
+  isam_optimizer_->SetTransformOdomToLidar(
+      transform_odom_lidar_.cast<double>());
+  isam_optimizer_->SetTrackingToGps(tracking_to_gps_.cast<double>());
 
   DataCollectorOptions data_collector_options;
   data_collector_options.accumulate_cloud_num =
@@ -246,7 +247,7 @@ void MapBuilder::AddNewTrajectory() {
 }
 
 void MapBuilder::InsertFrameForSubmap(const PointCloudPtr& cloud_ptr,
-                                      const Eigen::Matrix4f& global_pose,
+                                      const Eigen::Matrix4d& global_pose,
                                       const double match_score) {
   auto frame = std::make_shared<Frame<PointType>>();
   frame->SetCloud(cloud_ptr);
@@ -332,7 +333,7 @@ void MapBuilder::ScanMatchProcessing() {
         got_first_point_cloud_ = true;
         target_cloud = source_cloud;
         history_cloud = target_cloud;
-        InsertFrameForSubmap(source_cloud, Eigen::Matrix4f::Identity(), 1.);
+        InsertFrameForSubmap(source_cloud, Eigen::Matrix4d::Identity(), 1.);
         continue;
       }
     } else {
@@ -418,7 +419,7 @@ void MapBuilder::ScanMatchProcessing() {
 
       final_transform *= accumulative_transform;
       pose_source = final_transform;
-      InsertFrameForSubmap(source_cloud, final_transform.cast<float>(),
+      InsertFrameForSubmap(source_cloud, final_transform,
                            scan_matcher_->GetFitnessScore());
 
       accumulative_transform = Pose3d::Identity();
@@ -457,17 +458,17 @@ void MapBuilder::SubmapPairMatch(const int source_index,
   matcher->SetInputSource(source_submap->Cloud());
   matcher->SetInputTarget(target_submap->Cloud());
   Eigen::Matrix4d result = Eigen::Matrix4d::Identity();
-  Eigen::Matrix4f guess =
+  Eigen::Matrix4d guess =
       target_submap->GetFrames()[0]->GlobalPose().inverse() *
       source_submap->GetFrames()[0]->GlobalPose();
-  matcher->Align(guess.cast<double>(), result);
+  matcher->Align(guess, result);
   common::NormalizeRotation(result);
   double submap_match_score = matcher->GetFitnessScore();
   // PRINT_DEBUG_FMT("submap match score: %lf", submap_match_score);
   source_submap->match_score_to_previous_submap_ = submap_match_score;
   if (submap_match_score >=
       options_.back_end_options.submap_matcher_options.accepted_min_score) {
-    target_submap->SetMatchedTransformedToNext(result.cast<float>());
+    target_submap->SetMatchedTransformedToNext(result);
   } else {
     // do nothing
     // keep the former transform
@@ -553,7 +554,7 @@ void MapBuilder::ConnectAllSubmap() {
         }
 
         PointCloudPtr transformed_cloud(new PointCloudType);
-        Eigen::Matrix4f pose = submap->GlobalPose();
+        Eigen::Matrix4d pose = submap->GlobalPose();
         pcl::transformPointCloud(*(submap->Cloud()), *transformed_cloud, pose);
         *local_map += *transformed_cloud;
       }
@@ -572,7 +573,7 @@ void MapBuilder::ConnectAllSubmap() {
   // make sure that all submap output to file if need
   if (!current_trajectory_->empty()) {
     current_trajectory_->back()->SetMatchedTransformedToNext(
-        Eigen::Matrix4f::Identity());
+        Eigen::Matrix4d::Identity());
   }
   PRINT_INFO("All submaps have been connected.");
 
@@ -584,7 +585,8 @@ void MapBuilder::ConnectAllSubmap() {
         break;
       case kOnlineCalib:
         PRINT_INFO("Update tf(odom->lidar) from online calibration.");
-        transform_odom_lidar_ = isam_optimizer_->GetTransformOdomToLidar();
+        transform_odom_lidar_ =
+            isam_optimizer_->GetTransformOdomToLidar().cast<float>();
         break;
       case kOfflineCalib:
         PRINT_INFO("Update tf(odom->lidar) from offline calibration.");
@@ -629,7 +631,8 @@ void MapBuilder::ConnectAllSubmap() {
           output_cloud->clear();
           pcl::transformPointCloud(*(frame->Cloud()), *output_cloud,
                                    frame->GlobalPose());
-          map.InsertPointCloud(output_cloud, frame->GlobalTranslation());
+          map.InsertPointCloud(output_cloud,
+                               frame->GlobalTranslation().cast<float>());
         }
       }
       submap->ClearCloud();
@@ -1002,9 +1005,8 @@ void MapBuilder::CalculateCoordTransformToGps() {
 
   // update the submap pose and frame pose
   for (auto& submap : *current_trajectory_) {
-    Eigen::Matrix4d new_submap_pose =
-        map_enu_transform * submap->GlobalPose().cast<double>();
-    submap->SetGlobalPose(new_submap_pose.cast<float>());
+    Eigen::Matrix4d new_submap_pose = map_enu_transform * submap->GlobalPose();
+    submap->SetGlobalPose(new_submap_pose);
     submap->UpdateInnerFramePose();
   }
 }
@@ -1068,7 +1070,7 @@ void MapBuilder::SaveMapPackage() {
   double max_y = -1.e50;
   for (auto& single_trajectory : trajectories_) {
     for (auto& submap : *single_trajectory) {
-      Eigen::Vector3f position = submap->GlobalTranslation();
+      const Eigen::Vector3d position = submap->GlobalTranslation();
       if (position[0] > max_x) {
         max_x = position[0];
       }
@@ -1155,14 +1157,15 @@ void MapBuilder::SaveMapPackage() {
       voxel_map.Initialise(options_.output_mrvm_settings);
       for (auto& submap : part.inside_submaps) {
         PointCloudPtr transformed_cloud(new PointCloudType);
-        Eigen::Matrix4f pose = submap->GlobalPose();
-        Eigen::Vector3f translation = submap->GlobalTranslation();
+        const Eigen::Matrix4d pose = submap->GlobalPose();
+        const Eigen::Vector3d translation = submap->GlobalTranslation();
         pcl::transformPointCloud(*(submap->Cloud()), *transformed_cloud, pose);
         PRINT_DEBUG_FMT("submap in piece[%d][%d] : %d / %d", x, y, i,
                         submaps_size - 1);
-        if (inside_bbox(translation.cast<double>(), part.bb_min, part.bb_max)) {
+        if (inside_bbox(translation, part.bb_min, part.bb_max)) {
           start_clock();
-          voxel_map.InsertPointCloud(transformed_cloud, translation);
+          voxel_map.InsertPointCloud(transformed_cloud,
+                                     translation.cast<float>());
           end_clock(__FILE__, __FUNCTION__, __LINE__);
         } else {
           start_clock();
@@ -1174,7 +1177,8 @@ void MapBuilder::SaveMapPackage() {
             }
           }
           if (!transformed_cloud_in_bbox->empty()) {
-            voxel_map.InsertPointCloud(transformed_cloud_in_bbox, translation);
+            voxel_map.InsertPointCloud(transformed_cloud_in_bbox,
+                                       translation.cast<float>());
           }
           end_clock(__FILE__, __FUNCTION__, __LINE__);
         }

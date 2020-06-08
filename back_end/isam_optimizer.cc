@@ -108,10 +108,10 @@ gtsam::Values IsamOptimizer<PointT>::UpdateAllPose() {
   const auto &frames = loop_detector_->GetFrames();
   const int frames_size = frames.size();
   for (int i = 0; i < frames_size; ++i) {
-    Eigen::Matrix4f pose =
-        estimate_poses.at<gtsam::Pose3>(POSE_KEY(i)).matrix().cast<float>();
+    Eigen::Matrix4d pose =
+        estimate_poses.at<gtsam::Pose3>(POSE_KEY(i)).matrix();
     frames[i]->SetGlobalPose(pose);
-    view_graph_.AddVertex(i, pose);
+    view_graph_.AddVertex(i, pose.cast<float>());
   }
 
   return estimate_poses;
@@ -120,7 +120,7 @@ gtsam::Values IsamOptimizer<PointT>::UpdateAllPose() {
 template <typename PointT>
 void IsamOptimizer<PointT>::AddLoopCloseEdge(
     const int target_index, const int source_index,
-    const Eigen::Matrix4f &transform_tgt_to_src,
+    const Eigen::Matrix4d &transform_tgt_to_src,
     const NM::Base::shared_ptr &loop_close_noise) {
   isam_factor_graph_->addExpressionFactor(
       loop_close_noise, Pose3(transform_tgt_to_src.cast<double>()),
@@ -128,27 +128,28 @@ void IsamOptimizer<PointT>::AddLoopCloseEdge(
 
   auto &frames = loop_detector_->GetFrames();
   frames[target_index]->AddConnectedSubmap(frames[source_index]->GetId());
-  view_graph_.AddEdge(target_index, source_index, transform_tgt_to_src);
+  view_graph_.AddEdge(target_index, source_index,
+                      transform_tgt_to_src.cast<float>());
 }
 
 template <typename PointT>
 void IsamOptimizer<PointT>::AddVertex(
-    const int &index, const Eigen::Matrix4f &pose,
-    const Eigen::Matrix4f &transform_from_last_pose,
+    const int &index, const Eigen::Matrix4d &pose,
+    const Eigen::Matrix4d &transform_from_last_pose,
     const NM::Base::shared_ptr &odom_noise) {
   auto &frames = loop_detector_->GetFrames();
   gtsam::Pose3 pose_gtsam = gtsam::Pose3(pose.cast<double>());
   gtsam::Pose3 transform_gtsam =
       gtsam::Pose3(transform_from_last_pose.cast<double>());
   initial_estimate_.insert(POSE_KEY(index), pose_gtsam);
-  view_graph_.AddVertex(index, pose);
+  view_graph_.AddVertex(index, pose.cast<float>());
   if (index == 0) {
     // first index
     // the pose should be set constant
     isam_factor_graph_->addExpressionFactor(prior_noise_model_, pose_gtsam,
                                             Pose3_(POSE_KEY(index)));
     if (options_.use_odom) {
-      Eigen::Vector6<float> tf_6d =
+      Eigen::Vector6<double> tf_6d =
           common::TransformToVector6(tf_odom_lidar_.inverse().eval());
       Pose3 odom_tf = Pose3(Rot3::RzRyRx(tf_6d[3], tf_6d[4], tf_6d[5]),
                             Point3(tf_6d[0], tf_6d[1], tf_6d[2]));
@@ -163,7 +164,8 @@ void IsamOptimizer<PointT>::AddVertex(
         between(Pose3_(POSE_KEY(index - 1)), Pose3_(POSE_KEY(index))));
 
     frames[index - 1]->AddConnectedSubmap(frames[index]->GetId());
-    view_graph_.AddEdge(index - 1, index, transform_from_last_pose);
+    view_graph_.AddEdge(index - 1, index,
+                        transform_from_last_pose.cast<float>());
   }
 
   IsamUpdate();
@@ -179,11 +181,11 @@ double IsamOptimizer<PointT>::AnalyseAllFramePoseForMaxRotation() {
 
   std::vector<double> delta_rotations;
   // assume that the car or robot move on the xy plane
-  const Eigen::Vector3f x_norm(1.f, 0., 0.);
-  const Eigen::Matrix3f first_rotation = frames[0]->GlobalRotation();
-  const Eigen::Vector3f v0 = first_rotation * x_norm;
+  const Eigen::Vector3d x_norm(1.f, 0., 0.);
+  const Eigen::Matrix3d first_rotation = frames[0]->GlobalRotation();
+  const Eigen::Vector3d v0 = first_rotation * x_norm;
   for (const auto frame : frames) {
-    const Eigen::Vector3f v_f = frame->GlobalRotation() * x_norm;
+    const Eigen::Vector3d v_f = frame->GlobalRotation() * x_norm;
     delta_rotations.push_back(std::fabs(std::acos(v0.dot(v_f))));
   }
   std::sort(delta_rotations.begin(), delta_rotations.end());
@@ -274,7 +276,7 @@ void IsamOptimizer<PointT>::AddFrame(
   CHECK(isam_->valueExists(POSE_KEY(frame_index)));
   UpdateAllPose();
   // gtsam::Values estimate_poses = isam_->calculateEstimate();
-  // Eigen::Matrix4f current_pose =
+  // Eigen::Matrix4d current_pose =
   //     estimate_poses.at<gtsam::Pose3>(POSE_KEY(frame_index))
   //         .matrix()
   //         .cast<float>();
@@ -345,10 +347,8 @@ void IsamOptimizer<PointT>::RunFinalOptimazation() {
 
   if (options_.use_odom && calib_factor_inserted_) {
     // update the calibration result
-    tf_odom_lidar_ = estimate_poses.at<gtsam::Pose3>(ODOM_CALIB_KEY)
-                         .matrix()
-                         .inverse()
-                         .cast<float>();
+    tf_odom_lidar_ =
+        estimate_poses.at<gtsam::Pose3>(ODOM_CALIB_KEY).matrix().inverse();
     PRINT_INFO("odom calibration result (odom->lidar) : ");
     common::PrintTransform(tf_odom_lidar_);
   }
@@ -371,18 +371,18 @@ Eigen::Matrix4d IsamOptimizer<PointT>::GetGpsCoordTransform() {
 }
 
 template <typename PointT>
-void IsamOptimizer<PointT>::SetTransformOdomToLidar(const Eigen::Matrix4f &t) {
+void IsamOptimizer<PointT>::SetTransformOdomToLidar(const Eigen::Matrix4d &t) {
   tf_odom_lidar_ = t;
   loop_detector_->SetTransformOdomToLidar(t);
 }
 
 template <typename PointT>
-void IsamOptimizer<PointT>::SetTrackingToGps(const Eigen::Matrix4f &t) {
+void IsamOptimizer<PointT>::SetTrackingToGps(const Eigen::Matrix4d &t) {
   tf_tracking_gps_ = t;
 }
 
 template <typename PointT>
-Eigen::Matrix4f IsamOptimizer<PointT>::GetTransformOdomToLidar() {
+Eigen::Matrix4d IsamOptimizer<PointT>::GetTransformOdomToLidar() {
   return tf_odom_lidar_;
 }
 

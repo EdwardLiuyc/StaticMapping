@@ -55,7 +55,7 @@ class MultiTrajectoryOptimizer {
   void AddSubmap(const std::shared_ptr<Submap<PointT>> &submap,
                  bool do_loop_detect);
   void AddSubmapConnection(const SubmapId &target, const SubmapId &source,
-                           const Eigen::Matrix4f &transform,
+                           const Eigen::Matrix4d &transform,
                            bool is_loop_constraint = false);
 
   void UseCurrentStateAsBaseMap();
@@ -63,7 +63,7 @@ class MultiTrajectoryOptimizer {
   void RunFinalOptimizing();
 
  protected:
-  void AddVertex(const uint64_t index, const Eigen::Matrix4f &pose);
+  void AddVertex(const uint64_t index, const Eigen::Matrix4d &pose);
 
  private:
   std::map<int /*trajectory id*/, std::vector<std::shared_ptr<Submap<PointT>>>>

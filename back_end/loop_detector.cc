@@ -39,8 +39,8 @@ template <typename PointT>
 typename LoopDetector<PointT>::DetectResult LoopDetector<PointT>::AddFrame(
     const std::shared_ptr<Submap<PointT>>& frame, bool do_loop_detect) {
   all_frames_.push_back(frame);
-  const Eigen::Vector3f translation = frame->GlobalTranslation();
-  all_frames_translation_.push_back(translation.cast<double>());
+  const Eigen::Vector3d translation = frame->GlobalTranslation();
+  all_frames_translation_.push_back(translation);
 
   int32_t current_index = all_frames_.size() - 1;
   const char* mode_name[kLoopStatusCount] = {"No Loop", "Trying To Close Loop",
@@ -206,7 +206,7 @@ typename LoopDetector<PointT>::DetectResult LoopDetector<PointT>::AddFrame(
       Eigen::Matrix4d transform;
       if (CloseLoop(p.first, p.second, &transform, &constraint_score)) {
         result.close_pair.push_back(p);
-        result.transform.push_back(transform.cast<float>());
+        result.transform.push_back(transform);
         result.constraint_score.push_back(constraint_score);
       }
     };
@@ -257,7 +257,7 @@ bool LoopDetector<PointT>::CloseLoop(const int target_id, const int source_id,
                                      double* score) {
   // PRINT_INFO("Trying to close loop ...");
   CHECK(all_frames_.size() > target_id && all_frames_.size() > source_id);
-  Eigen::Matrix4f init_guess = all_frames_[target_id]->GlobalPose().inverse() *
+  Eigen::Matrix4d init_guess = all_frames_[target_id]->GlobalPose().inverse() *
                                all_frames_[source_id]->GlobalPose();
   // @todo it is a trick, remove it
   init_guess(2, 3) = 0.f;
@@ -266,7 +266,7 @@ bool LoopDetector<PointT>::CloseLoop(const int target_id, const int source_id,
     // if use gps, update the translation part of guess
     const EnuPosition delta_enu = all_frames_[source_id]->GetRelatedGpsInENU() -
                                   all_frames_[target_id]->GetRelatedGpsInENU();
-    init_guess.block(0, 3, 3, 1) = delta_enu.cast<float>();
+    init_guess.block(0, 3, 3, 1) = delta_enu;
   }
 
   registrator::IcpUsingPointMatcher<PointT> scan_matcher;
@@ -303,7 +303,7 @@ bool LoopDetector<PointT>::CloseLoop(const int target_id, const int source_id,
 }
 
 template <typename PointT>
-void LoopDetector<PointT>::SetTransformOdomToLidar(const Eigen::Matrix4f& t) {
+void LoopDetector<PointT>::SetTransformOdomToLidar(const Eigen::Matrix4d& t) {
   tf_odom_lidar_ = t;
 }
 

@@ -47,7 +47,7 @@ template <typename PointT>
 class LoopDetector {
  public:
   explicit LoopDetector(const LoopDetectorSettings &l_d_settings)
-      : settings_(l_d_settings), tf_odom_lidar_(Eigen::Matrix4f::Identity()) {}
+      : settings_(l_d_settings), tf_odom_lidar_(Eigen::Matrix4d::Identity()) {}
   ~LoopDetector() {}
 
   LoopDetector(const LoopDetector &) = delete;
@@ -69,13 +69,13 @@ class LoopDetector {
     bool close_succeed;
 #ifndef _USE_TBB_
     std::vector<std::pair<int, int>> close_pair;
-    std::vector<Eigen::Matrix4f, Eigen::aligned_allocator<Eigen::Matrix4f>>
+    std::vector<Eigen::Matrix4d, Eigen::aligned_allocator<Eigen::Matrix4d>>
         transform;
     std::vector<double> constraint_score;
 #else
     tbb::concurrent_vector<std::pair<int, int>> close_pair;
-    tbb::concurrent_vector<Eigen::Matrix4f,
-                           Eigen::aligned_allocator<Eigen::Matrix4f>>
+    tbb::concurrent_vector<Eigen::Matrix4d,
+                           Eigen::aligned_allocator<Eigen::Matrix4d>>
         transform;
     tbb::concurrent_vector<double> constraint_score;
 #endif
@@ -88,7 +88,7 @@ class LoopDetector {
   std::vector<std::shared_ptr<Submap<PointT>>> &GetFrames();
 
   /// @brief set static tf link from odom to lidar(cloud frame)
-  void SetTransformOdomToLidar(const Eigen::Matrix4f &t);
+  void SetTransformOdomToLidar(const Eigen::Matrix4d &t);
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
@@ -107,7 +107,7 @@ class LoopDetector {
   LoopStatus current_status_ = kNoLoop;
   LoopDetectorSettings settings_;
 
-  Eigen::Matrix4f tf_odom_lidar_;
+  Eigen::Matrix4d tf_odom_lidar_;
 
   int search_window_start_ = -1;
   int search_window_end_ = -1;

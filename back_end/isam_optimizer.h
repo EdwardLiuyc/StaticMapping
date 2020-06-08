@@ -80,11 +80,11 @@ class IsamOptimizer {
   /// @brief for imu factor in optimization
   void AddImuData(const sensors::ImuMsg &imu_msg);
   /// @brief set static tf link from odom to lidar(cloud frame)
-  void SetTransformOdomToLidar(const Eigen::Matrix4f &t);
+  void SetTransformOdomToLidar(const Eigen::Matrix4d &t);
   /// @brief get the odom->lidar tf after calibration
-  Eigen::Matrix4f GetTransformOdomToLidar();
+  Eigen::Matrix4d GetTransformOdomToLidar();
   /// @brief tf connection tracking_frame -> gps
-  void SetTrackingToGps(const Eigen::Matrix4f &t);
+  void SetTrackingToGps(const Eigen::Matrix4d &t);
 
   void RunFinalOptimazation();
 
@@ -95,10 +95,10 @@ class IsamOptimizer {
  protected:
   void AddLoopCloseEdge(
       const int target_index, const int source_index,
-      const Eigen::Matrix4f &transform_from_last_pose,
+      const Eigen::Matrix4d &transform_from_last_pose,
       const gtsam::noiseModel::Base::shared_ptr &constraint_noise);
-  void AddVertex(const int &index, const Eigen::Matrix4f &pose,
-                 const Eigen::Matrix4f &transform_from_last_pose,
+  void AddVertex(const int &index, const Eigen::Matrix4d &pose,
+                 const Eigen::Matrix4d &transform_from_last_pose,
                  const gtsam::noiseModel::Base::shared_ptr &odom_noise);
   void IsamUpdate(const int update_time = 1);
 
@@ -121,8 +121,8 @@ class IsamOptimizer {
   gtsam::noiseModel::Base::shared_ptr odom_tf_noise_model_;
   gtsam::noiseModel::Base::shared_ptr odom_noise_model_;
 
-  Eigen::Matrix4f tf_odom_lidar_ = Eigen::Matrix4f::Identity();
-  Eigen::Matrix4f tf_tracking_gps_ = Eigen::Matrix4f::Identity();
+  Eigen::Matrix4d tf_odom_lidar_ = Eigen::Matrix4d::Identity();
+  Eigen::Matrix4d tf_tracking_gps_ = Eigen::Matrix4d::Identity();
 
   std::unique_ptr<LoopDetector<PointT>> loop_detector_;
   IsamOptimizerOptions options_;

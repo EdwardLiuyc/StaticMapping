@@ -72,7 +72,7 @@ void Submap<PointType>::InsertFrame(
 
   if (frames_.empty()) {
     this->global_pose_ = frame->GlobalPose();
-    frame->SetLocalPose(Eigen::Matrix4f::Identity());
+    frame->SetLocalPose(Eigen::Matrix4d::Identity());
     this->SetTimeStamp(frame->GetTimeStamp());
   } else {
     frame->SetLocalPose(this->global_pose_.inverse() * frame->GlobalPose());
@@ -98,7 +98,8 @@ void Submap<PointType>::InsertFrame(
       if (options_.enable_check) {
         FATAL_CHECK_CLOUD(output_cloud);
       }
-      map.InsertPointCloud(output_cloud, frame->LocalTranslation());
+      map.InsertPointCloud(output_cloud,
+                           frame->LocalTranslation().template cast<float>());
     }
     map.OutputToPointCloud(0.51, this->cloud_);
 
@@ -110,7 +111,8 @@ void Submap<PointType>::InsertFrame(
     if (options_.enable_inner_multiview_icp) {
       MultiviewRegistratorLumPcl<PointType> multi_matcher;
       for (auto& frame : frames_) {
-        multi_matcher.AddNewCloud(frame->Cloud(), frame->LocalPose());
+        multi_matcher.AddNewCloud(frame->Cloud(),
+                                  frame->LocalPose().template cast<float>());
       }
       multi_matcher.AlignAll(this->cloud_);
     }
@@ -176,7 +178,7 @@ std::shared_ptr<Frame<PointType>> Submap<PointType>::GetFrame(
 }
 
 template <typename PointType>
-void Submap<PointType>::SetMatchedTransformedToNext(const Eigen::Matrix4f& t) {
+void Submap<PointType>::SetMatchedTransformedToNext(const Eigen::Matrix4d& t) {
   CHECK(!got_matched_transform_to_next_.load());
   boost::upgrade_lock<ReadWriteMutex> locker(mutex_);
   {

@@ -93,7 +93,7 @@ class Submap : public FrameBase<PointType> {
   /// you should call this func to update the inner frames's global pose
   void UpdateInnerFramePose();
   /// @brief set the matrix to next and set flag to true as well
-  void SetMatchedTransformedToNext(const Eigen::Matrix4f& t);
+  void SetMatchedTransformedToNext(const Eigen::Matrix4d& t);
   /// @brief when the submap is full, you can insert no more frames into it
   /// the full_ flag is an atomic variable so use .load()
   inline bool Full() { return full_.load(); }
