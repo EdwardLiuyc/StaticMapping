@@ -54,6 +54,7 @@ namespace static_map {
  */
 class SimpleTime {
  public:
+  // @todo(edward) seperate this into .h and .cc
   SimpleTime() : secs(0), nsecs(0), u_judge_range(1) {}
   SimpleTime(uint32_t s, uint32_t n) : secs(s), nsecs(n), u_judge_range(1) {}
 
