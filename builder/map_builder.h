@@ -219,7 +219,7 @@ class MapBuilder {
   void SubmapPairMatch(const int source_index, const int target_index);
   /// @brief do offline calibration between odom and lidar
   /// after finishing the optimization of whole map
-  void OfflineCalibrationOdomToLidar();
+  // void OfflineCalibrationOdomToLidar();
   /// @brief after getting the map path, calcualate
   /// the transform from map to enu, and set the rotation into submap pose
   void CalculateCoordTransformToGps();

@@ -178,7 +178,6 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - **using docker to build and run**
 - **use enu instead of utm in multi-traj situation**
 - seperate map_builder class into several smaller classes
-- move inline funtion definitions out of the class declaration
 - more robust normal estimate for fast icp
 - use glog or other logging lib instead of print macro
 - complete the offset for enu coordinate system
