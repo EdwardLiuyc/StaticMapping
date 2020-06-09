@@ -223,6 +223,7 @@ inline size_t ArgMax(const Eigen::Vector3d& v) {
   // FIXME: Change that to use the new API. the new Eigen API (3.2.8) allows
   // this with the call maxCoeff. See the section Visitors in
   // https://eigen.tuxfamily.org/dox/group__TutorialReductionsVisitorsBroadcasting.html
+  // @todo(edward) use eigen api
   const int size(v.size());
   double maxVal(0.);
   size_t maxIdx(0);
@@ -368,7 +369,7 @@ Eigen::MatrixXd CrossProduct(const Eigen::MatrixXd& A,
 }
 
 void SolvePossiblyUnderdeterminedLinearSystem(const Matrix& A, const Vector& b,
-                                              Vector& x) {
+                                              Vector& x) {  // NOLINT
   CHECK_EQ(A.cols(), A.rows());
   CHECK_EQ(b.cols(), 1);
   CHECK_EQ(b.rows(), A.rows());

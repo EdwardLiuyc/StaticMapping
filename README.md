@@ -210,7 +210,6 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - add support for different kind of IMU and ODOM
 - add support for more kind of pointclouds
 - add a Pose3d struct for simple operation of matrix4f or just use gtsam::pose3d
-- use double instead of float (eigen::matrix)
 - mrvm output to a special format data file and can be transformed to pcd independently
 - gravity alignment (in pose extrapolator)
 - improve the tool (pcd to las)
@@ -218,8 +217,9 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - remove the dependency of ceres solver
 - full support for all kinds of pointcloud
 - totally independent with ROS
-- try sqlite to manage submap memory
+- try SQlite to manage submap memory
 - isam optimizer should not be involved with pointcloud type
+- Introduce a PoseGraph class to handle all things for back-end
 
 # Tried
 - tried folly, libcds (intending to used instead of tbb) but they are not very freindly to use and not like stl containers

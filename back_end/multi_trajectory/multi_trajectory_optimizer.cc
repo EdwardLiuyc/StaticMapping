@@ -32,6 +32,7 @@ namespace back_end {
 #define SUBMAP_SYMBOL ('s')
 #define SUBMAP_KEY(index) (gtsam::Symbol(SUBMAP_SYMBOL, (index)))
 
+namespace {
 // we assume that
 // the count of submaps in one single trajectory is less than 2^32-1
 // and the count of trajectories is less than 2^32-1
@@ -42,6 +43,7 @@ inline uint32_t SubmapIndexFromUint64(uint64_t index) {
   uint32_t* submap_id = reinterpret_cast<uint32_t*>(&index);
   return *submap_id;
 }
+}  // namespace
 
 namespace NM = gtsam::noiseModel;
 using gtsam::between;

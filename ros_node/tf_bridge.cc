@@ -25,6 +25,20 @@
 #include "glog/logging.h"
 
 namespace static_map_ros {
+namespace {
+inline Eigen::Matrix4d GeometryTransformToEigen(
+    const geometry_msgs::TransformStamped& transform) {
+  Eigen::Matrix4d eigen_transform = Eigen::Matrix4d::Identity();
+  eigen_transform.block(0, 3, 3, 1) << transform.transform.translation.x,
+      transform.transform.translation.y, transform.transform.translation.z;
+  eigen_transform.block(0, 0, 3, 3) =
+      Eigen::Quaterniond(
+          transform.transform.rotation.w, transform.transform.rotation.x,
+          transform.transform.rotation.y, transform.transform.rotation.z)
+          .toRotationMatrix();
+  return eigen_transform;
+}
+}  // namespace
 
 Eigen::Matrix4d LoopUpTransfrom(const std::string& target_frame,
                                 const std::string& source_frame,
@@ -46,19 +60,6 @@ Eigen::Matrix4d LoopUpTransfrom(const std::string& target_frame,
   tf::transformTFToEigen(transform, eigen_transform);
 
   return eigen_transform.matrix();
-}
-
-inline Eigen::Matrix4d GeometryTransformToEigen(
-    const geometry_msgs::TransformStamped& transform) {
-  Eigen::Matrix4d eigen_transform = Eigen::Matrix4d::Identity();
-  eigen_transform.block(0, 3, 3, 1) << transform.transform.translation.x,
-      transform.transform.translation.y, transform.transform.translation.z;
-  eigen_transform.block(0, 0, 3, 3) =
-      Eigen::Quaterniond(
-          transform.transform.rotation.w, transform.transform.rotation.x,
-          transform.transform.rotation.y, transform.transform.rotation.z)
-          .toRotationMatrix();
-  return eigen_transform;
 }
 
 Eigen::Matrix4d LoopUpTransfrom(const std::string& target_frame,
