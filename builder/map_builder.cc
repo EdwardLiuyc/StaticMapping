@@ -33,6 +33,7 @@
 #include "back_end/loop_detector.h"
 #include "builder/data_collector.h"
 #include "builder/map_builder.h"
+#include "builder/offline_calibration.h"
 #include "common/macro_defines.h"
 #include "common/make_unique.h"
 #include "common/performance/simple_prof.h"
@@ -587,10 +588,14 @@ void MapBuilder::ConnectAllSubmap() {
         PRINT_INFO("Update tf(odom->lidar) from online calibration.");
         transform_odom_lidar_ = isam_optimizer_->GetTransformOdomToLidar();
         break;
-      case kOfflineCalib:
-        PRINT_INFO("Update tf(odom->lidar) from offline calibration.");
-        OfflineCalibrationOdomToLidar();
-        break;
+      case kOfflineCalib: {
+        Eigen::Matrix4d result;
+        if (OfflineCalibrationOdomToLidar<PointType>(
+                current_trajectory_, transform_odom_lidar_, &result)) {
+          PRINT_INFO("Update tf(odom->lidar) from offline calibration.");
+          transform_odom_lidar_ = result;
+        }
+      } break;
       default:
         PRINT_ERROR("Unknown Calibration Mode.");
         break;
@@ -867,124 +872,6 @@ void MapBuilder::FinishAllComputations() {
     submap_thread_->join();
     submap_thread_.reset();
   }
-}
-
-void MapBuilder::OfflineCalibrationOdomToLidar() {
-  if (!use_odom_) {
-    return;
-  }
-  const int submap_size = current_trajectory_->size();
-  if (submap_size <= 1) {
-    PRINT_WARNING("too few submaps to calculate the transfrom");
-    return;
-  }
-
-  std::vector<Eigen::Vector3d> map_path_positions;
-  std::vector<Eigen::Vector3d> map_path_directions;
-  std::vector<OdomPose> odom_poses;
-
-  Eigen::Matrix4d init_estimate = transform_odom_lidar_;
-  PointCloudType path_and_odom_cloud;
-  for (auto& submap : *current_trajectory_) {
-    if (!submap->HasOdom()) {
-      continue;
-    }
-
-    PointType path_point;
-    Eigen::Vector3d path_position = submap->GlobalTranslation();
-    path_point.x = path_position[0];
-    path_point.y = path_position[1];
-    path_point.z = path_position[2];
-    path_point.intensity = 1;
-    map_path_positions.push_back(path_position);
-
-    // refer to
-    // https://stackoverflow.com/questions/1568568/how-to-convert-euler-angles-to-directional-vector
-    // get the directional vector of a rotation matrix
-    Eigen::Matrix3d path_roation = submap->GlobalRotation();
-    Eigen::Vector3d eulers = common::RotationMatrixToEulerAngles(path_roation);
-    Eigen::Vector3d direction(std::cos(eulers[2]) * std::cos(eulers[1]),
-                              std::sin(eulers[2]) * std::cos(eulers[1]),
-                              std::sin(eulers[1]));
-    map_path_directions.push_back(direction);
-
-    OdomPose odom_pose = submap->GetRelatedOdom();
-    odom_poses.push_back(odom_pose);
-    PointType odom_point;
-    odom_point.x = odom_pose(0, 3);
-    odom_point.y = odom_pose(1, 3);
-    odom_point.z = odom_pose(2, 3);
-    odom_point.intensity = 2;
-
-    path_and_odom_cloud.points.push_back(path_point);
-    path_and_odom_cloud.points.push_back(odom_point);
-  }
-  if (!path_and_odom_cloud.empty()) {
-    pcl::io::savePCDFileBinaryCompressed(
-        options_.whole_options.export_file_path + "path_and_odom_before.pcd",
-        path_and_odom_cloud);
-  }
-
-  if (map_path_positions.empty()) {
-    return;
-  }
-
-  const int size = map_path_positions.size();
-  // @todo add a init estimate based-on tf_odom_lidar
-  Eigen::Vector6<double> init_estimate_6d =
-      common::TransformToVector6(init_estimate);
-  double t[] = {init_estimate_6d[0], init_estimate_6d[1], init_estimate_6d[2]};
-  double r[] = {init_estimate_6d[3], init_estimate_6d[4], init_estimate_6d[5]};
-  ceres::Problem problem;
-  for (int i = 0; i < size; ++i) {
-    auto cost_function = cost_functions::OdomToMapPath::Create(
-        map_path_positions[i], odom_poses[i], map_path_directions[i]);
-    problem.AddResidualBlock(cost_function, new ceres::HuberLoss(1.0), t, r);
-  }
-  ceres::Solver::Options options;
-  options.minimizer_progress_to_stdout = false;
-  options.max_num_iterations = 100;
-  options.num_threads = 8;
-  ceres::Solver::Summary summary;
-  ceres::Solve(options, &problem, &summary);
-
-  Eigen::Vector3d translation(t[0], t[1], t[2]);
-  Eigen::Matrix3d rotation =
-      common::EulerAnglesToRotationMatrix(Eigen::Vector3d(r[0], r[1], r[2]));
-  PointCloudType path_and_odom_cloud_after;
-  for (int i = 0; i < size; ++i) {
-    PointType path_point;
-    Eigen::Vector3d path_position = map_path_positions[i];
-    path_point.x = path_position[0];
-    path_point.y = path_position[1];
-    path_point.z = path_position[2];
-    path_point.intensity = 1;
-
-    Eigen::Matrix4d transform = Eigen::Matrix4d::Identity();
-    transform.block(0, 0, 3, 3) = rotation;
-    transform.block(0, 3, 3, 1) = translation;
-    Eigen::Matrix4d odom_pose_in_map =
-        transform.inverse() * odom_poses[i] * transform;
-    PointType odom_point;
-    odom_point.x = odom_pose_in_map(0, 3);
-    odom_point.y = odom_pose_in_map(1, 3);
-    odom_point.z = odom_pose_in_map(2, 3);
-    odom_point.intensity = 2;
-
-    path_and_odom_cloud_after.points.push_back(path_point);
-    path_and_odom_cloud_after.points.push_back(odom_point);
-  }
-  if (!path_and_odom_cloud_after.empty()) {
-    pcl::io::savePCDFileBinaryCompressed(
-        options_.whole_options.export_file_path + "path_and_odom_after.pcd",
-        path_and_odom_cloud_after);
-  }
-
-  // update the tf connection
-  transform_odom_lidar_.block<3, 3>(0, 0) = rotation;
-  transform_odom_lidar_.block<3, 1>(0, 3) = translation;
-  PRINT_INFO("odom -> lidar match result :");
-  common::PrintTransform(transform_odom_lidar_);
 }
 
 void MapBuilder::CalculateCoordTransformToGps() {
