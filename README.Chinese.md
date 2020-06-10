@@ -67,10 +67,6 @@ sudo apt -y install cmake \
 ## install pcl 
 sudo apt -y install libpcl-dev
 
-## ceres solver 
-sudo apt -y install libceres-dev
-## 或者你可以按照 ceres solver 的官方文档 http://ceres-solver.org/installation.html 进行编译安装
-
 cd your_own_workspace 
 ## 比如 /home/user/3rd_parties
 ## 或者你可以直接 cd 到当前项目的 third_parties 目录下

@@ -29,10 +29,6 @@ sudo apt -y install cmake \
 ## tested in pcl-1.7 (ubuntu16.04) and pcl-1.8 (ubuntu18.04)
 sudo apt -y install libpcl-dev
 
-## ceres solver 
-sudo apt -y install libceres-dev
-## or you can build and install ceres solver refering to http://ceres-solver.org/installation.html
-
 cd your_own_workspace 
 ## like /home/user/3rd_parties
 ## or you can just go to "third_parties" in this repo
@@ -213,7 +209,6 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - gravity alignment (in pose extrapolator)
 - improve the tool (pcd to las)
 - add illustration of some important parameters
-- remove the dependency of ceres solver
 - full support for all kinds of pointcloud
 - totally independent with ROS
 - try SQlite to manage submap memory

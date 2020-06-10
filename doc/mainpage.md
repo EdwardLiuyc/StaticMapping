@@ -5,7 +5,6 @@
 ### requirements  
 - PCL(1.8 or higher)
 - GTSAM(4.0 or higher)
-- Ceres Solver(1.12 or higher)
 - Boost
 - Eigen
 - libPNG
@@ -50,37 +49,6 @@ sudo make install
 ```bash
 git clone https://github.com/ethz-asl/libpointmatcher.git
 cd libnabo
-mkdir build && cd build
-cmake ..
-make -j8
-sudo make install
-```
-
-#### Ceres Solver
-
-```bash
-# CMake
-sudo apt-get install cmake
-# google-glog + gflags
-sudo apt-get install libgoogle-glog-dev
-# BLAS & LAPACK
-sudo apt-get install libatlas-base-dev
-# Eigen3
-sudo apt-get install libeigen3-dev
-# SuiteSparse and CXSparse (optional)
-# - If you want to build Ceres as a *static* library (the default)
-#   you can use the SuiteSparse package in the main Ubuntu package
-#   repository:
-sudo apt-get install libsuitesparse-dev
-# - However, if you want to build Ceres as a *shared* library, you must
-#   add the following PPA:
-sudo add-apt-repository ppa:bzindovic/suitesparse-bugfix-1319687
-sudo apt-get update
-sudo apt-get install libsuitesparse-dev
-# Get Ceres 1.14.0 and build
-git clone https://github.com/ceres-solver/ceres-solver.git
-cd ceres-solver
-git checkout tags/1.14.0
 mkdir build && cd build
 cmake ..
 make -j8
