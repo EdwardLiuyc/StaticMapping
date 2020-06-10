@@ -35,6 +35,19 @@
 #include "glog/logging.h"
 
 namespace Eigen {
+namespace Rigid3 {
+
+template <typename Scalar>
+using Transform = Matrix<Scalar, 4, 4>;
+template <typename Scalar>
+using Translation = Matrix<Scalar, 3, 1>;
+template <typename Scalar>
+using Rotation = Matrix<Scalar, 3, 3>;
+template <typename Scalar>
+using Eulers = Matrix<Scalar, 3, 1>;
+
+}  // namespace Rigid3
+
 template <typename Scalar>
 using Vector6 = Matrix<Scalar, 6, 1>;
 
@@ -43,12 +56,6 @@ using VectorNd = Matrix<double, N, 1>;
 template <int N>
 using VectorNf = Matrix<float, N, 1>;
 }  // namespace Eigen
-
-#define TRANSFORM(Scalar) Eigen::Matrix<Scalar, 4, 4>
-#define TRANSFORM_6D(Scalar) Eigen::Vector6<Scalar>
-#define TRANSLATION(Scalar) Eigen::Matrix<Scalar, 3, 1>
-#define EULERS(Scalar) Eigen::Matrix<Scalar, 3, 1>
-#define ROTATION(Scalar) Eigen::Matrix<Scalar, 3, 3>
 
 namespace static_map {
 namespace common {
@@ -96,8 +103,8 @@ T NormalizeAngleDifference(T difference) {
 }
 
 template <typename T>
-EULERS(T)
-RotationMatrixToEulerAngles(const ROTATION(T) & R) {
+Eigen::Rigid3::Eulers<T> RotationMatrixToEulerAngles(
+    const Eigen::Rigid3::Rotation<T>& R) {
   Eigen::Matrix3d double_R = R.template cast<double>();
 
   double sy = std::sqrt(double_R(0, 0) * double_R(0, 0) +
@@ -118,46 +125,44 @@ RotationMatrixToEulerAngles(const ROTATION(T) & R) {
 }
 
 template <typename T>
-Eigen::Quaternion<T> EulerAnglesToQuaternion(const EULERS(T) & eulers) {
-  Eigen::AngleAxis<T> yaw_angle(eulers[2], EULERS(T)::UnitZ());
-  Eigen::AngleAxis<T> pitch_angle(eulers[1], EULERS(T)::UnitY());
-  Eigen::AngleAxis<T> roll_angle(eulers[0], EULERS(T)::UnitX());
+Eigen::Quaternion<T> EulerAnglesToQuaternion(
+    const Eigen::Rigid3::Eulers<T>& eulers) {
+  Eigen::AngleAxis<T> yaw_angle(eulers[2], Eigen::Rigid3::Eulers<T>::UnitZ());
+  Eigen::AngleAxis<T> pitch_angle(eulers[1], Eigen::Rigid3::Eulers<T>::UnitY());
+  Eigen::AngleAxis<T> roll_angle(eulers[0], Eigen::Rigid3::Eulers<T>::UnitX());
   Eigen::Quaternion<T> q = yaw_angle * pitch_angle * roll_angle;
 
   return q;
 }
 
 template <typename T>
-ROTATION(T)
-EulerAnglesToRotationMatrix(const EULERS(T) & eulers) {
+Eigen::Rigid3::Rotation<T> EulerAnglesToRotationMatrix(
+    const Eigen::Rigid3::Eulers<T>& eulers) {
   return EulerAnglesToQuaternion(eulers).template toRotationMatrix();
 }
 
 template <typename T>
-EULERS(T)
-QuaternionToEulers(const Eigen::Quaternion<T>& q) {
+Eigen::Rigid3::Eulers<T> QuaternionToEulers(const Eigen::Quaternion<T>& q) {
   auto R = q.toRotationMatrix();
   return RotationMatrixToEulerAngles(R);
 }
 
 template <typename T>
-TRANSFORM_6D(T)
-TransformToVector6(const TRANSFORM(T) & t) {
-  TRANSFORM_6D(T) ret;
+Eigen::Vector6<T> TransformToVector6(const Eigen::Rigid3::Transform<T>& t) {
+  Eigen::Vector6<T> ret;
   ret.topRows(3) = t.block(0, 3, 3, 1);
-  ret.bottomRows(3) =
-      RotationMatrixToEulerAngles(ROTATION(T)(t.block(0, 0, 3, 3)));
+  ret.bottomRows(3) = RotationMatrixToEulerAngles(
+      Eigen::Rigid3::Rotation<T>(t.block(0, 0, 3, 3)));
 
   return ret;
 }
 
 template <typename T>
-TRANSFORM(T)
-Vector6ToTransform(const TRANSFORM_6D(T) & v) {
-  TRANSFORM(T) ret = TRANSFORM(T)::Identity();
-  Eigen::AngleAxis<T> yaw_angle(v[5], EULERS(T)::UnitZ());
-  Eigen::AngleAxis<T> pitch_angle(v[4], EULERS(T)::UnitY());
-  Eigen::AngleAxis<T> roll_angle(v[3], EULERS(T)::UnitX());
+Eigen::Rigid3::Transform<T> Vector6ToTransform(const Eigen::Vector6<T>& v) {
+  Eigen::Rigid3::Transform<T> ret = Eigen::Rigid3::Transform<T>::Identity();
+  Eigen::AngleAxis<T> yaw_angle(v[5], Eigen::Rigid3::Eulers<T>::UnitZ());
+  Eigen::AngleAxis<T> pitch_angle(v[4], Eigen::Rigid3::Eulers<T>::UnitY());
+  Eigen::AngleAxis<T> roll_angle(v[3], Eigen::Rigid3::Eulers<T>::UnitX());
   Eigen::Quaternion<T> q = yaw_angle * pitch_angle * roll_angle;
 
   ret.template block<3, 1>(0, 3) = v.topRows(3);
@@ -167,20 +172,19 @@ Vector6ToTransform(const TRANSFORM_6D(T) & v) {
 }
 
 template <typename T>
-ROTATION(T)
-Rotation(const TRANSFORM(T) & t) {
+Eigen::Rigid3::Rotation<T> Rotation(const Eigen::Rigid3::Transform<T>& t) {
   return t.template block<3, 3>(0, 0);
 }
 
 template <typename T>
-TRANSLATION(T)
-Translation(const TRANSFORM(T) & t) {
+Eigen::Rigid3::Translation<T> Translation(
+    const Eigen::Rigid3::Transform<T>& t) {
   return t.template block<3, 1>(0, 3);
 }
 
 template <typename T>
-void PrintTransform(const TRANSFORM(T) & t) {
-  TRANSFORM_6D(T) vec_6d = TransformToVector6(t);
+void PrintTransform(const Eigen::Rigid3::Transform<T>& t) {
+  Eigen::Vector6<T> vec_6d = TransformToVector6(t);
   const double factor = 180. / M_PI;
   std::cout << "  translation : (" << vec_6d[0] << ", " << vec_6d[1] << ", "
             << vec_6d[2] << ")\n"
@@ -271,52 +275,14 @@ PlaneFitting(const std::vector<Eigen::Matrix<Scalar, 3, 1>>& points) {
 }
 
 template <typename T>
-void NormalizeRotation(TRANSFORM(T) & transform) {
-  Eigen::Quaternion<T> q(ROTATION(T)(transform.template block(0, 0, 3, 3)));
+void NormalizeRotation(Eigen::Rigid3::Transform<T>& transform) {  // NOLINT
+  Eigen::Quaternion<T> q(
+      Eigen::Rigid3::Rotation<T>(transform.template block(0, 0, 3, 3)));
   transform.template block(0, 0, 3, 3) =
       q.template normalized().template toRotationMatrix();
 }
 
-#ifdef __cplusplus
-#define cast_uint32_t static_cast<uint32_t>
-#else
-#define cast_uint32_t (uint32_t)
-#endif
-
-static inline float fastpow2(float p) {
-  float offset = (p < 0) ? 1.0f : 0.0f;
-  float clipp = (p < -126) ? -126.0f : p;
-  int w = clipp;
-  float z = clipp - w + offset;
-  union {
-    uint32_t i;
-    float f;
-  } v = {cast_uint32_t((1 << 23) *
-                       (clipp + 121.2740575f + 27.7280233f / (4.84252568f - z) -
-                        1.49012907f * z))};
-
-  return v.f;
-}
-
-static inline float fastexp(float p) { return fastpow2(1.442695040f * p); }
-
-static inline float fasterlog(float x) {
-  union {
-    float f;
-    uint32_t i;
-  } vx = {x};
-  float y = vx.i;
-  y *= 8.2629582881927490e-8f;
-  return y - 87.989971088f;
-}
-
 }  // namespace common
 }  // namespace static_map
-
-#undef TRANSFORM
-#undef TRANSFORM_6D
-#undef TRANSLATION
-#undef EULERS
-#undef ROTATION
 
 #endif  // COMMON_MATH_H_
