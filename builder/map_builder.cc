@@ -33,12 +33,12 @@
 #include "back_end/loop_detector.h"
 #include "builder/data_collector.h"
 #include "builder/map_builder.h"
-#include "builder/offline_calibration.h"
+// #include "builder/offline_calibration.h"
 #include "common/macro_defines.h"
 #include "common/make_unique.h"
 #include "common/performance/simple_prof.h"
 #include "common/pugixml.hpp"
-#include "cost_functions/odom_map_match.h"
+// #include "cost_functions/odom_map_match.h"
 #include "descriptor/m2dp.h"
 
 namespace static_map {
@@ -589,12 +589,16 @@ void MapBuilder::ConnectAllSubmap() {
         transform_odom_lidar_ = isam_optimizer_->GetTransformOdomToLidar();
         break;
       case kOfflineCalib: {
-        Eigen::Matrix4d result;
-        if (OfflineCalibrationOdomToLidar<PointType>(
-                current_trajectory_, transform_odom_lidar_, &result)) {
-          PRINT_INFO("Update tf(odom->lidar) from offline calibration.");
-          transform_odom_lidar_ = result;
-        }
+        PRINT_ERROR(
+            "It is a deprecated function. If you got a RTK-INS for odom, we "
+            "will do the online calibration of the extrinsic matrices in the "
+            "back-end. No offline mode supported.");
+        // Eigen::Matrix4d result;
+        // if (OfflineCalibrationOdomToLidar<PointType>(
+        //         current_trajectory_, transform_odom_lidar_, &result)) {
+        //   PRINT_INFO("Update tf(odom->lidar) from offline calibration.");
+        //   transform_odom_lidar_ = result;
+        // }
       } break;
       default:
         PRINT_ERROR("Unknown Calibration Mode.");
