@@ -92,6 +92,7 @@ class Trajectory {
   void SetEnuOffset(const double x, const double y);
   void ToXmlNode(pugi::xml_node* map_node);
   void SetSavePath(const std::string& path);
+  void OutputPathToPointcloud(const std::string& path);
 
  private:
   // use a read&write mutex locker to ensure efficiency of submap

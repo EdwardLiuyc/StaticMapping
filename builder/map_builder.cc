@@ -33,12 +33,10 @@
 #include "back_end/loop_detector.h"
 #include "builder/data_collector.h"
 #include "builder/map_builder.h"
-// #include "builder/offline_calibration.h"
 #include "common/macro_defines.h"
 #include "common/make_unique.h"
 #include "common/performance/simple_prof.h"
 #include "common/pugixml.hpp"
-// #include "cost_functions/odom_map_match.h"
 #include "descriptor/m2dp.h"
 
 namespace static_map {
@@ -291,8 +289,8 @@ void MotionCompensation(const MapBuilder::PointCloudPtr& raw_cloud,
     output_cloud->points.push_back(new_point);
   }
 }
-}  // namespace
 
+// TODO(edward) use slerp
 Eigen::Matrix4d AverageTransforms(
     const std::vector<Eigen::Matrix4d>& transforms) {
   CHECK(!transforms.empty());
@@ -311,6 +309,7 @@ Eigen::Matrix4d AverageTransforms(
 
   return result;
 }
+}  // namespace
 
 void MapBuilder::ScanMatchProcessing() {
   using Pose3d = PoseExtrapolator::RigidPose3d;
@@ -658,79 +657,9 @@ void MapBuilder::ConnectAllSubmap() {
 
 void MapBuilder::OutputPath() {
   PRINT_INFO("generating path files ...");
-  int path_point_index = 0;
-  std::ofstream path_text_file(options_.whole_options.export_file_path +
-                               "path.csv");
-  std::string path_content;
-  bool write_to_text = path_text_file.is_open();
-  pcl::PointCloud<pcl::_PointXYZI>::Ptr path_cloud(
-      new pcl::PointCloud<pcl::_PointXYZI>);
-  pcl::PointCloud<pcl::PointXYZI> enu_path_cloud;
-  pcl::PointCloud<pcl::PointXYZI> odom_path_cloud;
-  enu_path_cloud.points.reserve(current_trajectory_->size());
-  for (auto& submap : *current_trajectory_) {
-    // enu path
-    if (submap->HasGps()) {
-      pcl::PointXYZI enu_point;
-      const Eigen::Vector3d enu = submap->GetRelatedGpsInENU();
-      enu_point.x = enu[0];
-      enu_point.y = enu[1];
-      enu_point.z = enu[2];
-      enu_point.intensity = 0.;
-      enu_path_cloud.push_back(enu_point);
-    }
-    // odom path
-    if (submap->HasOdom()) {
-      pcl::PointXYZI odom_point;
-      const Eigen::Vector3d odom =
-          common::Translation(submap->GetRelatedOdom());
-      odom_point.x = odom[0];
-      odom_point.y = odom[1];
-      odom_point.z = odom[2];
-      odom_point.intensity = 0.;
-      odom_path_cloud.push_back(odom_point);
-    }
-    // map path
-    for (auto& frame : submap->GetFrames()) {
-      pcl::_PointXYZI path_point;
-      Eigen::Matrix4d pose = frame->GlobalPose();
-      Eigen::Vector6<double> global_pose_6d = common::TransformToVector6(pose);
-      path_point.x = global_pose_6d[0];
-      path_point.y = global_pose_6d[1];
-      path_point.z = global_pose_6d[2];
-      path_point.intensity = path_point_index;
 
-      path_cloud->push_back(path_point);
-      if (write_to_text) {
-        path_content += (std::to_string(path_point_index) + ", ");
-        path_content += (std::to_string(global_pose_6d[0]) + ", ");
-        path_content += (std::to_string(global_pose_6d[1]) + ", ");
-        path_content += (std::to_string(global_pose_6d[2]) + ", ");
-        path_content += (std::to_string(global_pose_6d[3]) + ", ");
-        path_content += (std::to_string(global_pose_6d[4]) + ", ");
-        path_content += (std::to_string(global_pose_6d[5]) + " \n");
-      }
-      path_point_index++;
-    }
-  }
-  if (!path_cloud->empty()) {
-    pcl::io::savePCDFileBinaryCompressed(
-        options_.whole_options.export_file_path + "path.pcd", *path_cloud);
-  }
-  if (!enu_path_cloud.points.empty()) {
-    pcl::io::savePCDFileBinaryCompressed(
-        options_.whole_options.export_file_path + "enu_path.pcd",
-        enu_path_cloud);
-  }
-  if (!odom_path_cloud.points.empty()) {
-    pcl::io::savePCDFileBinaryCompressed(
-        options_.whole_options.export_file_path + "odom_path.pcd",
-        odom_path_cloud);
-  }
-  if (write_to_text) {
-    path_text_file << path_content;
-    path_text_file.close();
-  }
+  current_trajectory_->OutputPathToPointcloud(
+      options_.whole_options.export_file_path);
 
   data_collector_->RawGpsDataToFile(options_.whole_options.export_file_path +
                                     "original_gps.pcd");
