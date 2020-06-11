@@ -43,6 +43,7 @@
 // local headers
 #include <boost/optional.hpp>
 #include "back_end/options.h"
+#include "builder/map_package.h"
 #include "builder/msg_conversion.h"
 #include "builder/multi_resolution_voxel_map.h"
 #include "builder/pose_extrapolator.h"
@@ -91,14 +92,6 @@ struct Options {
 
 }  // namespace front_end
 
-struct MapPackageOptions {
-  bool enable = true;
-  double border_offset = 100.;
-  double piece_width = 500.;
-  std::string cloud_file_prefix = "part_";
-  std::string descript_filename = "map_package.xml";
-};
-
 enum OdomCalibrationMode { kNoCalib, kOnlineCalib, kOfflineCalib };
 
 struct MapBuilderOptions {
@@ -140,21 +133,6 @@ class MapBuilder {
 
   using Ptr = std::shared_ptr<MapBuilder>;
   using ConstPtr = std::shared_ptr<const MapBuilder>;
-
-  struct SeperatedPart {
-    SeperatedPart()
-        : center(Eigen::Vector2d::Zero()),
-          bb_min(Eigen::Vector2d::Zero()),
-          bb_max(Eigen::Vector2d::Zero()),
-          cloud(new PointCloudType) {}
-    Eigen::Vector2d center;
-    Eigen::Vector2d bb_min;
-    Eigen::Vector2d bb_max;
-    std::vector<std::shared_ptr<Submap<PointType>>> inside_submaps;
-    PointCloudPtr cloud;
-
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-  };
 
   // functions
   /// @brief initialise the mapbuilder with a config file (xml)

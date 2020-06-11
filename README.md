@@ -171,8 +171,7 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 # TODO
 - **Loop Close factor should be rubust**
 - **mapping using kitti data**
-- **using docker to build and run**
-- **use enu instead of utm in multi-traj situation**
+- **using docker to run**
 - seperate map_builder class into several smaller classes
 - more robust normal estimate for fast icp
 - use glog or other logging lib instead of print macro
@@ -180,7 +179,6 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - faster compiling
 - re-organize the process of caching submaps
 - mrvp using cuda or opencl
-- solve all nls problem using gtsam
 - **supporting multi-lidars**
 - perhaps need a brand-new data type for pointcloud 
 - **remove the imu dependency of pose extrapolator**
@@ -193,7 +191,6 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - **lidar motion compensation after optimization**
 - lidar motion compensation inside ICP
 - ICP using GPU 
-- finish multi-trajectory map builder
 - use ground detection to label the pointcloud 
 - use some machine learning or deep learning method to add semantic labels
 - get odom message from a cheap GPS and IMU intergration  
@@ -208,12 +205,16 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - mrvm output to a special format data file and can be transformed to pcd independently
 - gravity alignment (in pose extrapolator)
 - improve the tool (pcd to las)
-- add illustration of some important parameters
+- add illustration for some important parameters
 - full support for all kinds of pointcloud
 - totally independent with ROS
 - try SQlite to manage submap memory
 - isam optimizer should not be involved with pointcloud type
 - Introduce a PoseGraph class to handle all things for back-end
+
+## Something involved with multi-trajectory-situation
+- **use enu instead of utm in multi-traj situation**
+- finish multi-trajectory map builder
 
 # Tried
 - tried folly, libcds (intending to used instead of tbb) but they are not very freindly to use and not like stl containers
