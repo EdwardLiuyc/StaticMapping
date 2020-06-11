@@ -27,14 +27,16 @@
 #include <string>
 #include <vector>
 
+#include <boost/thread/pthread/shared_mutex.hpp>
+
+#include "builder/submap.h"
+#include "common/macro_defines.h"
+
 namespace pugi {
 class xml_node;
 }
 
 namespace static_map {
-
-template <typename PointType>
-class Submap;
 
 /*
  * @class Trajectory

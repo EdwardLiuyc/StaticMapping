@@ -34,6 +34,7 @@
 #include "back_end/loop_detector.h"
 #include "builder/data_collector.h"
 #include "builder/map_builder.h"
+#include "builder/memory_manager.h"
 #include "common/macro_defines.h"
 #include "common/performance/simple_prof.h"
 #include "common/pugixml.hpp"
@@ -51,7 +52,6 @@ MapBuilder::MapBuilder()
     : use_imu_(false),
       use_gps_(false),
       end_all_thread_(false),
-      end_managing_memory_(false),
       submap_processing_done_(false),
       scan_match_thread_running_(false) {}
 
@@ -280,26 +280,6 @@ void MotionCompensation(const MapBuilder::PointCloudPtr& raw_cloud,
     output_cloud->points.push_back(new_point);
   }
 }
-
-// TODO(edward) use slerp
-Eigen::Matrix4d AverageTransforms(
-    const std::vector<Eigen::Matrix4d>& transforms) {
-  CHECK(!transforms.empty());
-  Eigen::Vector3d angles(0, 0, 0);
-  Eigen::Vector3d translation(0, 0, 0);
-  for (Eigen::Matrix4d transform : transforms) {
-    translation += transform.block(0, 3, 3, 1);
-    angles += common::RotationMatrixToEulerAngles(
-        Eigen::Matrix3d(transform.block(0, 0, 3, 3)));
-  }
-  translation /= static_cast<float>(transforms.size());
-  angles /= static_cast<float>(transforms.size());
-  Eigen::Matrix4d result = Eigen::Matrix4d::Identity();
-  result.block(0, 0, 3, 3) = common::EulerAnglesToRotationMatrix(angles);
-  result.block(0, 3, 3, 1) = translation;
-
-  return result;
-}
 }  // namespace
 
 void MapBuilder::ScanMatchProcessing() {
@@ -377,7 +357,7 @@ void MapBuilder::ScanMatchProcessing() {
         std::vector<Eigen::Matrix4d> transforms;
         transforms.push_back(align_result);
         transforms.push_back(guess);
-        average_transform = AverageTransforms(transforms);
+        average_transform = common::AverageTransforms(transforms);
       }
       // motion compensation using align result
       PointCloudType compensated_source_cloud;
@@ -649,7 +629,6 @@ void MapBuilder::ConnectAllSubmap() {
   }
 
   data_collector_->ClearAllCloud();
-  end_managing_memory_ = true;
 }
 
 void MapBuilder::OutputPath() {
@@ -664,37 +643,15 @@ void MapBuilder::OutputPath() {
                                      "original_odom.pcd");
 }
 
-void MapBuilder::SubmapMemoryManaging() {
-  if (!options_.back_end_options.submap_options.enable_disk_saving) {
-    // PRINT_INFO("No need to manage submap memory, exit the thread.");
-    return;
-  }
-
-  const int time = 1;
-  while (true) {
-    if (end_managing_memory_) {
-      break;
-    }
-
-    // int submap_size = current_trajectory_->size();
-    int active_submap_count = 0;
-    for (auto& submap : *current_trajectory_) {
-      if (submap->UpdateInactiveTime(time)) {
-        active_submap_count++;
-      }
-    }
-    SimpleTime::from_sec(static_cast<double>(time)).sleep();
-    // PRINT_INFO_FMT("Active submaps %d in all %d submaps",
-    // active_submap_count,
-    //                submap_size);
-  }
-  PRINT_INFO("End managing memory.");
-}
-
 void MapBuilder::SubmapProcessing() {
   current_trajectory_->reserve(kSubmapResSize);
   auto& submap_options = options_.back_end_options.submap_options;
   const int submap_frame_count = submap_options.frame_count;
+
+  std::unique_ptr<MemoryManager<PointType>> submap_mem_manager;
+  if (options_.back_end_options.submap_options.enable_disk_saving) {
+    submap_mem_manager.reset(new MemoryManager<PointType>(&trajectories_));
+  }
 
   size_t current_index = 0;
   std::vector<std::shared_ptr<Frame<PointType>>> local_frames;
@@ -703,7 +660,7 @@ void MapBuilder::SubmapProcessing() {
   // it is to connect all submap into a global map
   // others are for submap matching
   submap_match_thread_pool.enqueue([&]() { ConnectAllSubmap(); });
-  submap_match_thread_pool.enqueue([&]() { SubmapMemoryManaging(); });
+
   size_t frames_size = 0;
   while (true) {
     {
