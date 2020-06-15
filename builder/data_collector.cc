@@ -23,7 +23,6 @@
 #include <utility>
 
 #include "builder/data_collector.h"
-#include "builder/msg_conversion.h"
 #include "common/macro_defines.h"
 #include "common/make_unique.h"
 #include "common/math.h"
@@ -154,8 +153,7 @@ void DataCollector<PointT>::AddSensorData(const PointCloudPtr& cloud) {
     // accumulated_point_cloud_
     if (accumulated_cloud_count_ == 0) {
       accumulated_point_cloud_.reset(new PointCloudType);
-      first_time_in_accmulated_cloud_ =
-          sensors::ToLocalTime(cloud->header.stamp);
+      first_time_in_accmulated_cloud_ = ToLocalTime(cloud->header.stamp);
     }
     *accumulated_point_cloud_ += *cloud;
     accumulated_cloud_count_++;
@@ -165,7 +163,7 @@ void DataCollector<PointT>::AddSensorData(const PointCloudPtr& cloud) {
   } else {
     accumulated_point_cloud_.reset();
     accumulated_point_cloud_ = cloud;
-    first_time_in_accmulated_cloud_ = sensors::ToLocalTime(cloud->header.stamp);
+    first_time_in_accmulated_cloud_ = ToLocalTime(cloud->header.stamp);
   }
 
   REGISTER_FUNC;
@@ -220,7 +218,7 @@ void DataCollector<PointT>::CloudPreProcessing() {
     //           "
     //           << data.delta_time_in_cloud;
 
-    CHECK(data.time == sensors::ToLocalTime(data.cloud->header.stamp));
+    CHECK(data.time == ToLocalTime(data.cloud->header.stamp));
 
     // just for debug
     got_clouds_count_++;

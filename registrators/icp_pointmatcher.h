@@ -26,7 +26,7 @@
 #include <fstream>
 #include <memory>
 #include <string>
-#include "builder/msg_conversion.h"
+#include "pointmatcher/PointMatcher.h"
 #include "registrators/interface.h"
 
 namespace static_map {

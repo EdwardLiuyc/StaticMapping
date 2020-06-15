@@ -155,7 +155,7 @@ void MapBuilder::InsertPointcloudMsg(const PointCloudPtr& point_cloud) {
   if (end_all_thread_.load() || (use_imu_ && extrapolator_ == nullptr)) {
     return;
   }
-  if (extrapolator_ && sensors::ToLocalTime(point_cloud->header.stamp) <
+  if (extrapolator_ && ToLocalTime(point_cloud->header.stamp) <
                            extrapolator_->GetLastPoseTime()) {
     PRINT_WARNING("skip cloud.");
     return;
@@ -249,7 +249,7 @@ void MapBuilder::InsertFrameForSubmap(const PointCloudPtr& cloud_ptr,
   auto frame = std::make_shared<Frame<PointType>>();
   frame->SetCloud(cloud_ptr);
   frame->CalculateDescriptor();
-  frame->SetTimeStamp(sensors::ToLocalTime(cloud_ptr->header.stamp));
+  frame->SetTimeStamp(ToLocalTime(cloud_ptr->header.stamp));
   frame->SetGlobalPose(global_pose);
 
   common::MutexLocker locker(&mutex_);
@@ -344,7 +344,7 @@ void MapBuilder::ScanMatchProcessing() {
       continue;
     }
 
-    const auto source_time = sensors::ToLocalTime(source_cloud->header.stamp);
+    const auto source_time = ToLocalTime(source_cloud->header.stamp);
     if (extrapolator_ && source_time < extrapolator_->GetLastPoseTime()) {
       PRINT_INFO("Extrapolator still initialising...");
       target_cloud = source_cloud;

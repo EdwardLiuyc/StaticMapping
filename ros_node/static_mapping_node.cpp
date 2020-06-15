@@ -37,11 +37,11 @@
 #include <sstream>
 // local
 #include "builder/map_builder.h"
-#include "builder/msg_conversion.h"
 #include "common/file_utils.h"
 #include "common/performance/simple_prof.h"
 #include "common/simple_time.h"
 #include "ros_node/kitti_reader.h"
+#include "ros_node/msg_conversion.h"
 #include "ros_node/playable_bag.h"
 #include "ros_node/tf_bridge.h"
 
@@ -65,19 +65,19 @@ void pointcloud_callback(const sensor_msgs::PointCloud2::ConstPtr& msg) {
 
 void imu_callback(const sensor_msgs::Imu& imu_msg) {
   ImuMsg::Ptr incomming_imu(new ImuMsg);
-  *incomming_imu = static_map::sensors::ToLocalImu(imu_msg);
+  *incomming_imu = static_map_ros::ToLocalImu(imu_msg);
   map_builder->InsertImuMsg(incomming_imu);
 }
 
 void odom_callback(const nav_msgs::Odometry& odom_msg) {
   OdomMsg::Ptr local_odom(new OdomMsg);
-  *local_odom = static_map::sensors::ToLocalOdom(odom_msg);
+  *local_odom = static_map_ros::ToLocalOdom(odom_msg);
   map_builder->InsertOdomMsg(local_odom);
 }
 
 void gps_callback(const sensor_msgs::NavSatFix& gps_msg) {
   NavSatFixMsg::Ptr local_gps(new NavSatFixMsg);
-  *local_gps = static_map::sensors::ToLocalNavSatMsg(gps_msg);
+  *local_gps = static_map_ros::ToLocalNavSatMsg(gps_msg);
   map_builder->InsertGpsMsg(local_gps);
 }
 

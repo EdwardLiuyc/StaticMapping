@@ -20,24 +20,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include "builder/msg_conversion.h"
+#include "ros_node/msg_conversion.h"
 
-namespace static_map {
-namespace sensors {
-SimpleTime ToLocalTime(const ros::Time& time) {
-  SimpleTime local_time;
-  local_time.secs = time.sec;
-  local_time.nsecs = time.nsec;
+namespace static_map_ros {
+namespace {
 
-  return local_time;
-}
-
-SimpleTime ToLocalTime(const PclTimeStamp& time) {
-  return SimpleTime::fromNSec(time * 1000ull);
-}
-
-Header ToLocalHeader(const std_msgs::Header& header) {
-  Header local_header;
+static_map::sensors::Header ToLocalHeader(const std_msgs::Header& header) {
+  static_map::sensors::Header local_header;
 
   local_header.seq = header.seq;
   local_header.frame_id = header.frame_id;
@@ -46,8 +35,18 @@ Header ToLocalHeader(const std_msgs::Header& header) {
   return local_header;
 }
 
-ImuMsg ToLocalImu(const sensor_msgs::Imu& msg) {
-  ImuMsg local_imu;
+}  // namespace
+
+static_map::SimpleTime ToLocalTime(const ros::Time& time) {
+  static_map::SimpleTime local_time;
+  local_time.secs = time.sec;
+  local_time.nsecs = time.nsec;
+
+  return local_time;
+}
+
+static_map::sensors::ImuMsg ToLocalImu(const sensor_msgs::Imu& msg) {
+  static_map::sensors::ImuMsg local_imu;
 
   local_imu.header = ToLocalHeader(msg.header);
 
@@ -75,8 +74,8 @@ ImuMsg ToLocalImu(const sensor_msgs::Imu& msg) {
   return std::move(local_imu);
 }
 
-OdomMsg ToLocalOdom(const nav_msgs::Odometry& msg) {
-  OdomMsg local_odom;
+static_map::sensors::OdomMsg ToLocalOdom(const nav_msgs::Odometry& msg) {
+  static_map::sensors::OdomMsg local_odom;
   local_odom.header = ToLocalHeader(msg.header);
 
   local_odom.pose.pose.position.x() = msg.pose.pose.position.x;
@@ -99,8 +98,9 @@ OdomMsg ToLocalOdom(const nav_msgs::Odometry& msg) {
   return std::move(local_odom);
 }
 
-NavSatFixMsg ToLocalNavSatMsg(const sensor_msgs::NavSatFix& msg) {
-  NavSatFixMsg local_navsat;
+static_map::sensors::NavSatFixMsg ToLocalNavSatMsg(
+    const sensor_msgs::NavSatFix& msg) {
+  static_map::sensors::NavSatFixMsg local_navsat;
 
   local_navsat.header = ToLocalHeader(msg.header);
   local_navsat.status.status = msg.status.status;
@@ -116,5 +116,4 @@ NavSatFixMsg ToLocalNavSatMsg(const sensor_msgs::NavSatFix& msg) {
   return std::move(local_navsat);
 }
 
-}  // namespace sensors
-}  // namespace static_map
+}  // namespace static_map_ros
