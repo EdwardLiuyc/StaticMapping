@@ -44,7 +44,6 @@
 #include <boost/optional.hpp>
 #include "back_end/options.h"
 #include "builder/map_package.h"
-#include "builder/msg_conversion.h"
 #include "builder/multi_resolution_voxel_map.h"
 #include "builder/pose_extrapolator.h"
 #include "builder/sensor_fusions/imu_gps_tracker.h"

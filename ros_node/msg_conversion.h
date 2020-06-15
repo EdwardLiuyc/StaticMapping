@@ -20,8 +20,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BUILDER_MSG_CONVERSION_H_
-#define BUILDER_MSG_CONVERSION_H_
+#ifndef ROS_NODE_MSG_CONVERSION_H_
+#define ROS_NODE_MSG_CONVERSION_H_
 
 #include <utility>
 
@@ -34,21 +34,17 @@
 
 #include "builder/sensors.h"
 
-namespace static_map {
-namespace sensors {
+namespace static_map_ros {
 
-using PclTimeStamp = uint64_t;
-SimpleTime ToLocalTime(const ros::Time& time);
-SimpleTime ToLocalTime(const PclTimeStamp& time);
+static_map::SimpleTime ToLocalTime(const ros::Time& time);
 
-Header ToLocalHeader(const std_msgs::Header& header);
-ImuMsg ToLocalImu(const sensor_msgs::Imu& msg);
+static_map::sensors::ImuMsg ToLocalImu(const sensor_msgs::Imu& msg);
 
-OdomMsg ToLocalOdom(const nav_msgs::Odometry& msg);
+static_map::sensors::OdomMsg ToLocalOdom(const nav_msgs::Odometry& msg);
 
-NavSatFixMsg ToLocalNavSatMsg(const sensor_msgs::NavSatFix& msg);
+static_map::sensors::NavSatFixMsg ToLocalNavSatMsg(
+    const sensor_msgs::NavSatFix& msg);
 
-}  // namespace sensors
-}  // namespace static_map
+}  // namespace static_map_ros
 
-#endif  // BUILDER_MSG_CONVERSION_H_
+#endif  // ROS_NODE_MSG_CONVERSION_H_

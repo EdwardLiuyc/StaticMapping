@@ -82,21 +82,7 @@ endif()
 include_directories(${PCL_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})
 link_libraries(${PCL_LIBRARIES})
-#### ros cpp ####
-find_package(catkin COMPONENTS
-  roscpp
-  std_msgs
-  nav_msgs
-  sensor_msgs
-  tf
-  tf_conversions
-  pcl_conversions
-  urdf
-  rosbag
-  REQUIRED
-)
-include_directories(${catkin_INCLUDE_DIRS})
-link_libraries(${catkin_LIBRARIES})
+
 add_subdirectory(tools)
 #### gtsam ####
 find_package(GTSAM REQUIRED)
@@ -199,13 +185,5 @@ else()
   message(STATUS $ENV{ROS_DISTRO})
 endif()
 
-add_executable(static_mapping_node 
-  ros_node/static_mapping_node.cpp
-  ros_node/urdf_reader.cc
-  ros_node/tf_bridge.cc
-  ros_node/playable_bag.cc
-  ros_node/kitti_reader.cc)
-target_link_libraries(static_mapping_node ${static_mapping_libs} ${require_libs} pthread)
-
-# add_executable(join_maps_node ros_node/join_maps_node.cpp)
-# target_link_libraries(join_maps_node ${static_mapping_libs} ${require_libs})
+#### ros cpp ####
+add_subdirectory(ros_node)

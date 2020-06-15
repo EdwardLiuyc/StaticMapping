@@ -240,4 +240,9 @@ class SimpleTime {
   uint32_t u_judge_range;
 };
 
+using PclTimeStamp = uint64_t;
+static inline SimpleTime ToLocalTime(const PclTimeStamp &time) {
+  return SimpleTime::fromNSec(time * 1000ull);
+}
+
 }  // namespace static_map
