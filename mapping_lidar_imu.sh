@@ -22,7 +22,7 @@ IMU_FRAME_ID=imu_link
 
 BAG_FILE=/mnt/Data/visual/map_test/20200507124024_1_NoPlace.bag
 
-./build/static_mapping_node \
+./build/ros_node/static_mapping_node \
   -cfg ${CONFIG_PATH} \
   -urdf ${URDF_FILE} \
   -pc ${POINT_CLOUD_TOPIC} \

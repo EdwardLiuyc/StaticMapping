@@ -22,7 +22,7 @@ GPS_TOPIC=navsatfix
 GPS_FRAME_ID=gps
 BAG_FILE=/mnt/Data/juxin_fisheye_0228/proj-29.bag
 
-./build/static_mapping_node \
+./build/ros_node/static_mapping_node \
   -cfg ${CONFIG_PATH} \
   -pc ${POINT_CLOUD_TOPIC} \
   -pc_frame_id ${POINT_CLOUD_FRAME_ID} \

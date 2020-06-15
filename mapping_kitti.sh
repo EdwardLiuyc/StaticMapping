@@ -9,7 +9,7 @@ POINT_CLOUD_FRAME_ID=frame_velodyne_points
 
 KITTI_PATH=/mnt/Data/kitti/lidar/00/velodyne
 
-./build/static_mapping_node \
+./build/ros_node/static_mapping_node \
   -cfg ${CONFIG_PATH} \
   -pc ${POINT_CLOUD_TOPIC} \
   -pc_frame_id ${POINT_CLOUD_FRAME_ID} \

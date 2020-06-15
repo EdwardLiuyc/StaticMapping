@@ -23,7 +23,7 @@ GPS_FRAME_ID=gps
 
 BAG_FILE=/mnt/Data/OS1-64_freeway1.bag
 
-./build/static_mapping_node \
+./build/ros_node/static_mapping_node \
   -cfg ${CONFIG_PATH} \
   -pc ${POINT_CLOUD_TOPIC} \
   -pc_frame_id ${POINT_CLOUD_FRAME_ID} \

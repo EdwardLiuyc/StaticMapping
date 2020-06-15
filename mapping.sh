@@ -24,7 +24,7 @@ ODOM_FRAME_ID=novatel_odom
 GPS_TOPIC=/navsat/fix
 GPS_FRAME_ID=novatel_imu
 
-./build/static_mapping_node \
+./build/ros_node/static_mapping_node \
   -cfg ${CONFIG_PATH} \
   -pc ${POINT_CLOUD_TOPIC} \
   -pc_frame_id ${POINT_CLOUD_FRAME_ID} \
