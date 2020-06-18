@@ -35,16 +35,6 @@ namespace registrator {
 struct BuildData;
 using NNS = Nabo::NearestNeighbourSearch<double>;
 
-// enum class MinimizerFunction : int32_t { kPointToPlane = 0, kPointToPoint = 1
-// };
-
-struct IcpFastOptions {
-  int32_t knn_for_normal_estimate = 7;
-  int32_t max_iteration = 100;
-  // int32_t minimizer_function = static_cast<int>(kPointToPlane);
-  float dist_outlier_ratio = 0.7;
-};
-
 template <typename PointType>
 class IcpFast : public Interface<PointType> {
  public:
@@ -64,7 +54,11 @@ class IcpFast : public Interface<PointType> {
   std::shared_ptr<BuildData> target_cloud_;
   std::shared_ptr<NNS> nns_kdtree_;
 
-  IcpFastOptions options_;
+  struct {
+    int32_t knn_for_normal_estimate = 7;
+    int32_t max_iteration = 100;
+    float dist_outlier_ratio = 0.7;
+  } options_;
 };
 
 }  // namespace registrator

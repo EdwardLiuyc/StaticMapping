@@ -19,10 +19,10 @@
         <param type="1" name="min_range"> 4.5 </param>
       </filter>
       <filter name="RandomSampler" >
-        <param type="1" name="sampling_rate"> 0.45 </param>
+        <param type="1" name="sampling_rate"> 0.5 </param>
       </filter>
     </filters>
-    <front_end_options accumulate_cloud_num="1">
+    <front_end_options accumulate_cloud_num="151">
       <!-- matcher type  
         0: none 
         1: icp using pointmatcher 
@@ -34,6 +34,9 @@
           <param name="dist_outlier_ratio"> 0.7 </param>
           <param name="knn_normal_estimate"> 7 </param>
           <param name="max_iteration"> 100 </param>
+        </registrator_options>
+        <registrator_options type = "3">
+          <param name="use_ndt"> false </param>
         </registrator_options>
         <inner_filters>
           <filter name="GroundRemoval2" >
@@ -101,14 +104,14 @@
         output_matched_cloud="false"
         loop_ignore_threshold="20"
         trying_detect_loop_count="1"
-        max_close_loop_distance="18"
-        max_close_loop_z_distance="10"
-        m2dp_match_score="0.98"
-        accept_scan_match_score="0.88"
+        max_close_loop_distance="5"
+        max_close_loop_z_distance="1."
+        m2dp_match_score="0.975"
+        accept_scan_match_score="0.8"
         nearest_history_pos_num="5" />
     </back_end_options>
     <output_mrvm_settings
-      output_average="true"
+      output_average="false"
       output_rgb="false"
       prob_threshold="0.57" 
       low_resolution="1." 

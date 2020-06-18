@@ -270,7 +270,7 @@ void MotionCompensation(const MapBuilder::PointCloudPtr& raw_cloud,
         transform.block(0, 3, 3, 1);
 
     const Eigen::Vector3d new_point_current =
-        delta_transform.block(0, 0, 3, 3).inverse() *
+        delta_transform.block(0, 0, 3, 3).transpose() *
         (new_point_start - delta_transform.block(0, 3, 3, 1));
     MapBuilder::PointType new_point;
     new_point.x = new_point_current[0];
@@ -326,6 +326,7 @@ void MapBuilder::ScanMatchProcessing() {
       target_cloud = source_cloud;
       continue;
     }
+
     Pose3d pose_source = pose_target;
     if (extrapolator_) {
       pose_source = extrapolator_->ExtrapolatePose(source_time);
@@ -335,6 +336,9 @@ void MapBuilder::ScanMatchProcessing() {
     common::NormalizeRotation(guess);
 
     // motion compensation using guess
+    // still in test
+    // scan_matcher_->DisableInnerCompensation();
+
     scan_matcher_->SetInputTarget(target_cloud);
     if (options_.front_end_options.motion_compensation_options.enable &&
         options_.front_end_options.motion_compensation_options.use_average) {
@@ -349,7 +353,9 @@ void MapBuilder::ScanMatchProcessing() {
     {
       REGISTER_BLOCK("scan match");
       scan_matcher_->Align(guess, align_result);
+      // std::cout << scan_matcher_->GetFitnessScore() << std::endl;
     }
+    // common::PrintTransform(align_result);
 
     if (options_.front_end_options.motion_compensation_options.enable) {
       Eigen::Matrix4d average_transform = align_result;
@@ -419,7 +425,6 @@ void MapBuilder::SubmapPairMatch(const int source_index,
   std::shared_ptr<Submap<PointType>> target_submap, source_submap;
   target_submap = current_trajectory_->at(target_index);
   source_submap = current_trajectory_->at(source_index);
-  // target_submap->ClearCloudInFrames();
 
   // init back end(submap to submap matcher)
   std::shared_ptr<registrator::Interface<PointType>> matcher;
@@ -441,7 +446,6 @@ void MapBuilder::SubmapPairMatch(const int source_index,
   matcher->Align(guess, result);
   common::NormalizeRotation(result);
   double submap_match_score = matcher->GetFitnessScore();
-  // PRINT_DEBUG_FMT("submap match score: %lf", submap_match_score);
   source_submap->match_score_to_previous_submap_ = submap_match_score;
   if (submap_match_score >=
       options_.back_end_options.submap_matcher_options.accepted_min_score) {

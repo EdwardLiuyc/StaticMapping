@@ -90,6 +90,10 @@ class Interface {
 
   void InitInnerFiltersWithXml(const pugi::xml_node& node);
 
+  void EnableInnerCompensation();
+
+  void DisableInnerCompensation();
+
   virtual void InitWithOptions() {}
 
   void PrintOptions();
@@ -108,7 +112,19 @@ class Interface {
   PointCloudSourcePtr source_cloud_ = nullptr;
   PointCloudTargetPtr target_cloud_ = nullptr;
   std::unordered_map<std::string, InnerOptionItem> inner_options_;
+
+  bool inner_compensation_ = false;
 };
+
+template <typename PointType>
+void Interface<PointType>::EnableInnerCompensation() {
+  inner_compensation_ = true;
+}
+
+template <typename PointType>
+void Interface<PointType>::DisableInnerCompensation() {
+  inner_compensation_ = false;
+}
 
 template <typename PointType>
 void Interface<PointType>::SetInputSource(

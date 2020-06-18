@@ -173,6 +173,8 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - **mapping using kitti data**
 - **using docker to run**
 - seperate map_builder class into several smaller classes
+- preprocessor: remove points under the ground
+- Fix bug for bool parameters of registrators
 - more robust normal estimate for fast icp
 - use glog or other logging lib instead of print macro
 - complete the offset for enu coordinate system

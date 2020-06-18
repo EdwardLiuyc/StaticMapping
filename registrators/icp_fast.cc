@@ -48,24 +48,46 @@ using OutlierWeights = Matrix;
 struct BuildData {
   std::vector<int> indices;
   std::vector<int> indices_to_keep;
+  std::vector<double> factors;
   Matrix points;
   Matrix normals;
 
   template <typename PointType>
   void FromPointCloud(const typename pcl::PointCloud<PointType>::Ptr& cloud) {
-    CHECK(cloud);
+    CHECK(cloud && !cloud->empty());
 
     const int size = cloud->size();
     indices.resize(size);
+    factors.resize(size);
     points.resize(kDim, size);
     normals.resize(kDim, size);
     for (int i = 0; i < size; ++i) {
       indices[i] = i;
+      factors[i] = static_cast<double>(i) / size;
       points.col(i) << cloud->points[i].x, cloud->points[i].y,
           cloud->points[i].z;
     }
   }
 };
+
+void MotionCompensation(const Eigen::Matrix4d& delta_transform,
+                        BuildData* const in_output_cloud) {
+  const size_t cloud_size = in_output_cloud->points.cols();
+  CHECK_EQ(cloud_size, in_output_cloud->factors.size());
+
+  for (size_t i = 0; i < cloud_size; ++i) {
+    const Eigen::Matrix4d transform = common::InterpolateTransform(
+        Eigen::Matrix4d::Identity().eval(), delta_transform,
+        in_output_cloud->factors[i]);
+
+    const Eigen::Vector3d new_point_start =
+        transform.block(0, 0, 3, 3) *
+            in_output_cloud->points.col(i).topRows(3) +
+        transform.block(0, 3, 3, 1);
+
+    in_output_cloud->points.col(i).topRows(3) = new_point_start;
+  }
+}
 
 struct Matches {
   //!< Squared distances to closest points, dense matrix
@@ -122,20 +144,21 @@ struct ErrorElements {
 
   ErrorElements();
   ErrorElements(const BuildData& source_points, const BuildData& target_points,
-                const OutlierWeights& outlierWeights, const Matches& matches) {
+                const OutlierWeights& weights, const Matches& matches) {
     CHECK_GT(matches.ids.rows(), 0);
     CHECK_GT(matches.ids.cols(), 0);
     CHECK(matches.ids.cols() == source_points.points.cols());  // nbpts
-    CHECK(outlierWeights.rows() == matches.ids.rows());        // knn
+    CHECK(weights.rows() == matches.ids.rows());               // knn
 
-    const int knn = outlierWeights.rows();
+    const int knn = weights.rows();
     const int dimPoints = source_points.points.rows();
 
     // Count points with no weights
-    const int pointsCount = (outlierWeights.array() != 0.0).count();
+    const int pointsCount = (weights.array() != 0.0).count();
     CHECK_GT(pointsCount, 0) << "no point to minimize";
 
     Matrix keptPoints(dimPoints, pointsCount);
+    std::vector<double> kept_points_factor(pointsCount);
     Matches keptMatches(1, pointsCount);
     OutlierWeights keptWeights(1, pointsCount);
 
@@ -153,13 +176,14 @@ struct ErrorElements {
           continue;
         }
 
-        if (outlierWeights(k, i) != 0.0) {
+        if (weights(k, i) != 0.0) {
           keptPoints.col(j) = source_points.points.col(i);
+          kept_points_factor[j] = source_points.factors[i];
           keptMatches.ids(0, j) = matches.ids(k, i);
           keptMatches.dists(0, j) = matchDist;
-          keptWeights(0, j) = outlierWeights(k, i);
+          keptWeights(0, j) = weights(k, i);
           ++j;
-          this->weightedPointUsedRatio += outlierWeights(k, i);
+          this->weightedPointUsedRatio += weights(k, i);
           matchExist = true;
         } else {
           rejectedMatchCount++;
@@ -199,6 +223,7 @@ struct ErrorElements {
 
     // Copy final data to structure
     reading.points = keptPoints;
+    reading.factors = std::move(kept_points_factor);
     reference.points = associatedPoints;
     reference.normals = associated_target_normals;
 
@@ -336,35 +361,23 @@ Matches FindClosests(const std::shared_ptr<NNS>& nns_kdtree,
 
 Eigen::MatrixXd CrossProduct(const Eigen::MatrixXd& A,
                              const Eigen::MatrixXd& B) {
-  // Note: A = [x, y, z, 1] and B = [x, y, z] for convenience
-
   // Expecting matched points
-  assert(A.cols() == B.cols());
+  CHECK_EQ(A.cols(), B.cols());
   // Expecting homogenous coord X eucl. coord
-  assert(A.rows() - 1 == B.rows());
-  // Expecting homogenous coordinates
-  assert(A.rows() == 4 || A.rows() == 3);
+  CHECK_EQ(A.rows(), B.rows());
 
-  const unsigned int x = 0;
-  const unsigned int y = 1;
-  const unsigned int z = 2;
+  constexpr unsigned int x = 0;
+  constexpr unsigned int y = 1;
+  constexpr unsigned int z = 2;
 
-  Eigen::MatrixXd cross;
-  if (A.rows() == 4) {
-    cross = Eigen::MatrixXd(B.rows(), B.cols());
+  Eigen::MatrixXd cross(B.rows(), B.cols());
+  cross.row(x) =
+      A.row(y).array() * B.row(z).array() - A.row(z).array() * B.row(y).array();
+  cross.row(y) =
+      A.row(z).array() * B.row(x).array() - A.row(x).array() * B.row(z).array();
+  cross.row(z) =
+      A.row(x).array() * B.row(y).array() - A.row(y).array() * B.row(x).array();
 
-    cross.row(x) = A.row(y).array() * B.row(z).array() -
-                   A.row(z).array() * B.row(y).array();
-    cross.row(y) = A.row(z).array() * B.row(x).array() -
-                   A.row(x).array() * B.row(z).array();
-    cross.row(z) = A.row(x).array() * B.row(y).array() -
-                   A.row(y).array() * B.row(x).array();
-  } else {
-    // pseudo-cross product for 2D vectors
-    cross = Eigen::VectorXd(B.cols());
-    cross = A.row(x).array() * B.row(y).array() -
-            A.row(y).array() * B.row(x).array();
-  }
   return cross;
 }
 
@@ -429,19 +442,15 @@ void SolvePossiblyUnderdeterminedLinearSystem(const Matrix& A, const Vector& b,
 Eigen::Matrix4d ComputePointToPlane(const BuildData& source_cloud,
                                     const BuildData& target_cloud,
                                     const Eigen::MatrixXd& weights,
-                                    const Matches& matches) {
+                                    const Matches& matches,
+                                    bool compensation = false) {
   const Eigen::MatrixXd target_normals = target_cloud.normals;
   CHECK_EQ(target_normals.rows(), kDim);
   CHECK_EQ(target_normals.cols(), target_cloud.points.cols());
   CHECK_EQ(source_cloud.points.cols(), target_cloud.points.cols());
 
-  const int source_points_count = source_cloud.points.cols();
-
   // Compute cross product of cross = cross(reading X target_normals)
-  Matrix homo_source_points(4, source_points_count);
-  homo_source_points.setConstant(1.);
-  homo_source_points.block(0, 0, 3, source_points_count) = source_cloud.points;
-  const Matrix cross = CrossProduct(homo_source_points, target_normals);
+  const Matrix cross = CrossProduct(source_cloud.points, target_normals);
 
   // wF = [weights*cross, weights*normals]
   // F  = [cross, normals]
@@ -455,6 +464,13 @@ Eigen::Matrix4d ComputePointToPlane(const BuildData& source_cloud,
   for (int i = 0; i < target_normals.rows(); i++) {
     wF.row(i + cross.rows()) = weights.array() * target_normals.row(i).array();
     F.row(i + cross.rows()) = target_normals.row(i);
+  }
+
+  if (compensation) {
+    for (int i = 0; i < target_normals.cols(); ++i) {
+      wF.col(i) *= source_cloud.factors[i];
+      F.col(i) *= source_cloud.factors[i];
+    }
   }
 
   // Unadjust covariance A = wF * F'
@@ -687,7 +703,11 @@ bool IcpFast<PointT>::Align(const Eigen::Matrix4d& guess,
   while (true) {
     // step1 Find Closest points
     BuildData step_cloud(init_source_cloud);
-    TransformData(&step_cloud, T_iter);
+    if (this->inner_compensation_) {
+      MotionCompensation(T_iter, &step_cloud);
+    } else {
+      TransformData(&step_cloud, T_iter);
+    }
 
     const Matches matches(FindClosests(nns_kdtree_, step_cloud));
 
@@ -704,7 +724,8 @@ bool IcpFast<PointT>::Align(const Eigen::Matrix4d& guess,
 
     T_iter =
         ComputePointToPlane(error_elements.reading, error_elements.reference,
-                            error_elements.weights, error_elements.matches) *
+                            error_elements.weights, error_elements.matches,
+                            this->inner_compensation_) *
         T_iter;
 
     // step4 check convergence and jump out

@@ -9,3 +9,5 @@ pkgs/*
 doc/html/*
 doc/latex/*
 *mondeo*
+mapping_test.sh
+urdf/test_ran.urdf
