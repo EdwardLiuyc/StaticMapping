@@ -504,6 +504,57 @@ Eigen::Matrix4d ComputePointToPlane(const BuildData& source_cloud,
   return mOut;
 }
 
+Eigen::Matrix4d ComputePointToPoint(BuildData& source_cloud,  // NOLINT
+                                    BuildData& target_cloud,  // NOLINT
+                                    const Eigen::MatrixXd& weights,
+                                    const Matches& matches) {
+  CHECK_EQ(source_cloud.points.cols(), target_cloud.points.cols());
+
+  // const int dimCount(mPts.reading.features.rows());
+  // const int ptsCount(mPts.reading.features.cols()); //Both point clouds have
+  // now the same number of (matched) point
+
+  const Vector w = weights.row(0);
+  const double w_sum_inv = 1. / w.sum();
+  const Vector meanReading =
+      (source_cloud.points.array().rowwise() * w.array().transpose())
+          .rowwise()
+          .sum() *
+      w_sum_inv;
+  const Vector meanReference =
+      (target_cloud.points.array().rowwise() * w.array().transpose())
+          .rowwise()
+          .sum() *
+      w_sum_inv;
+
+  // Remove the mean from the point clouds
+  source_cloud.points.colwise() -= meanReading;
+  target_cloud.points.colwise() -= meanReference;
+
+  // Singular Value Decomposition
+  const Matrix m(target_cloud.points * w.asDiagonal() *
+                 source_cloud.points.transpose());
+  const Eigen::JacobiSVD<Matrix> svd(m,
+                                     Eigen::ComputeThinU | Eigen::ComputeThinV);
+  Matrix rotMatrix(svd.matrixU() * svd.matrixV().transpose());
+  // It is possible to get a reflection instead of a rotation. In this case, we
+  // take the second best solution, guaranteed to be a rotation. For more
+  // details, read the tech report: "Least-Squares Rigid Motion Using SVD", Olga
+  // Sorkine http://igl.ethz.ch/projects/ARAP/svd_rot.pdf
+  if (rotMatrix.determinant() < 0.) {
+    Matrix tmpV = svd.matrixV().transpose();
+    tmpV.row(kDim - 1) *= -1.;
+    rotMatrix = svd.matrixU() * tmpV;
+  }
+  const Vector trVector(meanReference - rotMatrix * meanReading);
+
+  Matrix result(Matrix::Identity(4, 4));
+  result.topLeftCorner(kDim, kDim) = rotMatrix;
+  result.topRightCorner(kDim, 1) = trVector;
+
+  return result;
+}
+
 bool CheckConvergence(const std::vector<Eigen::Quaterniond>& rotations,
                       const std::vector<Eigen::Vector3d>& translations) {
   constexpr int kSmoothLength = 4;
