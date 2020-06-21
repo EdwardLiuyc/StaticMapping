@@ -35,9 +35,13 @@ namespace registrator {
 struct BuildData;
 using NNS = Nabo::NearestNeighbourSearch<double>;
 
+// enum class MinimizerFunction : int32_t { kPointToPlane = 0, kPointToPoint = 1
+// };
+
 struct IcpFastOptions {
   int32_t knn_for_normal_estimate = 7;
   int32_t max_iteration = 100;
+  // int32_t minimizer_function = static_cast<int>(kPointToPlane);
   float dist_outlier_ratio = 0.7;
 };
 
