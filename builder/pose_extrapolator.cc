@@ -34,7 +34,8 @@ inline Eigen::Quaterniond Rotation(const PoseExtrapolator::RigidPose3d& pose) {
 }  // namespace
 
 PoseExtrapolator::PoseExtrapolator(const SimpleTime pose_queue_duration,
-                                   double imu_gravity_time_constant)
+                                   double imu_gravity_time_constant,
+                                   PoseExtrapolator::Mode mode)
     : pose_queue_duration_(pose_queue_duration),
       gravity_time_constant_(imu_gravity_time_constant),
       cached_extrapolated_pose_{SimpleTime(), RigidPose3d::Identity()} {}
@@ -149,7 +150,7 @@ void PoseExtrapolator::AddOdometryData(const sensors::OdomMsg& odometry_data) {
 PoseExtrapolator::RigidPose3d PoseExtrapolator::ExtrapolatePose(
     const SimpleTime time) {
   common::MutexLocker locker(&mutex_);
-  const TimedPose& newest_timed_pose = timed_pose_queue_.back();
+  const sensors::TimedPose& newest_timed_pose = timed_pose_queue_.back();
   CHECK_GE(time, newest_timed_pose.time);
   if (cached_extrapolated_pose_.time != time) {
     const Eigen::Vector3d translation =
@@ -187,10 +188,9 @@ void PoseExtrapolator::UpdateVelocitiesFromPoses() {
     // We need two poses to estimate velocities.
     return;
   }
-  CHECK(!timed_pose_queue_.empty());
-  const TimedPose& newest_timed_pose = timed_pose_queue_.back();
+  const sensors::TimedPose& newest_timed_pose = timed_pose_queue_.back();
   const auto newest_time = newest_timed_pose.time;
-  const TimedPose& oldest_timed_pose = timed_pose_queue_.front();
+  const sensors::TimedPose& oldest_timed_pose = timed_pose_queue_.front();
   const auto oldest_time = oldest_timed_pose.time;
   const double queue_delta = (newest_time - oldest_time).toSec();
   if (queue_delta < pose_queue_duration_.toSec()) {
@@ -263,7 +263,7 @@ Eigen::Quaterniond PoseExtrapolator::ExtrapolateRotation(
 }
 
 Eigen::Vector3d PoseExtrapolator::ExtrapolateTranslation(SimpleTime time) {
-  const TimedPose& newest_timed_pose = timed_pose_queue_.back();
+  const sensors::TimedPose& newest_timed_pose = timed_pose_queue_.back();
   const double extrapolation_delta = (time - newest_timed_pose.time).toSec();
   if (odometry_data_.size() < 2) {
     return extrapolation_delta * linear_velocity_from_poses_;
