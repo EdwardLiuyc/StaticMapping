@@ -21,8 +21,9 @@
 // SOFTWARE.
 
 #include "builder/pose_extrapolator.h"
+
 #include <algorithm>
-#include "common/make_unique.h"
+#include <memory>
 
 namespace static_map {
 
@@ -41,10 +42,10 @@ PoseExtrapolator::PoseExtrapolator(const SimpleTime pose_queue_duration,
 std::unique_ptr<PoseExtrapolator> PoseExtrapolator::InitializeWithImu(
     const SimpleTime pose_queue_duration,
     const double imu_gravity_time_constant, const sensors::ImuMsg& imu_data) {
-  auto extrapolator = common::make_unique<PoseExtrapolator>(
+  auto extrapolator = std::make_unique<PoseExtrapolator>(
       pose_queue_duration, imu_gravity_time_constant);
   extrapolator->AddImuData(imu_data);
-  extrapolator->imu_tracker_ = common::make_unique<ImuTracker>(
+  extrapolator->imu_tracker_ = std::make_unique<ImuTracker>(
       imu_gravity_time_constant, imu_data.header.stamp);
   extrapolator->imu_tracker_->AddImuLinearAccelerationObservation(
       imu_data.linear_acceleration);
@@ -83,7 +84,7 @@ void PoseExtrapolator::AddPose(const SimpleTime time, const RigidPose3d& pose) {
       tracker_start = std::min(tracker_start, imu_data_.front().header.stamp);
     }
     imu_tracker_ =
-        common::make_unique<ImuTracker>(gravity_time_constant_, tracker_start);
+        std::make_unique<ImuTracker>(gravity_time_constant_, tracker_start);
   }
   timed_pose_queue_.emplace_back(time, pose);
   while (timed_pose_queue_.size() > 2 &&
@@ -94,8 +95,8 @@ void PoseExtrapolator::AddPose(const SimpleTime time, const RigidPose3d& pose) {
   AdvanceImuTracker(time, imu_tracker_.get());
   TrimImuData();
   TrimOdometryData();
-  odometry_imu_tracker_ = common::make_unique<ImuTracker>(*imu_tracker_);
-  extrapolation_imu_tracker_ = common::make_unique<ImuTracker>(*imu_tracker_);
+  odometry_imu_tracker_ = std::make_unique<ImuTracker>(*imu_tracker_);
+  extrapolation_imu_tracker_ = std::make_unique<ImuTracker>(*imu_tracker_);
 }
 
 void PoseExtrapolator::AddImuData(const sensors::ImuMsg& imu_data) {

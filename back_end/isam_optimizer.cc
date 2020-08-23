@@ -27,12 +27,12 @@
 #include <gtsam/slam/expressions.h>
 
 #include <algorithm>
+#include <memory>
 #include <vector>
 
 // local
 #include "back_end/isam_optimizer.h"
 #include "back_end/loop_detector.h"
-#include "common/make_unique.h"
 #include "common/math.h"
 
 namespace static_map {

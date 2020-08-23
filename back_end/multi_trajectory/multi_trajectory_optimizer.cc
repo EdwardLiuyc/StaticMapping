@@ -20,11 +20,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-// third party
-#include <gtsam/slam/expressions.h>
-// local
 #include "back_end/multi_trajectory_optimizer.h"
-#include "common/make_unique.h"
+
+#include <memory>
+
+// third party
+#include "gtsam/slam/expressions.h"
 
 namespace static_map {
 namespace back_end {
@@ -59,7 +60,7 @@ MultiTrajectoryOptimizer<PointT>::MultiTrajectoryOptimizer(
   gtsam::ISAM2Params parameters;
   parameters.relinearizeThreshold = 0.01;
   parameters.relinearizeSkip = 1;
-  isam_ = common::make_unique<gtsam::ISAM2>(parameters);
+  isam_ = std::make_unique<gtsam::ISAM2>(parameters);
 
   // init several noise models
   prior_noise_model_ = NM::Diagonal::Sigmas(

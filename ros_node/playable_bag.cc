@@ -20,11 +20,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#include "ros_node/playable_bag.h"
+
+#include <memory>
 #include <utility>
 
-#include "common/make_unique.h"
 #include "glog/logging.h"
-#include "ros_node/playable_bag.h"
 #include "tf2_msgs/TFMessage.h"
 
 namespace static_map_ros {
@@ -32,10 +33,8 @@ namespace static_map_ros {
 PlayableBag::PlayableBag(const std::string& bag_filename,
                          const ros::Time start_time, const ros::Time end_time,
                          const ros::Duration buffer_delay)
-    : bag_(static_map::common::make_unique<rosbag::Bag>(bag_filename,
-                                                        rosbag::bagmode::Read)),
-      view_(static_map::common::make_unique<rosbag::View>(*bag_, start_time,
-                                                          end_time)),
+    : bag_(std::make_unique<rosbag::Bag>(bag_filename, rosbag::bagmode::Read)),
+      view_(std::make_unique<rosbag::View>(*bag_, start_time, end_time)),
       view_iterator_(view_->begin()),
       finished_(false),
       bag_filename_(bag_filename),

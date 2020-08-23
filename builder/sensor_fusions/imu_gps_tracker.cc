@@ -21,8 +21,10 @@
 // SOFTWARE.
 
 #include "builder/sensor_fusions/imu_gps_tracker.h"
+
+#include <memory>
+
 #include "builder/sensors.h"
-#include "common/make_unique.h"
 
 namespace static_map {
 namespace sensor_fusions {
@@ -60,7 +62,7 @@ ImuGpsTracker::ImuGpsTracker(const double imu_gravity_time_constant,
 
   auto param = gtsam::PreintegratedCombinedMeasurements::Params::MakeSharedU(
       imu_gravity_time_constant);
-  imu_preintegrated_ = common::make_unique<gtsam::PreintegratedImuMeasurements>(
+  imu_preintegrated_ = std::make_unique<gtsam::PreintegratedImuMeasurements>(
       param, prior_imu_bias);
 }
 
