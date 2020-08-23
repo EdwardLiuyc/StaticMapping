@@ -22,6 +22,7 @@
 
 #include <atomic>
 #include <chrono>
+#include <memory>
 #include <utility>
 
 // pcl
@@ -34,7 +35,6 @@
 #include "builder/data_collector.h"
 #include "builder/map_builder.h"
 #include "common/macro_defines.h"
-#include "common/make_unique.h"
 #include "common/performance/simple_prof.h"
 #include "common/pugixml.hpp"
 #include "descriptor/m2dp.h"
@@ -78,7 +78,7 @@ int MapBuilder::InitialiseInside() {
   DataCollectorOptions data_collector_options;
   data_collector_options.accumulate_cloud_num =
       options_.front_end_options.accumulate_cloud_num;
-  data_collector_ = common::make_unique<DataCollector<PointType>>(
+  data_collector_ = std::make_unique<DataCollector<PointType>>(
       data_collector_options, &filter_factory_);
 
 #ifdef _USE_TBB_
@@ -98,12 +98,12 @@ int MapBuilder::InitialiseInside() {
   AddNewTrajectory();
 
   PRINT_INFO("Init threads.");
-  scan_match_thread_ = common::make_unique<std::thread>(
+  scan_match_thread_ = std::make_unique<std::thread>(
       std::bind(&MapBuilder::ScanMatchProcessing, this));
   while (!scan_match_thread_running_.load()) {
     SimpleTime::from_sec(0.01).sleep();
   }
-  submap_thread_ = common::make_unique<std::thread>(
+  submap_thread_ = std::make_unique<std::thread>(
       std::bind(&MapBuilder::SubmapProcessing, this));
 
   PRINT_INFO("Init finished.");

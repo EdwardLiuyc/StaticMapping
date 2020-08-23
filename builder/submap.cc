@@ -20,9 +20,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include "builder/submap.h"
+#include <memory>
+
 #include "builder/multi_resolution_voxel_map.h"
-#include "common/make_unique.h"
+#include "builder/submap.h"
 #include "common/point_utils.h"
 #include "common/simple_time.h"
 #include "pre_processors/random_sample_with_plane_detect.h"

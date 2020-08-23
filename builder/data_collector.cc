@@ -20,11 +20,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#include <memory>
 #include <utility>
 
 #include "builder/data_collector.h"
 #include "common/macro_defines.h"
-#include "common/make_unique.h"
 #include "common/math.h"
 #include "common/performance/simple_prof.h"
 #include "glog/logging.h"
@@ -290,7 +290,7 @@ std::unique_ptr<Eigen::Vector3d> DataCollector<PointT>::InterpolateGps(
       if (std::fabs(time.toSec() - gps_data_[0].time.toSec()) <=
               time_threshold &&
           gps_data_[0].status_fixed) {
-        return common::make_unique<Eigen::Vector3d>(gps_data_[0].enu_position);
+        return std::make_unique<Eigen::Vector3d>(gps_data_[0].enu_position);
       } else {
         PRINT_WARNING("the only data is not good.");
         return nullptr;
@@ -326,7 +326,7 @@ std::unique_ptr<Eigen::Vector3d> DataCollector<PointT>::InterpolateGps(
   CHECK(factor >= 0. && factor <= 1.);
   const Eigen::Vector3d delta =
       factor * (latter_data.enu_position - former_data.enu_position);
-  return common::make_unique<Eigen::Vector3d>(former_data.enu_position + delta);
+  return std::make_unique<Eigen::Vector3d>(former_data.enu_position + delta);
 }
 
 template <typename PointT>
@@ -345,7 +345,7 @@ std::unique_ptr<Eigen::Matrix4d> DataCollector<PointT>::InterpolateOdom(
       // size == 1
       if (std::fabs(time.toSec() - odom_data_[0].time.toSec()) <=
           time_threshold) {
-        return common::make_unique<Eigen::Matrix4d>(odom_data_[0].pose);
+        return std::make_unique<Eigen::Matrix4d>(odom_data_[0].pose);
       } else {
         PRINT_WARNING("the only data is not good.");
         return nullptr;
@@ -378,7 +378,7 @@ std::unique_ptr<Eigen::Matrix4d> DataCollector<PointT>::InterpolateOdom(
   // interpolate the data for more accurate odom data
   const Eigen::Matrix4d pose =
       common::InterpolateTransform(former_data.pose, latter_data.pose, factor);
-  return common::make_unique<Eigen::Matrix4d>(pose);
+  return std::make_unique<Eigen::Matrix4d>(pose);
 }
 
 template <typename PointT>
