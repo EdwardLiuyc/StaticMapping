@@ -81,6 +81,9 @@ int MapBuilder::InitialiseInside() {
   data_collector_ = std::make_unique<DataCollector<PointType>>(
       data_collector_options, &filter_factory_);
 
+  simple_extrapolator_.reset(
+      new SimplePoseExtrapolator(SimpleTime::from_sec(0.25)));
+
 #ifdef _USE_TBB_
   PRINT_INFO("Enable TBB.");
 #endif
@@ -334,6 +337,9 @@ void MapBuilder::ScanMatchProcessing() {
         target_cloud = source_cloud;
         history_cloud = target_cloud;
         InsertFrameForSubmap(source_cloud, Eigen::Matrix4d::Identity(), 1.);
+
+        simple_extrapolator_->AddPose(ToLocalTime(source_cloud->header.stamp),
+                                      Eigen::Matrix4d::Identity());
         continue;
       }
     } else {
@@ -351,9 +357,11 @@ void MapBuilder::ScanMatchProcessing() {
       continue;
     }
     Pose3d pose_source = pose_target;
-    if (extrapolator_) {
-      pose_source = extrapolator_->ExtrapolatePose(source_time);
-    }
+    // if (extrapolator_) {
+    //   pose_source = extrapolator_->ExtrapolatePose(source_time);
+    // }
+    pose_source = simple_extrapolator_->ExtrapolatePose(source_time);
+
     Pose3d guess = pose_target.inverse() * pose_source;
     common::NormalizeRotation(guess);
 
@@ -394,6 +402,7 @@ void MapBuilder::ScanMatchProcessing() {
     if (extrapolator_) {
       extrapolator_->AddPose(source_time, pose_source);
     }
+    simple_extrapolator_->AddPose(source_time, pose_source);
     // const Eigen::Quaterniond gravity_alignment =
     //     extrapolator_->EstimateGravityOrientation(source_time);
     const float accu_translation =

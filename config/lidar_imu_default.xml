@@ -62,7 +62,7 @@
           0: normal type
           1: imu in ins(combined imu) -->
       <imu_options 
-        use_imu="true"
+        use_imu="false"
         imu_frequency="200"
         type="0"
         gravity_constant="9.8" />
@@ -106,7 +106,7 @@
     </back_end_options>
     <output_mrvm_settings
       output_average="false"
-      output_rgb="true"
+      output_rgb="false"
       prob_threshold="0.57" 
       low_resolution="1." 
       high_resolution="0.1"

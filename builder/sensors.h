@@ -178,6 +178,14 @@ struct GpsEnuMsg {
   Eigen::Vector3d ToMatrix() { return Eigen::Vector3d(x, y, z); }
 };
 
+struct TimedPose {
+  TimedPose() {}
+  TimedPose(const SimpleTime &t, const Eigen::Matrix4d &p) : time(t), pose(p) {}
+  SimpleTime time;
+  Eigen::Matrix4d pose;
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+};
+
 }  // namespace sensors
 }  // namespace static_map
 

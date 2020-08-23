@@ -25,6 +25,7 @@
 
 #include <deque>
 #include <memory>
+
 #include "Eigen/Eigen"
 #include "builder/imu_tracker.h"
 #include "builder/sensors.h"
@@ -38,8 +39,14 @@ class PoseExtrapolator {
  public:
   using RigidPose3d = Eigen::Matrix4d;
 
+  enum class Mode : uint8_t {
+    kDefault,  // Using imu
+    kSimpleCVRV
+  };
+
   explicit PoseExtrapolator(SimpleTime pose_queue_duration,
-                            double imu_gravity_time_constant);
+                            double imu_gravity_time_constant,
+                            Mode mode = Mode::kDefault);
 
   PoseExtrapolator(const PoseExtrapolator&) = delete;
   PoseExtrapolator& operator=(const PoseExtrapolator&) = delete;
@@ -81,14 +88,8 @@ class PoseExtrapolator {
 
   common::Mutex mutex_;
   const SimpleTime pose_queue_duration_;
-  struct TimedPose {
-    TimedPose() {}
-    TimedPose(const SimpleTime& t, const RigidPose3d& p) : time(t), pose(p) {}
-    SimpleTime time;
-    RigidPose3d pose;
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-  };
-  std::deque<TimedPose> timed_pose_queue_;
+
+  std::deque<sensors::TimedPose> timed_pose_queue_;
   Eigen::Vector3d linear_velocity_from_poses_ = Eigen::Vector3d::Zero();
   Eigen::Vector3d angular_velocity_from_poses_ = Eigen::Vector3d::Zero();
 
@@ -97,7 +98,7 @@ class PoseExtrapolator {
   std::unique_ptr<ImuTracker> imu_tracker_;
   std::unique_ptr<ImuTracker> odometry_imu_tracker_;
   std::unique_ptr<ImuTracker> extrapolation_imu_tracker_;
-  TimedPose cached_extrapolated_pose_;
+  sensors::TimedPose cached_extrapolated_pose_;
 
   std::deque<sensors::OdomMsg> odometry_data_;
   Eigen::Vector3d linear_velocity_from_odometry_ = Eigen::Vector3d::Zero();
