@@ -42,8 +42,9 @@
 namespace static_map {
 
 namespace {
-constexpr int kOdomMsgMaxSize = 10000;
+constexpr int kOdomMsgMaxSize = 100;
 constexpr int kSubmapResSize = 100;
+constexpr double kExpolatorMinDuration = 0.001;  // second
 }  // namespace
 
 MapBuilder::MapBuilder()
@@ -65,6 +66,9 @@ int MapBuilder::InitialiseInside() {
   use_imu_ = options_.front_end_options.imu_options.enabled;
   if (use_imu_) {
     CHECK_GT(options_.front_end_options.imu_options.frequency, 1.e-6);
+  } else {
+    extrapolator_ = PoseExtrapolator::InitialSimpleCTRV(
+        SimpleTime::from_sec(kExpolatorMinDuration));
   }
 
   PRINT_INFO("Init isam optimizer.");
@@ -80,9 +84,6 @@ int MapBuilder::InitialiseInside() {
       options_.front_end_options.accumulate_cloud_num;
   data_collector_ = std::make_unique<DataCollector<PointType>>(
       data_collector_options, &filter_factory_);
-
-  simple_extrapolator_.reset(
-      new SimplePoseExtrapolator(SimpleTime::from_sec(0.25)));
 
 #ifdef _USE_TBB_
   PRINT_INFO("Enable TBB.");
@@ -184,7 +185,7 @@ void MapBuilder::InsertImuMsg(const sensors::ImuMsg::Ptr& imu_msg) {
 
   if (!extrapolator_) {
     extrapolator_ = PoseExtrapolator::InitializeWithImu(
-        SimpleTime::from_sec(0.001),
+        SimpleTime::from_sec(kExpolatorMinDuration),
         options_.front_end_options.imu_options.gravity_constant, *imu_msg);
   } else {
     extrapolator_->AddImuData(*imu_msg);
@@ -215,19 +216,6 @@ void MapBuilder::InsertOdomMsg(const sensors::OdomMsg::Ptr& odom_msg) {
     odom_msgs_.push_back(odom_msg);
   }
   data_collector_->AddSensorData(*odom_msg);
-
-  // common::PrintTransform(odom_msg->PoseInMatrix());
-
-  // static bool warned = false;
-  // if (extrapolator_ == nullptr) {
-  //   // Until we've initialized the extrapolator we cannot add odometry data.
-  //   if (!warned) {
-  //     PRINT_WARNING("Extrapolator not yet initialized.");
-  //     warned = true;
-  //   }
-  //   return;
-  // }
-  // extrapolator_->AddOdometryData(*odom_msg);
 }
 
 void MapBuilder::InsertGpsMsg(const sensors::NavSatFixMsg::Ptr& gps_msg) {
@@ -338,8 +326,10 @@ void MapBuilder::ScanMatchProcessing() {
         history_cloud = target_cloud;
         InsertFrameForSubmap(source_cloud, Eigen::Matrix4d::Identity(), 1.);
 
-        simple_extrapolator_->AddPose(ToLocalTime(source_cloud->header.stamp),
-                                      Eigen::Matrix4d::Identity());
+        if (extrapolator_) {
+          extrapolator_->AddPose(ToLocalTime(source_cloud->header.stamp),
+                                 Eigen::Matrix4d::Identity());
+        }
         continue;
       }
     } else {
@@ -357,10 +347,9 @@ void MapBuilder::ScanMatchProcessing() {
       continue;
     }
     Pose3d pose_source = pose_target;
-    // if (extrapolator_) {
-    //   pose_source = extrapolator_->ExtrapolatePose(source_time);
-    // }
-    pose_source = simple_extrapolator_->ExtrapolatePose(source_time);
+    if (extrapolator_) {
+      pose_source = extrapolator_->ExtrapolatePose(source_time);
+    }
 
     Pose3d guess = pose_target.inverse() * pose_source;
     common::NormalizeRotation(guess);
@@ -402,7 +391,6 @@ void MapBuilder::ScanMatchProcessing() {
     if (extrapolator_) {
       extrapolator_->AddPose(source_time, pose_source);
     }
-    simple_extrapolator_->AddPose(source_time, pose_source);
     // const Eigen::Quaterniond gravity_alignment =
     //     extrapolator_->EstimateGravityOrientation(source_time);
     const float accu_translation =

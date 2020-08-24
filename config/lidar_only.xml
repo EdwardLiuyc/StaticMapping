@@ -15,7 +15,7 @@
         0 : int
         1 : float  -->
       <filter name="Range" >
-        <param type="1" name="max_range"> 80. </param>
+        <param type="1" name="max_range"> 75. </param>
         <param type="1" name="min_range"> 4.5 </param>
       </filter>
       <filter name="RandomSampler" >
@@ -26,11 +26,9 @@
       <!-- matcher type  
         0: none 
         1: icp using pointmatcher 
-        2: icp using libicp 
         3: ndt&gicp 
-        4: kfpcs(not available now)
-        5: lego loam(in test)
-        6: ndt omp(in test) -->
+        5: ndt (in test)
+        6: fast icp (most recommended) -->
       <scan_matcher_options type="6" >
         <registrator_options type = "6">
           <param name="dist_outlier_ratio"> 0.7 </param>
@@ -70,7 +68,7 @@
         type="0"
         gravity_constant="9.8" />
       <motion_compensation_options 
-        enable="false"
+        enable="true"
         use_average="true" />
     </front_end_options>
     <back_end_options>
@@ -91,7 +89,7 @@
         enable_random_sampleing="false"
         enable_check="false"
         random_sampling_rate="0.5"
-        enable_disk_saving="true"
+        enable_disk_saving="false"
         disk_saving_delay="30"
         saving_name_prefix="s_" />
       <isam_optimizer_options 
@@ -100,24 +98,24 @@
       <loop_detector_setting 
         use_gps="false"
         use_descriptor="true"
-        output_matched_cloud="true"
+        output_matched_cloud="false"
         loop_ignore_threshold="20"
         trying_detect_loop_count="1"
         max_close_loop_distance="18"
         max_close_loop_z_distance="10"
-        m2dp_match_score="0.99"
+        m2dp_match_score="0.98"
         accept_scan_match_score="0.88"
         nearest_history_pos_num="5" />
     </back_end_options>
     <output_mrvm_settings
       output_average="true"
       output_rgb="false"
-      prob_threshold="0.56" 
+      prob_threshold="0.57" 
       low_resolution="1." 
       high_resolution="0.1"
       hit_prob="0.55"
       miss_prob="0.48"
-      z_offset="0"
+      z_offset="0."
       max_point_num_in_cell="10">
     </output_mrvm_settings>
   </static_mapping>
