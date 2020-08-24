@@ -28,6 +28,9 @@
 namespace static_map {
 
 namespace {
+
+constexpr double kDefaultWithImuGravity = 9.8;
+
 inline Eigen::Quaterniond Rotation(const PoseExtrapolator::RigidPose3d& pose) {
   return Eigen::Quaterniond(Eigen::Matrix3d(pose.block(0, 0, 3, 3)));
 }
@@ -36,7 +39,8 @@ inline Eigen::Quaterniond Rotation(const PoseExtrapolator::RigidPose3d& pose) {
 PoseExtrapolator::PoseExtrapolator(const SimpleTime pose_queue_duration,
                                    double imu_gravity_time_constant,
                                    PoseExtrapolator::Mode mode)
-    : pose_queue_duration_(pose_queue_duration),
+    : mode_(mode),
+      pose_queue_duration_(pose_queue_duration),
       gravity_time_constant_(imu_gravity_time_constant),
       cached_extrapolated_pose_{SimpleTime(), RigidPose3d::Identity()} {}
 
@@ -61,6 +65,12 @@ std::unique_ptr<PoseExtrapolator> PoseExtrapolator::InitializeWithImu(
   return extrapolator;
 }
 
+std::unique_ptr<PoseExtrapolator> PoseExtrapolator::InitialSimpleCTRV(
+    const SimpleTime& pose_queue_duration) {
+  return std::make_unique<PoseExtrapolator>(
+      pose_queue_duration, kDefaultWithImuGravity, Mode::kSimpleCTRV);
+}
+
 SimpleTime PoseExtrapolator::GetLastPoseTime() {
   common::MutexLocker locker(&mutex_);
   if (timed_pose_queue_.empty()) {
@@ -79,6 +89,23 @@ SimpleTime PoseExtrapolator::GetLastExtrapolatedTime() {
 
 void PoseExtrapolator::AddPose(const SimpleTime time, const RigidPose3d& pose) {
   common::MutexLocker locker(&mutex_);
+  timed_pose_queue_.emplace_back(time, pose);
+  if (timed_pose_queue_.size() == 1u) {
+    // It's the first pose and the only pose.
+    cached_extrapolated_pose_.time = time;
+    cached_extrapolated_pose_.pose = pose;
+    return;
+  }
+
+  while (timed_pose_queue_.size() > 2 &&
+         timed_pose_queue_[1].time <= time - pose_queue_duration_) {
+    timed_pose_queue_.pop_front();
+  }
+  UpdateVelocitiesFromPoses();
+  if (mode_ == Mode::kSimpleCTRV) {
+    return;
+  }
+
   if (imu_tracker_ == nullptr) {
     SimpleTime tracker_start = time;
     if (!imu_data_.empty()) {
@@ -87,12 +114,6 @@ void PoseExtrapolator::AddPose(const SimpleTime time, const RigidPose3d& pose) {
     imu_tracker_ =
         std::make_unique<ImuTracker>(gravity_time_constant_, tracker_start);
   }
-  timed_pose_queue_.emplace_back(time, pose);
-  while (timed_pose_queue_.size() > 2 &&
-         timed_pose_queue_[1].time <= time - pose_queue_duration_) {
-    timed_pose_queue_.pop_front();
-  }
-  UpdateVelocitiesFromPoses();
   AdvanceImuTracker(time, imu_tracker_.get());
   TrimImuData();
   TrimOdometryData();
@@ -101,6 +122,9 @@ void PoseExtrapolator::AddPose(const SimpleTime time, const RigidPose3d& pose) {
 }
 
 void PoseExtrapolator::AddImuData(const sensors::ImuMsg& imu_data) {
+  if (mode_ == Mode::kSimpleCTRV) {
+    return;
+  }
   common::MutexLocker locker(&mutex_);
   CHECK(timed_pose_queue_.empty() ||
         imu_data.header.stamp >= timed_pose_queue_.back().time);
@@ -109,6 +133,9 @@ void PoseExtrapolator::AddImuData(const sensors::ImuMsg& imu_data) {
 }
 
 void PoseExtrapolator::AddOdometryData(const sensors::OdomMsg& odometry_data) {
+  if (mode_ == Mode::kSimpleCTRV) {
+    return;
+  }
   common::MutexLocker locker(&mutex_);
   CHECK(timed_pose_queue_.empty() ||
         odometry_data.header.stamp >= timed_pose_queue_.back().time);
@@ -256,16 +283,33 @@ void PoseExtrapolator::AdvanceImuTracker(const SimpleTime time,
 
 Eigen::Quaterniond PoseExtrapolator::ExtrapolateRotation(
     const SimpleTime time, ImuTracker* const imu_tracker) const {
-  CHECK_GE(time, imu_tracker->time());
-  AdvanceImuTracker(time, imu_tracker);
-  const Eigen::Quaterniond last_orientation = imu_tracker_->orientation();
-  return last_orientation.inverse() * imu_tracker->orientation();
+  switch (mode_) {
+    case Mode::kDefaultWithImu: {
+      CHECK_GE(time, imu_tracker->time());
+      AdvanceImuTracker(time, imu_tracker);
+      const Eigen::Quaterniond last_orientation = imu_tracker_->orientation();
+      return last_orientation.inverse() * imu_tracker->orientation();
+    }
+    case Mode::kSimpleCTRV: {
+      const sensors::TimedPose& newest_timed_pose = timed_pose_queue_.back();
+      const double extrapolation_delta =
+          (time - newest_timed_pose.time).toSec();
+
+      const Eigen::Vector3d delta_anguler =
+          angular_velocity_from_poses_ * extrapolation_delta;
+      return common::EulerAnglesToQuaternion(delta_anguler);
+    }
+    default:
+      break;
+  }
+  CHECK(false);
+  return Eigen::Quaterniond::Identity();
 }
 
 Eigen::Vector3d PoseExtrapolator::ExtrapolateTranslation(SimpleTime time) {
   const sensors::TimedPose& newest_timed_pose = timed_pose_queue_.back();
   const double extrapolation_delta = (time - newest_timed_pose.time).toSec();
-  if (odometry_data_.size() < 2) {
+  if (mode_ == Mode::kSimpleCTRV || odometry_data_.size() < 2) {
     return extrapolation_delta * linear_velocity_from_poses_;
   }
   return extrapolation_delta * linear_velocity_from_odometry_;

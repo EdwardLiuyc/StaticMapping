@@ -47,7 +47,6 @@
 #include "builder/multi_resolution_voxel_map.h"
 #include "builder/pose_extrapolator.h"
 #include "builder/sensor_fusions/imu_gps_tracker.h"
-#include "builder/simple_pose_extrapolator.h"
 #include "builder/trajectory.h"
 #include "pre_processors/filter_factory.h"
 #include "registrators/interface.h"
@@ -241,7 +240,6 @@ class MapBuilder {
   pre_processers::filter::Factory<PointType> filter_factory_;
   // frond end
   std::unique_ptr<PoseExtrapolator> extrapolator_ = nullptr;
-  std::unique_ptr<SimplePoseExtrapolator> simple_extrapolator_ = nullptr;
   std::shared_ptr<registrator::Interface<PointType>> scan_matcher_ = nullptr;
   std::unique_ptr<std::thread> scan_match_thread_;
   std::vector<std::shared_ptr<Frame<PointType>>> frames_;

@@ -40,20 +40,21 @@ class PoseExtrapolator {
   using RigidPose3d = Eigen::Matrix4d;
 
   enum class Mode : uint8_t {
-    kDefault,  // Using imu
-    kSimpleCVRV
+    // Using IMU (refer to google cartographer)
+    kDefaultWithImu,
+    kSimpleCTRV
   };
 
-  explicit PoseExtrapolator(SimpleTime pose_queue_duration,
-                            double imu_gravity_time_constant,
-                            Mode mode = Mode::kDefault);
-
-  PoseExtrapolator(const PoseExtrapolator&) = delete;
-  PoseExtrapolator& operator=(const PoseExtrapolator&) = delete;
+  PoseExtrapolator(SimpleTime pose_queue_duration,
+                   double imu_gravity_time_constant,
+                   Mode mode = Mode::kDefaultWithImu);
 
   static std::unique_ptr<PoseExtrapolator> InitializeWithImu(
       SimpleTime pose_queue_duration, double imu_gravity_time_constant,
       const sensors::ImuMsg& imu_data);
+
+  static std::unique_ptr<PoseExtrapolator> InitialSimpleCTRV(
+      const SimpleTime& pose_queue_duration);
 
   // Returns the time of the last added pose or Time::min() if no pose was added
   // yet.
@@ -78,6 +79,9 @@ class PoseExtrapolator {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
  private:
+  PoseExtrapolator(const PoseExtrapolator&) = delete;
+  PoseExtrapolator& operator=(const PoseExtrapolator&) = delete;
+
   void UpdateVelocitiesFromPoses();
   void TrimImuData();
   void TrimOdometryData();
@@ -86,7 +90,9 @@ class PoseExtrapolator {
                                          ImuTracker* imu_tracker) const;
   Eigen::Vector3d ExtrapolateTranslation(SimpleTime time);
 
+ private:
   common::Mutex mutex_;
+  const Mode mode_;
   const SimpleTime pose_queue_duration_;
 
   std::deque<sensors::TimedPose> timed_pose_queue_;
