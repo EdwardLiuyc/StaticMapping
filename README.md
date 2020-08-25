@@ -172,6 +172,7 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - **Loop Close factor should be rubust**
 - **mapping using kitti data**
 - **using docker to run**
+- refactor xml_interface with std::unordered_map
 - seperate map_builder class into several smaller classes
 - more robust normal estimate for fast icp
 - use glog or other logging lib instead of print macro
