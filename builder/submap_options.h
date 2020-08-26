@@ -28,11 +28,13 @@
 namespace static_map {
 
 struct SubmapOptions {
+  bool enable_inner_mrvm = false;
   bool enable_inner_multiview_icp = false;
   bool enable_voxel_filter = false;
   bool enable_random_sampleing = false;
   bool enable_check = true;
   float random_sampling_rate = 0.5;
+  float voxel_size = 0.1f;
   int32_t frame_count = 5;
 
   // disk saving function

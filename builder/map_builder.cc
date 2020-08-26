@@ -393,6 +393,7 @@ void MapBuilder::ScanMatchProcessing() {
          accu_angles >= options_.front_end_options.motion_filter.angle_range)) {
       // re-align if nessary
       if (!first_in_accumulate) {
+        REGISTER_BLOCK("another match");
         scan_matcher_->SetInputSource(source_cloud);
         scan_matcher_->SetInputTarget(history_cloud);
         Eigen::Matrix4d tmp_result;
@@ -422,6 +423,7 @@ void MapBuilder::ScanMatchProcessing() {
 
 void MapBuilder::SubmapPairMatch(const int source_index,
                                  const int target_index) {
+  REGISTER_FUNC;
   std::shared_ptr<Submap<PointType>> target_submap, source_submap;
   target_submap = current_trajectory_->at(target_index);
   source_submap = current_trajectory_->at(source_index);
@@ -609,8 +611,6 @@ void MapBuilder::ConnectAllSubmap() {
     PointCloudPtr output_cloud(new PointCloudType);
     const int submaps_size = current_trajectory_->size();
     for (auto& submap : *current_trajectory_) {
-      // PRINT_DEBUG_FMT("submap index: %d / %d", submap->GetId().submap_index,
-      //                 submaps_size - 1);
       std::cout << "submap index: " << submap->GetId().submap_index << " / "
                 << submaps_size - 1 << "\r" << std::flush;
       {
