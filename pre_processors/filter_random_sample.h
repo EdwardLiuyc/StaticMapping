@@ -38,8 +38,7 @@ class RandomSampler : public Interface<PointT> {
   USE_POINTCLOUD;
 
   RandomSampler() : Interface<PointT>(), sampling_rate_(1.) {
-    INIT_INNER_PARAM(Interface<PointT>::kFloatParam, 0, "sampling_rate",
-                     sampling_rate_);
+    INIT_FLOAT_PARAM("sampling_rate", sampling_rate_);
   }
   ~RandomSampler() = default;
   RandomSampler(const RandomSampler&) = delete;

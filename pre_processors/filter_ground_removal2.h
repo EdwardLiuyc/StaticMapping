@@ -107,32 +107,22 @@ class GroundRemoval2 : public Interface<PointT> {
         search_angle_(10.) /* degree */
         ,
         thread_num_(4) {
-    INIT_INNER_PARAM(Interface<PointT>::kFloatParam, 0, "r_max", r_max_);
-    INIT_INNER_PARAM(Interface<PointT>::kFloatParam, 1, "r_min", r_min_);
-    INIT_INNER_PARAM(Interface<PointT>::kFloatParam, 2, "start_ground_height",
-                     start_ground_height_);
-    INIT_INNER_PARAM(Interface<PointT>::kFloatParam, 3, "long_line_threshold",
-                     long_line_threshold_);
-    INIT_INNER_PARAM(Interface<PointT>::kFloatParam, 4, "max_long_line_height",
-                     max_long_line_height_);
-    INIT_INNER_PARAM(Interface<PointT>::kFloatParam, 5, "max_start_height",
-                     max_start_height_);
-    INIT_INNER_PARAM(Interface<PointT>::kFloatParam, 6, "max_error",
-                     max_error_);
-    INIT_INNER_PARAM(Interface<PointT>::kFloatParam, 7, "max_slope",
-                     max_slope_);
-    INIT_INNER_PARAM(Interface<PointT>::kFloatParam, 8, "max_b", max_b_);
-    INIT_INNER_PARAM(Interface<PointT>::kFloatParam, 9, "max_dist_to_line",
-                     max_dist_to_line_);
-    INIT_INNER_PARAM(Interface<PointT>::kFloatParam, 10, "search_angle",
-                     search_angle_);
+    INIT_FLOAT_PARAM("r_max", r_max_);
+    INIT_FLOAT_PARAM("r_min", r_min_);
+    INIT_FLOAT_PARAM("start_ground_height", start_ground_height_);
+    INIT_FLOAT_PARAM("long_line_threshold", long_line_threshold_);
+    INIT_FLOAT_PARAM("max_long_line_height", max_long_line_height_);
+    INIT_FLOAT_PARAM("max_start_height", max_start_height_);
+    INIT_FLOAT_PARAM("max_error", max_error_);
+    INIT_FLOAT_PARAM("max_slope", max_slope_);
+    INIT_FLOAT_PARAM("max_b", max_b_);
+    INIT_FLOAT_PARAM("max_dist_to_line", max_dist_to_line_);
+    INIT_FLOAT_PARAM("search_angle", search_angle_);
 
     // int32_t params
-    INIT_INNER_PARAM(Interface<PointT>::kInt32Param, 0, "bin_num", bin_num_);
-    INIT_INNER_PARAM(Interface<PointT>::kInt32Param, 1, "segment_num",
-                     segment_num_);
-    INIT_INNER_PARAM(Interface<PointT>::kInt32Param, 2, "thread_num",
-                     thread_num_);
+    INIT_INT32_PARAM("bin_num", bin_num_);
+    INIT_INT32_PARAM("segment_num", segment_num_);
+    INIT_INT32_PARAM("thread_num", thread_num_);
   }
   ~GroundRemoval2() {}
 
