@@ -172,7 +172,6 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - **Loop Close factor should be rubust**
 - **mapping using kitti data**
 - **using docker to run**
-- refactor xml_interface with std::unordered_map
 - seperate map_builder class into several smaller classes
 - more robust normal estimate for fast icp
 - use glog or other logging lib instead of print macro
@@ -182,7 +181,6 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - mrvp using cuda or opencl
 - **supporting multi-lidars**
 - perhaps need a brand-new data type for pointcloud 
-- **remove the imu dependency of pose extrapolator**
 - save submap binary data into a special format file not just pointcloud into .pcd
 - save the frame clouds instead of submap clouds
 - filtering the cars directly at the input of the pointclouds

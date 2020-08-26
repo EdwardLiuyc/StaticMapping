@@ -38,10 +38,8 @@ class Range : public Interface<PointT> {
 
   Range() : Interface<PointT>(), min_range_(0.), max_range_(100.) {
     // float params
-    INIT_INNER_PARAM(Interface<PointT>::kFloatParam, 0, "min_range",
-                     min_range_);
-    INIT_INNER_PARAM(Interface<PointT>::kFloatParam, 1, "max_range",
-                     max_range_);
+    INIT_FLOAT_PARAM("min_range", min_range_);
+    INIT_FLOAT_PARAM("max_range", max_range_);
   }
   ~Range() {}
   Range(const Range &) = delete;

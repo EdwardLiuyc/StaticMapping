@@ -78,18 +78,14 @@ class RangeImage : public Interface<PointT> {
     neighbors_.push_back(Index(-1, 0));
 
     // float params
-    INIT_INNER_PARAM(Interface<PointT>::kFloatParam, 0, "top_angle",
-                     top_angle_);
-    INIT_INNER_PARAM(Interface<PointT>::kFloatParam, 1, "btm_angle",
-                     btm_angle_);
-    INIT_INNER_PARAM(Interface<PointT>::kFloatParam, 2, "offset_x", offset_x_);
-    INIT_INNER_PARAM(Interface<PointT>::kFloatParam, 3, "offset_y", offset_y_);
-    INIT_INNER_PARAM(Interface<PointT>::kFloatParam, 4, "offset_z", offset_z_);
+    INIT_FLOAT_PARAM("top_angle", top_angle_);
+    INIT_FLOAT_PARAM("btm_angle", btm_angle_);
+    INIT_FLOAT_PARAM("offset_x", offset_x_);
+    INIT_FLOAT_PARAM("offset_y", offset_y_);
+    INIT_FLOAT_PARAM("offset_z", offset_z_);
     // int32_t params
-    INIT_INNER_PARAM(Interface<PointT>::kInt32Param, 0, "vertical_line_num",
-                     vertical_line_num_);
-    INIT_INNER_PARAM(Interface<PointT>::kInt32Param, 1, "horizontal_line_num",
-                     horizontal_line_num_);
+    INIT_INT32_PARAM("vertical_line_num", vertical_line_num_);
+    INIT_INT32_PARAM("horizontal_line_num", horizontal_line_num_);
   }
   ~RangeImage() {}
   RangeImage(const RangeImage &) = delete;

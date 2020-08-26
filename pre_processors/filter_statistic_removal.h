@@ -38,10 +38,9 @@ class StatisticRemoval : public Interface<PointT> {
 
   StatisticRemoval() : Interface<PointT>(), point_num_meank_(30), std_mul_(1.) {
     // float params
-    INIT_INNER_PARAM(Interface<PointT>::kFloatParam, 0, "std_mul", std_mul_);
+    INIT_FLOAT_PARAM("std_mul", std_mul_);
     // int32_t params
-    INIT_INNER_PARAM(Interface<PointT>::kInt32Param, 0, "point_num_meank",
-                     point_num_meank_);
+    INIT_INT32_PARAM("point_num_meank", point_num_meank_);
   }
   ~StatisticRemoval() {}
   StatisticRemoval(const StatisticRemoval &) = delete;

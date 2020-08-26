@@ -41,10 +41,9 @@ class AxisRange : public Interface<PointT> {
   USE_POINTCLOUD;
 
   AxisRange() : Interface<PointT>(), axis_index_(2) {
-    INIT_INNER_PARAM(Interface<PointT>::kFloatParam, 0, "min", min_);
-    INIT_INNER_PARAM(Interface<PointT>::kFloatParam, 1, "max", min_);
-    INIT_INNER_PARAM(Interface<PointT>::kInt32Param, 0, "axis_index",
-                     axis_index_);
+    INIT_FLOAT_PARAM("min", min_);
+    INIT_FLOAT_PARAM("max", min_);
+    INIT_INT32_PARAM("axis_index", axis_index_);
   }
   ~AxisRange() = default;
   AxisRange(const AxisRange&) = delete;
@@ -124,7 +123,7 @@ class AxisRange : public Interface<PointT> {
   float max_ = std::numeric_limits<float>::max();
   // TODO(edward) Use string instead in the following refactoring
   // x:0, y:1, z:2
-  int axis_index_;
+  int32_t axis_index_;
 };
 
 }  // namespace filter

@@ -46,13 +46,10 @@ class GroundRemoval : public Interface<PointT> {
         leaf_size_(0.8),
         height_threshold_(0.15) {
     // float params
-    INIT_INNER_PARAM(Interface<PointT>::kFloatParam, 0, "leaf_size",
-                     leaf_size_);
-    INIT_INNER_PARAM(Interface<PointT>::kFloatParam, 1, "height_threshold",
-                     height_threshold_);
+    INIT_FLOAT_PARAM("leaf_size", leaf_size_);
+    INIT_FLOAT_PARAM("height_threshold", height_threshold_);
     // int32_t params
-    INIT_INNER_PARAM(Interface<PointT>::kInt32Param, 0,
-                     "min_point_num_in_voxel", min_point_num_in_voxel_);
+    INIT_INT32_PARAM("min_point_num_in_voxel", min_point_num_in_voxel_);
   }
   ~GroundRemoval() {}
 
