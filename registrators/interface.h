@@ -88,14 +88,17 @@ class Interface {
   */
   void InitWithXml(const pugi::xml_node& node);
 
+  /// @brief Some times we need a set of filters inside of the icp algorithm,
+  /// apart from the pre-processor.
   void InitInnerFiltersWithXml(const pugi::xml_node& node);
 
+  /// @brief Enable/Disable the motion compensation.
   void EnableInnerCompensation();
-
   void DisableInnerCompensation();
 
+  /// @brief Using the configs from xml to init inner functions.
   virtual void InitWithOptions() {}
-
+  /// @brief Print configs' value.
   void PrintOptions();
 
   virtual void SetInputSource(const PointCloudSourcePtr& cloud);

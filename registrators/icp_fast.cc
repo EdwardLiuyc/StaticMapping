@@ -262,26 +262,57 @@ inline size_t ArgMax(const Eigen::Vector3d& v) {
 }
 
 void CalculateNormals(BuildData* const data, const int first, const int last) {
-  std::vector<Eigen::Vector3d> point_for_calculating_normal;
-  for (int i = first; i < last; ++i) {
-    point_for_calculating_normal.push_back(
-        data->points.block(0, data->indices[i], kDim, 1));
-  }
-  // @todo(edward) check thr normal is proper
-  const std::pair<Eigen::Vector3d, Eigen::Vector3d> center_normal =
-      common::PlaneFitting(point_for_calculating_normal);
-
+  // std::vector<Eigen::Vector3d> point_for_calculating_normal;
   // for (int i = first; i < last; ++i) {
-  //   data->normals.block(0, data->indices[i], kDim, 1) = center_normal.second;
+  //   point_for_calculating_normal.push_back(
+  //       data->points.block(0, data->indices[i], kDim, 1));
   // }
+  // // @todo(edward) check thr normal is proper
+  // const std::pair<Eigen::Vector3d, Eigen::Vector3d> center_normal =
+  //     common::PlaneFitting(point_for_calculating_normal);
+
+  const int col_count = last - first;
+  // build nearest neighbors list
+  Matrix d(kDim, col_count);
+  for (int i = 0; i < col_count; ++i) {
+    d.col(i) = data->points.block(0, data->indices[first + i], kDim, 1);
+  }
+  const Vector mean = d.rowwise().sum() / col_count;
+  const Matrix NN = (d.colwise() - mean);
+
+  // compute covariance
+  const Matrix C(NN * NN.transpose());
+  Vector eigenvalues = Vector::Identity(kDim, 1);
+  Matrix eigenvectors = Matrix::Identity(kDim, kDim);
+  // Ensure that the matrix is suited for eigenvalues calculation
+  if (C.fullPivHouseholderQr().rank() + 1 >= kDim) {
+    const Eigen::EigenSolver<Matrix> solver(C);
+    eigenvalues = solver.eigenvalues().real();
+    eigenvectors = solver.eigenvectors().real();
+  } else {
+    return;
+  }
+
+  Vector normal;
+  {
+    int smallest_id(0);
+    double smallest_value(std::numeric_limits<double>::max());
+    for (int j = 0; j < eigenvectors.cols(); ++j) {
+      if (eigenvalues(j) < smallest_value) {
+        smallest_id = j;
+        smallest_value = eigenvalues(j);
+      }
+    }
+    normal = eigenvectors.col(smallest_id);
+  }
 
   // sampling in a simple way
   // use just one point in a box
   const int k = data->indices[first];
   // Mark the indices which will be part of the final data
   data->indices_to_keep.push_back(k);
-  data->points.col(k) = center_normal.first;
-  data->normals.col(k) = center_normal.second;
+  data->points.col(k) = mean;
+  data->normals.col(k) = normal;
 }
 
 void TransformData(BuildData* const data, const Eigen::Matrix4d& transform) {

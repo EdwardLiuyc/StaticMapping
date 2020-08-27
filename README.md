@@ -170,7 +170,6 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 
 # TODO
 - **Loop Close factor should be rubust**
-- **mapping using kitti data**
 - **using docker to run**
 - seperate map_builder class into several smaller classes
 - preprocessor: remove points under the ground
