@@ -88,10 +88,17 @@ class Interface {
   */
   void InitWithXml(const pugi::xml_node& node);
 
+  /// @brief Some times we need a set of filters inside of the icp algorithm,
+  /// apart from the pre-processor.
   void InitInnerFiltersWithXml(const pugi::xml_node& node);
 
-  virtual void InitWithOptions() {}
+  /// @brief Enable/Disable the motion compensation.
+  void EnableInnerCompensation();
+  void DisableInnerCompensation();
 
+  /// @brief Using the configs from xml to init inner functions.
+  virtual void InitWithOptions() {}
+  /// @brief Print configs' value.
   void PrintOptions();
 
   virtual void SetInputSource(const PointCloudSourcePtr& cloud);
@@ -108,7 +115,19 @@ class Interface {
   PointCloudSourcePtr source_cloud_ = nullptr;
   PointCloudTargetPtr target_cloud_ = nullptr;
   std::unordered_map<std::string, InnerOptionItem> inner_options_;
+
+  bool inner_compensation_ = false;
 };
+
+template <typename PointType>
+void Interface<PointType>::EnableInnerCompensation() {
+  inner_compensation_ = true;
+}
+
+template <typename PointType>
+void Interface<PointType>::DisableInnerCompensation() {
+  inner_compensation_ = false;
+}
 
 template <typename PointType>
 void Interface<PointType>::SetInputSource(

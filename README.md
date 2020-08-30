@@ -170,14 +170,13 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 
 # TODO
 - **Loop Close factor should be rubust**
-- **mapping using kitti data**
 - **using docker to run**
 - seperate map_builder class into several smaller classes
+- preprocessor: remove points under the ground
+- Fix bug for bool parameters of registrators
 - more robust normal estimate for fast icp
 - use glog or other logging lib instead of print macro
 - complete the offset for enu coordinate system
-- faster compiling
-- re-organize the process of caching submaps
 - mrvp using cuda or opencl
 - **supporting multi-lidars**
 - perhaps need a brand-new data type for pointcloud 
