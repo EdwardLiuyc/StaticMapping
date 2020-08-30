@@ -34,6 +34,7 @@
 
 #include "common/macro_defines.h"
 #include "common/math.h"
+#include "common/performance/simple_prof.h"
 
 namespace static_map {
 namespace registrator {
@@ -261,50 +262,32 @@ inline size_t ArgMax(const Eigen::Vector3d& v) {
   return maxIdx;
 }
 
+// Refer to
+//   "Fast and Accurate Computation of Surface Normals from Range Images"
+//   H. Badino, D. Huber, Y. Park and T. Kanade
+//   IV.C. "Unconstrained Least Squares" part
+// TODO(yongchuan) Try more normal estimation methods.
 void CalculateNormals(BuildData* const data, const int first, const int last) {
-  // std::vector<Eigen::Vector3d> point_for_calculating_normal;
-  // for (int i = first; i < last; ++i) {
-  //   point_for_calculating_normal.push_back(
-  //       data->points.block(0, data->indices[i], kDim, 1));
-  // }
-  // // @todo(edward) check thr normal is proper
-  // const std::pair<Eigen::Vector3d, Eigen::Vector3d> center_normal =
-  //     common::PlaneFitting(point_for_calculating_normal);
-
+  // REGISTER_FUNC;
   const int col_count = last - first;
   // build nearest neighbors list
   Matrix d(kDim, col_count);
+  Matrix M_wave = Eigen::Matrix<double, kDim, kDim>::Zero();
   for (int i = 0; i < col_count; ++i) {
     d.col(i) = data->points.block(0, data->indices[first + i], kDim, 1);
+    M_wave += d.col(i) * d.col(i).transpose();
   }
-  const Vector mean = d.rowwise().sum() / col_count;
+  const Vector b_wave = d.rowwise().sum();
+  const Vector mean = b_wave / col_count;
   const Matrix NN = (d.colwise() - mean);
 
   // compute covariance
   const Matrix C(NN * NN.transpose());
-  Vector eigenvalues = Vector::Identity(kDim, 1);
-  Matrix eigenvectors = Matrix::Identity(kDim, kDim);
-  // Ensure that the matrix is suited for eigenvalues calculation
-  if (C.fullPivHouseholderQr().rank() + 1 >= kDim) {
-    const Eigen::EigenSolver<Matrix> solver(C);
-    eigenvalues = solver.eigenvalues().real();
-    eigenvectors = solver.eigenvectors().real();
-  } else {
+  if (C.fullPivHouseholderQr().rank() + 1 < kDim) {
     return;
   }
 
-  Vector normal;
-  {
-    int smallest_id(0);
-    double smallest_value(std::numeric_limits<double>::max());
-    for (int j = 0; j < eigenvectors.cols(); ++j) {
-      if (eigenvalues(j) < smallest_value) {
-        smallest_id = j;
-        smallest_value = eigenvalues(j);
-      }
-    }
-    normal = eigenvectors.col(smallest_id);
-  }
+  Vector normal = M_wave.inverse() * Vector(b_wave);
 
   // sampling in a simple way
   // use just one point in a box
@@ -312,7 +295,7 @@ void CalculateNormals(BuildData* const data, const int first, const int last) {
   // Mark the indices which will be part of the final data
   data->indices_to_keep.push_back(k);
   data->points.col(k) = mean;
-  data->normals.col(k) = normal;
+  data->normals.col(k) = normal.normalized();
 }
 
 void TransformData(BuildData* const data, const Eigen::Matrix4d& transform) {

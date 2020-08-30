@@ -86,8 +86,8 @@ class TimerManager {
   TimerManager() = default;
 
   std::mutex mutex_;
-  std::unordered_map<std::thread::id,
-                     std::unordered_map<std::string, std::vector<int64_t>>>
+  std::unordered_map<std::string,
+                     std::unordered_map<std::thread::id, std::vector<int64_t>>>
       durations_;
 
   static std::shared_ptr<TimerManager> instance_;
