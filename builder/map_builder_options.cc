@@ -123,6 +123,9 @@ MapBuilderOptions& MapBuilder::Initialise(const char* config_file_name) {
                     output_mrvm_settings.output_average, bool, bool);
   GET_SINGLE_OPTION(static_map_node, "output_mrvm_settings", "output_rgb",
                     output_mrvm_settings.output_rgb, bool, bool);
+  GET_SINGLE_OPTION(static_map_node, "output_mrvm_settings",
+                    "use_max_intensity", output_mrvm_settings.use_max_intensity,
+                    bool, bool);
   GET_SINGLE_OPTION(static_map_node, "output_mrvm_settings", "prob_threshold",
                     output_mrvm_settings.prob_threshold, float, float);
   GET_SINGLE_OPTION(static_map_node, "output_mrvm_settings", "low_resolution",

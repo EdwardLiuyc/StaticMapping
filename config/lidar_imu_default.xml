@@ -19,7 +19,7 @@
         <param type="1" name="min_range"> 4.5 </param>
       </filter>
       <filter name="RandomSampler" >
-        <param type="1" name="sampling_rate"> 0.35 </param>
+        <param type="1" name="sampling_rate"> 0.4 </param>
       </filter>
     </filters>
     <front_end_options accumulate_cloud_num="151">
@@ -84,7 +84,7 @@
       <submap_options 
         frame_count="2"
         enable_inner_multiview_icp="false"
-        enable_voxel_filter="true"
+        enable_voxel_filter="false"
         enable_random_sampleing="false"
         enable_check="false"
         random_sampling_rate="0.5"

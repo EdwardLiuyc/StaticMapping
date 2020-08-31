@@ -98,8 +98,8 @@
       <submap_options 
         frame_count="2"
         enable_inner_multiview_icp="false"
-        enable_voxel_filter="true"
-        enable_random_sampleing="false"
+        enable_voxel_filter="false"
+        enable_random_sampleing="true"
         enable_check="false"
         random_sampling_rate="0.5"
         enable_disk_saving="true"
@@ -122,14 +122,15 @@
     </back_end_options>
     <output_mrvm_settings
       output_average="false"
-      output_rgb="false"
-      prob_threshold="0.56" 
+      output_rgb="true"
+      use_max_intensity="true"
+      prob_threshold="0.54" 
       low_resolution="1." 
       high_resolution="0.1"
       hit_prob="0.55"
       miss_prob="0.48"
       z_offset="0."
-      max_point_num_in_cell="6">
+      max_point_num_in_cell="8">
     </output_mrvm_settings>
   </static_mapping>
 </edward_liu>

@@ -88,8 +88,8 @@
       <submap_options 
         frame_count="2"
         enable_inner_multiview_icp="false"
-        enable_voxel_filter="true"
-        enable_random_sampleing="false"
+        enable_voxel_filter="false"
+        enable_random_sampleing="true"
         enable_check="false"
         random_sampling_rate="0.5"
         enable_disk_saving="false"
