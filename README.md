@@ -6,7 +6,10 @@
 [中文文档](README.Chinese.md)  
 
 # Introduction  
-<img src="doc/mapping.png" width="800" />
+<img src="doc/mapping.png" width="800" />  
+
+# Map with kitti dataset
+<img src="doc/kitti_rgb.png" width="800" />
 
 # Build
 > For now, It is recommended to build this repo in your host device but not in docker, due to that the docker image is not enough tested.
@@ -217,3 +220,8 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 # Tried
 - tried folly, libcds (intending to used instead of tbb) but they are not very freindly to use and not like stl containers
 - tried to create a brand-new point cloud type using tbb, but it is very slow and thread-safety is not necessary when create a point cloud
+
+# Donate 
+By me a cup of coffee if you like this project.  
+## Wechat or alipay
+<img src="https://i.v2ex.co/Ju3q4S2Zb.jpeg" />   <img src="https://i.v2ex.co/Ec6BYJfWb.jpeg" />  
