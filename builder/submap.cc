@@ -24,6 +24,7 @@
 
 #include "builder/multi_resolution_voxel_map.h"
 #include "builder/submap.h"
+#include "common/performance/simple_prof.h"
 #include "common/point_utils.h"
 #include "common/simple_time.h"
 #include "pre_processors/random_sample_with_plane_detect.h"
@@ -90,19 +91,29 @@ void Submap<PointType>::InsertFrame(
   if (full_.load()) {
     PointCloudPtr output_cloud(new PointCloudType);
 
-    MultiResolutionVoxelMap<PointType> map;
-    // todo add a parameter : z offset
-    // map.SetOffsetZ(1.2);
-    for (auto& frame : frames_) {
-      pcl::transformPointCloud(*frame->Cloud(), *output_cloud,
-                               frame->LocalPose());
-      if (options_.enable_check) {
-        FATAL_CHECK_CLOUD(output_cloud);
+    if (options_.enable_inner_mrvm) {
+      REGISTER_BLOCK("MRVM in submap");
+      MultiResolutionVoxelMap<PointType> map;
+      for (auto& frame : frames_) {
+        pcl::transformPointCloud(*frame->Cloud(), *output_cloud,
+                                 frame->LocalPose());
+        if (options_.enable_check) {
+          FATAL_CHECK_CLOUD(output_cloud);
+        }
+        map.InsertPointCloud(output_cloud,
+                             frame->LocalTranslation().template cast<float>());
       }
-      map.InsertPointCloud(output_cloud,
-                           frame->LocalTranslation().template cast<float>());
+    } else {
+      for (auto& frame : frames_) {
+        pcl::transformPointCloud(*frame->Cloud(), *output_cloud,
+                                 frame->LocalPose());
+        if (options_.enable_check) {
+          FATAL_CHECK_CLOUD(output_cloud);
+        }
+        *(this->cloud_) += *output_cloud;
+      }
+      this->cloud_->header.stamp = frames_[0]->Cloud()->header.stamp;
     }
-    map.OutputToPointCloud(0.51, this->cloud_);
 
     // check if the submap is valid
     if (options_.enable_check) {
@@ -130,7 +141,8 @@ void Submap<PointType>::InsertFrame(
 
     if (options_.enable_voxel_filter && !this->cloud_->empty()) {
       pcl::ApproximateVoxelGrid<PointType> approximate_voxel_filter;
-      approximate_voxel_filter.setLeafSize(0.1, 0.1, 0.1);
+      approximate_voxel_filter.setLeafSize(
+          options_.voxel_size, options_.voxel_size, options_.voxel_size);
       PointCloudPtr filtered_final_cloud(new PointCloudType);
       approximate_voxel_filter.setInputCloud(this->cloud_);
       approximate_voxel_filter.filter(*filtered_final_cloud);

@@ -134,14 +134,18 @@ void MultiResolutionVoxelMap<PointT>::OutputToPointCloud(
         average_point.x /= size;
         average_point.y /= size;
         average_point.z /= size;
-        average_point.intensity =
-            static_cast<int>(high_res_voxel.second.max_intensity);
+        if (settings_.use_max_intensity) {
+          average_point.intensity =
+              static_cast<int>(high_res_voxel.second.max_intensity);
+        }
         cloud->push_back(average_point);
 
       } else {
         for (auto& point : high_res_voxel.second.points) {
-          point.intensity =
-              static_cast<int>(high_res_voxel.second.max_intensity);
+          if (settings_.use_max_intensity) {
+            point.intensity =
+                static_cast<int>(high_res_voxel.second.max_intensity);
+          }
           cloud->points.push_back(point);
         }
       }
@@ -165,7 +169,7 @@ void MultiResolutionVoxelMap<PointT>::OutputToPointCloud(
       CHECK(!high_res_voxel.second.points.empty());
       // scale the intensity
       uint32_t intensity = high_res_voxel.second.max_intensity;
-      intensity *= 2;
+      intensity *= 1.4;
       if (intensity > 255) {
         intensity = 255;
       }

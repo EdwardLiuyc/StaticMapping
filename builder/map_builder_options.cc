@@ -123,6 +123,9 @@ MapBuilderOptions& MapBuilder::Initialise(const char* config_file_name) {
                     output_mrvm_settings.output_average, bool, bool);
   GET_SINGLE_OPTION(static_map_node, "output_mrvm_settings", "output_rgb",
                     output_mrvm_settings.output_rgb, bool, bool);
+  GET_SINGLE_OPTION(static_map_node, "output_mrvm_settings",
+                    "use_max_intensity", output_mrvm_settings.use_max_intensity,
+                    bool, bool);
   GET_SINGLE_OPTION(static_map_node, "output_mrvm_settings", "prob_threshold",
                     output_mrvm_settings.prob_threshold, float, float);
   GET_SINGLE_OPTION(static_map_node, "output_mrvm_settings", "low_resolution",
@@ -199,6 +202,8 @@ MapBuilderOptions& MapBuilder::Initialise(const char* config_file_name) {
     auto& submap_options = options_.back_end_options.submap_options;
     GET_SINGLE_OPTION(back_end_node, "submap_options", "frame_count",
                       submap_options.frame_count, int, int32_t);
+    GET_SINGLE_OPTION(back_end_node, "submap_options", "enable_inner_mrvm",
+                      submap_options.enable_inner_mrvm, bool, bool);
     GET_SINGLE_OPTION(back_end_node, "submap_options",
                       "enable_inner_multiview_icp",
                       submap_options.enable_inner_multiview_icp, bool, bool);
@@ -209,6 +214,8 @@ MapBuilderOptions& MapBuilder::Initialise(const char* config_file_name) {
                       submap_options.enable_random_sampleing, bool, bool);
     GET_SINGLE_OPTION(back_end_node, "submap_options", "random_sampling_rate",
                       submap_options.random_sampling_rate, float, float);
+    GET_SINGLE_OPTION(back_end_node, "submap_options", "voxel_size",
+                      submap_options.voxel_size, float, float);
     GET_SINGLE_OPTION(back_end_node, "submap_options", "enable_disk_saving",
                       submap_options.enable_disk_saving, bool, bool);
     GET_SINGLE_OPTION(back_end_node, "submap_options", "enable_check",

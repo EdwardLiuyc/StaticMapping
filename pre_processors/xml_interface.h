@@ -29,6 +29,8 @@
 #include <map>
 #include <string>
 
+#include "common/macro_defines.h"
+
 namespace static_map {
 namespace pre_processers {
 
@@ -46,8 +48,8 @@ class XmlInterface {
   XmlInterface() = default;
 
   virtual ~XmlInterface() {}
-  XmlInterface(const XmlInterface&) = delete;
-  XmlInterface& operator=(const XmlInterface&) = delete;
+
+  PROHIBIT_COPY_AND_ASSIGN(XmlInterface);
 
   template <typename T>
   bool SetValue(const std::string& name, const T& value) {

@@ -101,7 +101,9 @@ perhaps you would meet some error like ` conflicting declaration ‘typedef stru
 
 
 # How to use?
-> You can do these in or out of the docker container used for building
+## step0 Read wiki
+> There are very essential explanations in [wiki](https://github.com/EdwardLiuyc/StaticMapping/wiki) page. Read them first.
+
 ## step1 run the mapping process
 ```bash
 mkdir pcd
@@ -174,10 +176,10 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 # TODO
 - **Loop Close factor should be rubust**
 - **using docker to run**
+- separate normal estimation from icp_fast, then we can no longer do it again in submap matching
 - seperate map_builder class into several smaller classes
 - preprocessor: remove points under the ground
 - Fix bug for bool parameters of registrators
-- more robust normal estimate for fast icp
 - use glog or other logging lib instead of print macro
 - complete the offset for enu coordinate system
 - mrvp using cuda or opencl

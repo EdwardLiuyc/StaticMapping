@@ -117,7 +117,7 @@ MapBuilder::PointCloudPtr KittiReader::ReadFromBin(const int index) {
     point.x = *px;
     point.y = *py;
     point.z = *pz;
-    point.intensity = *pr;
+    point.intensity = (*pr) * 255;
     point_cloud->points.push_back(point);
     px += 4;
     py += 4;

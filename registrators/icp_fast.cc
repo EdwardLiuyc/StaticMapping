@@ -503,35 +503,23 @@ Eigen::Matrix4d ComputePointToPlane(const BuildData& source_cloud,
   SolvePossiblyUnderdeterminedLinearSystem(A, b, x);
 
   // Transform parameters to matrix
-  Eigen::Matrix4d mOut;
+  Eigen::Matrix4d result;
   Eigen::Transform<double, 3, Eigen::Affine> transform;
-  // PLEASE DONT USE EULAR ANGLES!!!!
-  // Rotation in Eular angles follow roll-pitch-yaw (1-2-3) rule
-  /*transform = Eigen::AngleAxis<T>(x(0), Eigen::Matrix<T,1,3>::UnitX())
-   * Eigen::AngleAxis<T>(x(1), Eigen::Matrix<T,1,3>::UnitY())
-   * Eigen::AngleAxis<T>(x(2), Eigen::Matrix<T,1,3>::UnitZ());*/
   transform =
       Eigen::AngleAxis<double>(x.head(3).norm(), x.head(3).normalized());
 
-  // Reverse roll-pitch-yaw conversion, very useful piece of knowledge, keep
-  // it with you all time!
-  /*const T pitch = -asin(transform(2,0));
-          const T roll = atan2(transform(2,1), transform(2,2));
-          const T yaw = atan2(transform(1,0) / cos(pitch), transform(0,0) /
-     cos(pitch)); std::cerr << "d angles" << x(0) - roll << ", " << x(1) -
-     pitch << "," << x(2) - yaw << std::endl;*/
   transform.translation() = x.segment(3, 3);
-  mOut = transform.matrix();
+  result = transform.matrix();
 
-  if (mOut != mOut) {
+  if (result.hasNaN()) {
     // Degenerate situation. This can happen when the source and reading
     // clouds are identical, and then b and x above are 0, and the rotation
     // matrix cannot be determined, it comes out full of NaNs. The correct
     // rotation is the identity.
-    mOut.block(0, 0, kDim, kDim) = Matrix::Identity(kDim, kDim);
+    result.block(0, 0, kDim, kDim) = Matrix::Identity(kDim, kDim);
   }
 
-  return mOut;
+  return result;
 }
 
 Eigen::Matrix4d ComputePointToPoint(BuildData& source_cloud,  // NOLINT
