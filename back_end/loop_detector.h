@@ -30,11 +30,8 @@
 #include <vector>
 
 #include "back_end/loop_detector_options.h"
-
-#ifdef _USE_TBB_
-#include <tbb/atomic.h>
-#include <tbb/concurrent_vector.h>
-#endif
+#include "tbb/atomic.h"
+#include "tbb/concurrent_vector.h"
 
 namespace static_map {
 
@@ -67,18 +64,12 @@ class LoopDetector {
     int current_frame_index;
     LoopStatus status;
     bool close_succeed;
-#ifndef _USE_TBB_
-    std::vector<std::pair<int, int>> close_pair;
-    std::vector<Eigen::Matrix4d, Eigen::aligned_allocator<Eigen::Matrix4d>>
-        transform;
-    std::vector<double> constraint_score;
-#else
     tbb::concurrent_vector<std::pair<int, int>> close_pair;
     tbb::concurrent_vector<Eigen::Matrix4d,
                            Eigen::aligned_allocator<Eigen::Matrix4d>>
         transform;
     tbb::concurrent_vector<double> constraint_score;
-#endif
+
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   };
 

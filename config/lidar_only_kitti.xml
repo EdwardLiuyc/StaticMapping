@@ -128,7 +128,7 @@
       low_resolution="1." 
       high_resolution="0.1"
       hit_prob="0.55"
-      miss_prob="0.48"
+      miss_prob="0.49"
       z_offset="0."
       max_point_num_in_cell="8">
     </output_mrvm_settings>

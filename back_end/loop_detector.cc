@@ -27,10 +27,7 @@
 #include "builder/submap.h"
 #include "common/simple_thread_pool.h"
 #include "registrators/icp_pointmatcher.h"
-
-#ifdef _USE_TBB_
-#include <tbb/task_group.h>
-#endif
+#include "tbb/task_group.h"
 
 namespace static_map {
 namespace back_end {
@@ -200,7 +197,7 @@ typename LoopDetector<PointT>::DetectResult LoopDetector<PointT>::AddFrame(
 
   if (current_status_ == kContinousLoop) {
     CHECK(!maybe_close_pair.empty());
-#ifdef _USE_TBB_
+
     auto pair_close_loop = [&](const std::pair<int, int>& p) {
       double constraint_score = 0.;
       Eigen::Matrix4d transform;
@@ -221,17 +218,7 @@ typename LoopDetector<PointT>::DetectResult LoopDetector<PointT>::AddFrame(
       tasks.run([&] { pair_close_loop(pair); });
     }
     tasks.wait();
-#else
-    for (auto& pair : maybe_close_pair) {
-      double constraint_score = 0.;
-      Eigen::Matrix4d transform;
-      if (CloseLoop(pair.first, pair.second, &transform, &constraint_score)) {
-        result.close_pair.push_back(pair);
-        result.transform.push_back(transform);
-        result.constraint_score.push_back(constraint_score);
-      }
-    }
-#endif
+
     if (!result.close_pair.empty()) {
       result.close_succeed = true;
     }

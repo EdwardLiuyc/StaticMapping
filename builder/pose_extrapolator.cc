@@ -198,6 +198,9 @@ PoseExtrapolator::RigidPose3d PoseExtrapolator::ExtrapolatePose(
 
 Eigen::Quaterniond PoseExtrapolator::EstimateGravityOrientation(
     const SimpleTime time) {
+  if (mode_ == Mode::kSimpleCTRV) {
+    return Eigen::Quaterniond::Identity();
+  }
   common::MutexLocker locker(&mutex_);
   ImuTracker imu_tracker = *imu_tracker_;
   AdvanceImuTracker(time, &imu_tracker);
