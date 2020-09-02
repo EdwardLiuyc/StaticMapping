@@ -47,6 +47,7 @@ class Factory : public Interface<PointT> {
  public:
   USE_POINTCLOUD;
 
+  // 初始化的时候就讲不同的Filter生成,然后放入Filter仓库中
   Factory() : Interface<PointT>() { RegisterSupportedFilters(); }
   ~Factory() = default;
 
@@ -102,15 +103,18 @@ class Factory : public Interface<PointT> {
     }
 
     // use all filters in order
+    // 将待匹配的点云放入当中
     PointCloudPtr middle_poindcloud1(new PointCloudType);
     PointCloudPtr middle_poindcloud2(new PointCloudType);
     *middle_poindcloud1 = *(this->inner_cloud_);
+    // 依据所有的滤波算法,对点云进行滤波
     for (auto filter : filters_) {
       filter->SetInputCloud(middle_poindcloud1);
       filter->Filter(middle_poindcloud2);
       // @todo copy but not directly =
       *middle_poindcloud1 = *middle_poindcloud2;
     }
+    // 最后滤波得到后的点云放入cloud容器后，供后面的匹配做准备
     *cloud = *middle_poindcloud2;
   }
 
@@ -122,6 +126,7 @@ class Factory : public Interface<PointT> {
   std::map<std::string, std::shared_ptr<Interface<PointT>>> supported_filters_;
 };
 
+// 工厂方法
 template <typename PointT>
 void Factory<PointT>::RegisterSupportedFilters() {
   supported_filters_.emplace("RandomSampler",
