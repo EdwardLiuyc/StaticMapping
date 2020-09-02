@@ -62,6 +62,7 @@ constexpr int kFalse = 0;
 struct MrvmSettings {
   bool output_average = false;
   bool output_rgb = false;
+  bool use_max_intensity = true;
   float prob_threshold = 0.6f;
   float low_resolution = 1.f;  // not in use any more
   float high_resolution = 0.1f;

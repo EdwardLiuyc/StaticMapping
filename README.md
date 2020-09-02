@@ -6,7 +6,10 @@
 [中文文档](README.Chinese.md)  
 
 # Introduction  
-<img src="doc/mapping.png" width="800" />
+<img src="doc/mapping.png" width="800" />  
+
+# Map with kitti dataset
+<img src="doc/kitti_rgb.png" width="800" />
 
 # Build
 > For now, It is recommended to build this repo in your host device but not in docker, due to that the docker image is not enough tested.
@@ -98,7 +101,9 @@ perhaps you would meet some error like ` conflicting declaration ‘typedef stru
 
 
 # How to use?
-> You can do these in or out of the docker container used for building
+## step0 Read wiki
+> There are very essential explanations in [wiki](https://github.com/EdwardLiuyc/StaticMapping/wiki) page. Read them first.
+
 ## step1 run the mapping process
 ```bash
 mkdir pcd
@@ -170,18 +175,16 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 
 # TODO
 - **Loop Close factor should be rubust**
-- **mapping using kitti data**
 - **using docker to run**
+- separate normal estimation from icp_fast, then we can no longer do it again in submap matching
 - seperate map_builder class into several smaller classes
-- more robust normal estimate for fast icp
+- preprocessor: remove points under the ground
+- Fix bug for bool parameters of registrators
 - use glog or other logging lib instead of print macro
 - complete the offset for enu coordinate system
-- faster compiling
-- re-organize the process of caching submaps
 - mrvp using cuda or opencl
 - **supporting multi-lidars**
 - perhaps need a brand-new data type for pointcloud 
-- **remove the imu dependency of pose extrapolator**
 - save submap binary data into a special format file not just pointcloud into .pcd
 - save the frame clouds instead of submap clouds
 - filtering the cars directly at the input of the pointclouds
@@ -219,3 +222,8 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 # Tried
 - tried folly, libcds (intending to used instead of tbb) but they are not very freindly to use and not like stl containers
 - tried to create a brand-new point cloud type using tbb, but it is very slow and thread-safety is not necessary when create a point cloud
+
+# Donate 
+By me a cup of coffee if you like this project.  
+## Wechat or alipay
+<img src="https://i.v2ex.co/Ju3q4S2Zb.jpeg" />   <img src="https://i.v2ex.co/Ec6BYJfWb.jpeg" />  

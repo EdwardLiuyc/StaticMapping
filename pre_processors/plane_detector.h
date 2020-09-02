@@ -20,8 +20,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BUILDER_PLANE_DETECTOR_H_
-#define BUILDER_PLANE_DETECTOR_H_
+#ifndef PRE_PROCESSORS_PLANE_DETECTOR_H_
+#define PRE_PROCESSORS_PLANE_DETECTOR_H_
 
 // third party
 #include <pcl/ModelCoefficients.h>
@@ -89,7 +89,7 @@ class PlaneDetector {
     }
   }
 
-  void Detect(std::vector<int>& ground_indices,
+  void Detect(std::vector<int>& ground_indices,  // NOLINT
               float distance_threshold = 0.2) {
     if (!input_cloud_ || voxels_.empty()) {
       PRINT_ERROR("input cloud is nullptr, nothing to filter.");
@@ -173,4 +173,4 @@ class PlaneDetector {
 
 }  // namespace static_map
 
-#endif  // BUILDER_PLANE_DETECTOR_H_
+#endif  // PRE_PROCESSORS_PLANE_DETECTOR_H_

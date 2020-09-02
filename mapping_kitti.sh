@@ -1,5 +1,5 @@
 ## usally, you can just leave this config file just like this, it will work fine
-CONFIG_PATH=./config/lidar_only.xml
+CONFIG_PATH=./config/lidar_only_kitti.xml
 URDF_FILE=./urdf/test2.urdf
 ## the follow 2 items must be set!!!
 ## the topic name of your pointcloud msg (ros)

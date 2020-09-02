@@ -190,8 +190,6 @@ class MapBuilder {
   void SubmapProcessing();
   /// @brief lifelong thread for connecting all submap in back-end
   void ConnectAllSubmap();
-  /// @brief life long thread for managing submaps between RAM and Disk
-  void SubmapMemoryManaging();
   /// @brief match 2 specified submaps
   void SubmapPairMatch(const int source_index, const int target_index);
   /// @brief do offline calibration between odom and lidar
@@ -233,7 +231,6 @@ class MapBuilder {
   bool use_odom_;
   bool use_gps_;
   std::atomic<bool> end_all_thread_;
-  std::atomic<bool> end_managing_memory_;
   std::atomic<bool> submap_processing_done_;
 
   // ********************* pre processors *********************

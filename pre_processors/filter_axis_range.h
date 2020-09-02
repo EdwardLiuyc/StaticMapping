@@ -20,9 +20,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef PRE_PROCESSORS_FILTER_RANGE_H_
-#define PRE_PROCESSORS_FILTER_RANGE_H_
+#ifndef PRE_PROCESSORS_FILTER_AXIS_RANGE_H_
+#define PRE_PROCESSORS_FILTER_AXIS_RANGE_H_
 
+#include <limits>
 #include <memory>
 
 #include "pre_processors/filter_interface.h"
@@ -32,57 +33,76 @@ namespace pre_processers {
 namespace filter {
 
 template <typename PointT>
-class Range : public Interface<PointT> {
+class AxisRange : public Interface<PointT> {
+ private:
+  enum class Axis : int32_t { kX = 0, kY = 1, kZ = 2 };
+
  public:
   USE_POINTCLOUD;
 
-  Range() : Interface<PointT>(), min_range_(0.), max_range_(100.) {
-    // float params
-    INIT_FLOAT_PARAM("min_range", min_range_);
-    INIT_FLOAT_PARAM("max_range", max_range_);
+  AxisRange() : Interface<PointT>(), axis_index_(2) {
+    INIT_FLOAT_PARAM("min", min_);
+    INIT_FLOAT_PARAM("max", min_);
+    INIT_INT32_PARAM("axis_index", axis_index_);
   }
-  ~Range() {}
-  Range(const Range &) = delete;
-  Range &operator=(const Range &) = delete;
+  ~AxisRange() = default;
+  AxisRange(const AxisRange&) = delete;
+  AxisRange& operator=(const AxisRange&) = delete;
 
   std::shared_ptr<Interface<PointT>> CreateNewInstance() override {
-    return std::make_shared<Range<PointT>>();
+    return std::make_shared<AxisRange<PointT>>();
   }
 
-  void Filter(const PointCloudPtr &cloud) override {
+  void Filter(const PointCloudPtr& cloud) override {
     if (!cloud || !Interface<PointT>::inner_cloud_) {
       LOG(WARNING) << "nullptr cloud, do nothing!" << std::endl;
       return;
     }
-
-    this->FilterPrepare(cloud);
-    const int size = this->inner_cloud_->size();
-    bool is_inlier[size];
-#ifdef _OPENMP
-#pragma omp parallel for num_threads(LOCAL_OMP_THREADS_NUM)
-#endif
-    for (int i = 0; i < size; ++i) {
-      auto &point = this->inner_cloud_->points[i];
-      float range =
-          std::sqrt(point.x * point.x + point.y * point.y + point.z * point.z);
-      if (range >= min_range_ && range <= max_range_) {
-        is_inlier[i] = true;
-      } else {
-        is_inlier[i] = false;
+    if (min_ == std::numeric_limits<float>::min() &&
+        max_ == std::numeric_limits<float>::max()) {
+      *cloud = *this->inner_cloud_;
+      for (int i = 0; i < this->inner_cloud_->size(); ++i) {
+        this->inliers_.push_back(i);
       }
+      this->outliers_.clear();
+      return;
     }
 
-    // first, reserve
-    // then, push_back
-    // finally, shrink to fit
-    // to get best efficiency and space usage
+    this->FilterPrepare(cloud);
+
+    auto& input = this->inner_cloud_;
+    const int size = input->size();
     this->inliers_.reserve(size);
     this->outliers_.reserve(size);
     cloud->points.reserve(size);
+    // TODO(edward) Filter all axis in one filter (for efficiency)
     for (int i = 0; i < size; ++i) {
-      if (is_inlier[i]) {
+      const auto& point = input->points[i];
+      bool is_outlier = false;
+      switch (static_cast<Axis>(axis_index_)) {
+        case Axis::kX:
+          if (point.x < min_ || point.x > max_) {
+            is_outlier = true;
+          }
+          break;
+        case Axis::kY:
+          if (point.y < min_ || point.y > max_) {
+            is_outlier = true;
+          }
+          break;
+        case Axis::kZ:
+          if (point.z < min_ || point.z > max_) {
+            is_outlier = true;
+          }
+          break;
+
+        default:
+          break;
+      }
+
+      if (!is_outlier) {
+        cloud->push_back(input->points[i]);
         this->inliers_.push_back(i);
-        cloud->push_back(this->inner_cloud_->points[i]);
       } else {
         this->outliers_.push_back(i);
       }
@@ -93,17 +113,21 @@ class Range : public Interface<PointT> {
   }
 
   void DisplayAllParams() override {
-    PARAM_INFO(min_range_);
-    PARAM_INFO(max_range_);
+    PARAM_INFO(min_);
+    PARAM_INFO(max_);
+    PARAM_INFO(axis_index_);
   }
 
  private:
-  float min_range_;
-  float max_range_;
+  float min_ = std::numeric_limits<float>::min();
+  float max_ = std::numeric_limits<float>::max();
+  // TODO(edward) Use string instead in the following refactoring
+  // x:0, y:1, z:2
+  int32_t axis_index_;
 };
 
 }  // namespace filter
 }  // namespace pre_processers
 }  // namespace static_map
 
-#endif  // PRE_PROCESSORS_FILTER_RANGE_H_
+#endif  // PRE_PROCESSORS_FILTER_AXIS_RANGE_H_

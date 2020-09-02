@@ -19,7 +19,7 @@
         <param type="1" name="min_range"> 4.5 </param>
       </filter>
       <filter name="RandomSampler" >
-        <param type="1" name="sampling_rate"> 0.35 </param>
+        <param type="1" name="sampling_rate"> 0.4 </param>
       </filter>
     </filters>
     <front_end_options accumulate_cloud_num="151">
@@ -62,7 +62,7 @@
           0: normal type
           1: imu in ins(combined imu) -->
       <imu_options 
-        use_imu="false"
+        use_imu="true"
         imu_frequency="200"
         type="0"
         gravity_constant="9.8" />
@@ -84,7 +84,7 @@
       <submap_options 
         frame_count="2"
         enable_inner_multiview_icp="false"
-        enable_voxel_filter="true"
+        enable_voxel_filter="false"
         enable_random_sampleing="false"
         enable_check="false"
         random_sampling_rate="0.5"
@@ -97,11 +97,13 @@
       <loop_detector_setting 
         use_gps="false"
         use_descriptor="true"
+        output_matched_cloud="false"
         loop_ignore_threshold="15"
         trying_detect_loop_count="1"
         max_close_loop_distance="3"
         max_close_loop_z_distance="1."
         m2dp_match_score="0.96"
+        accept_scan_match_score="0.75"
         nearest_history_pos_num="5" />
     </back_end_options>
     <output_mrvm_settings

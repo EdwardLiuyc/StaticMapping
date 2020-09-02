@@ -20,48 +20,51 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef REGISTRATORS_ICP_FAST_H_
-#define REGISTRATORS_ICP_FAST_H_
+#include "builder/memory_manager.h"
 
-#include <memory>
-#include <vector>
+#include <pcl/point_types.h>
 
-#include "nabo/nabo.h"
-#include "registrators/interface.h"
+#include "builder/trajectory.h"
+#include "common/macro_defines.h"
+#include "common/simple_time.h"
+#include "glog/logging.h"
 
 namespace static_map {
-namespace registrator {
 
-struct BuildData;
-using NNS = Nabo::NearestNeighbourSearch<double>;
+constexpr int kTimeStepSec = 1;
 
 template <typename PointType>
-class IcpFast : public Interface<PointType> {
- public:
-  USE_REGISTRATOR_CLOUDS;
+MemoryManager<PointType>::MemoryManager(
+    std::vector<std::shared_ptr<Trajectory<PointType>>>* const trajectories)
+    : trajectories_(trajectories), quit_(false) {
+  CHECK(trajectories_);
 
-  IcpFast();
-  ~IcpFast() = default;
+  memory_managing_thread_ =
+      std::thread(std::bind(&MemoryManager::Processing, this));
+}
 
-  PROHIBIT_COPY_AND_ASSIGN(IcpFast);
+template <typename PointType>
+MemoryManager<PointType>::~MemoryManager() {
+  quit_ = true;
+  if (memory_managing_thread_.joinable()) {
+    memory_managing_thread_.join();
+  }
+}
 
-  void SetInputSource(const PointCloudSourcePtr& cloud) override;
-  void SetInputTarget(const PointCloudTargetPtr& cloud) override;
-  bool Align(const Eigen::Matrix4d& guess, Eigen::Matrix4d& result) override;
+template <typename PointType>
+void MemoryManager<PointType>::Processing() {
+  PRINT_INFO("Start managing memory.");
+  while (!quit_.load()) {
+    for (auto& trajectory : *trajectories_) {
+      for (auto& submap : *trajectory) {
+        submap->UpdateInactiveTime(kTimeStepSec);
+      }
+    }
+    SimpleTime::from_sec(static_cast<double>(kTimeStepSec)).sleep();
+  }
+  PRINT_INFO("End managing memory.");
+}
 
- private:
-  std::shared_ptr<BuildData> source_cloud_;
-  std::shared_ptr<BuildData> target_cloud_;
-  std::shared_ptr<NNS> nns_kdtree_;
+template class MemoryManager<pcl::PointXYZI>;
 
-  struct {
-    int32_t knn_for_normal_estimate = 7;
-    int32_t max_iteration = 100;
-    float dist_outlier_ratio = 0.7;
-  } options_;
-};
-
-}  // namespace registrator
 }  // namespace static_map
-
-#endif  // REGISTRATORS_ICP_FAST_H_

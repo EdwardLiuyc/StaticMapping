@@ -21,7 +21,7 @@ IMU_FRAME_ID=imu_link
 GPS_TOPIC=navsatfix
 GPS_FRAME_ID=gps
 
-BAG_FILE=/mnt/Data/OS1-64_freeway1.bag
+BAG_FILE=/mnt/Data/visual/map_test/20200507124024_1_NoPlace.bag
 
 ./build/ros_node/static_mapping_node \
   -cfg ${CONFIG_PATH} \

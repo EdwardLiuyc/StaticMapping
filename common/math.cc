@@ -173,5 +173,69 @@ std::vector<Eigen::Vector3i> VoxelCastingDDA(const Eigen::Vector3f& ray_start,
   return visited_voxels;
 }
 
+// TODO(edward) use slerp
+template <typename T>
+Eigen::Rigid3::Transform<T> AverageTransforms(
+    const std::vector<Eigen::Rigid3::Transform<T>>& transforms) {
+  CHECK(!transforms.empty());
+  Eigen::Rigid3::Eulers<T> angles(0, 0, 0);
+  Eigen::Rigid3::Translation<T> translation(0, 0, 0);
+  for (const Eigen::Rigid3::Transform<T>& transform : transforms) {
+    translation += transform.block(0, 3, 3, 1);
+    angles += RotationMatrixToEulerAngles(
+        Eigen::Rigid3::Rotation<T>(transform.block(0, 0, 3, 3)));
+  }
+  translation /= static_cast<T>(transforms.size());
+  angles /= static_cast<T>(transforms.size());
+  Eigen::Rigid3::Transform<T> result = Eigen::Rigid3::Transform<T>::Identity();
+  result.block(0, 0, 3, 3) = common::EulerAnglesToRotationMatrix(angles);
+  result.block(0, 3, 3, 1) = translation;
+
+  return result;
+}
+template Eigen::Rigid3::Transform<double> AverageTransforms(
+    const std::vector<Eigen::Rigid3::Transform<double>>& transforms);
+template Eigen::Rigid3::Transform<float> AverageTransforms(
+    const std::vector<Eigen::Rigid3::Transform<float>>& transforms);
+
+template <typename Scalar>
+std::pair<Eigen::Matrix<Scalar, 3, 1>, Eigen::Matrix<Scalar, 3, 1>>
+PlaneFitting(const std::vector<Eigen::Matrix<Scalar, 3, 1>>& points) {
+  if (points.size() < 2) {
+    Scalar limit = std::numeric_limits<Scalar>::max();
+    return std::make_pair(Eigen::Matrix<Scalar, 3, 1>(limit, limit, limit),
+                          Eigen::Matrix<Scalar, 3, 1>(limit, limit, limit));
+  }
+  // copy coordinates to  matrix in Eigen format
+  size_t num_atoms = points.size();
+  Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> coord(3, num_atoms);
+  for (size_t i = 0; i < num_atoms; ++i) {
+    coord.template col(i) = points[i];
+  }
+
+  // calculate centroid
+  Eigen::Matrix<Scalar, 3, 1> centroid(coord.template row(0).template mean(),
+                                       coord.template row(1).template mean(),
+                                       coord.template row(2).template mean());
+
+  // subtract centroid
+  coord.template row(0).array() -= centroid(0);
+  coord.template row(1).array() -= centroid(1);
+  coord.template row(2).array() -= centroid(2);
+
+  // we only need the left-singular matrix here
+  // http://math.stackexchange.com/questions/99299/best-fitting-plane-given-a-set-of-points
+  Eigen::JacobiSVD<Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>> svd =
+      coord.template jacobiSvd(Eigen::ComputeFullU | Eigen::ComputeThinV);
+  Eigen::Matrix<Scalar, 3, 1> plane_normal =
+      svd.template matrixU().template rightCols<1>();
+  return std::make_pair(centroid, plane_normal);
+}
+
+template std::pair<Eigen::Matrix<double, 3, 1>, Eigen::Matrix<double, 3, 1>>
+PlaneFitting(const std::vector<Eigen::Matrix<double, 3, 1>>& points);
+template std::pair<Eigen::Matrix<float, 3, 1>, Eigen::Matrix<float, 3, 1>>
+PlaneFitting(const std::vector<Eigen::Matrix<float, 3, 1>>& points);
+
 }  // namespace common
 }  // namespace static_map

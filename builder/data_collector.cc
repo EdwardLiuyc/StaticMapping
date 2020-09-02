@@ -166,8 +166,6 @@ void DataCollector<PointT>::AddSensorData(const PointCloudPtr& cloud) {
     first_time_in_accmulated_cloud_ = ToLocalTime(cloud->header.stamp);
   }
 
-  REGISTER_FUNC;
-
   PointCloudData data_before_processing;
   data_before_processing.time = first_time_in_accmulated_cloud_;
   data_before_processing.cloud.reset(new PointCloudType);
@@ -206,8 +204,11 @@ void DataCollector<PointT>::CloudPreProcessing() {
     data.delta_time_in_cloud = (next_data_time - data.time).toSec();
     // filtering cloud
     PointCloudPtr filtered_cloud(new PointCloudType);
-    filter_factory_->SetInputCloud(data.cloud);
-    filter_factory_->Filter(filtered_cloud);
+    {
+      REGISTER_BLOCK("Filtering Cloud");
+      filter_factory_->SetInputCloud(data.cloud);
+      filter_factory_->Filter(filtered_cloud);
+    }
     // insert new data
     Locker locker(mutex_[kPointCloudData]);
     data.cloud = filtered_cloud;

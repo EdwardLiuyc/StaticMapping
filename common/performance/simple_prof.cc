@@ -56,11 +56,11 @@ inline StatisticDetails GetStatistics(std::vector<int64_t>* const data) {
 std::vector<int64_t>* TimerManager::RegisterTimer(
     const std::string& block_name) {
   std::lock_guard<std::mutex> locker(mutex_);
-  return &durations_[std::this_thread::get_id()][block_name];
+  return &durations_[block_name][std::this_thread::get_id()];
 }
 
 TimerManager::~TimerManager() {
-  std::map<OutputUnit, std::pair<std::string, double> > output_factor;
+  std::map<OutputUnit, std::pair<std::string, double>> output_factor;
   output_factor[kS] = std::make_pair("(s)", 1.e-6);
   output_factor[kMs] = std::make_pair("(ms)", 1.e-3);
   output_factor[kUs] = std::make_pair("(us)", 1.);
@@ -83,11 +83,11 @@ TimerManager::~TimerManager() {
     return (factored_time >= 1 ? std::to_string(factored_time) : "<1");
   };
 
-  for (auto& id_block : durations_) {
-    for (auto& name_vector : id_block.second) {
-      const auto statistics = GetStatistics(&name_vector.second);
+  for (auto& name_block : durations_) {
+    for (auto& id_vector : name_block.second) {
+      const auto statistics = GetStatistics(&id_vector.second);
 
-      std::cout << std::setw(25) << name_vector.first << " | " << std::setw(8)
+      std::cout << std::setw(25) << name_block.first << " | " << std::setw(8)
                 << statistics.size << " | " << std::setw(9)
                 << time_to_string(statistics.average) << " | " << std::setw(10)
                 << time_to_string(statistics.sum) << " | " << std::setw(9)
