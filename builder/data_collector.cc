@@ -61,6 +61,7 @@ DataCollector<PointT>::DataCollector(
       filter_factory_(filter),
       accumulated_cloud_count_(0) {
   // reserve the vectors for less memory copy when push_back
+  // 初始化容器,说明用来保存多少数据，用于后续的处理
   constexpr size_t reserve_size = 2000;
   imu_data_.reserve(reserve_size);
   gps_data_.reserve(reserve_size);
@@ -70,6 +71,7 @@ DataCollector<PointT>::DataCollector(
 
 template <typename PointT>
 DataCollector<PointT>::~DataCollector() {
+  //!@brief 如果销毁这个容器，等这里的数据全部处理完
   kill_cloud_preprocessing_thread_ = true;
   if (cloud_processing_thread_.joinable()) {
     cloud_processing_thread_.join();
@@ -184,25 +186,32 @@ void DataCollector<PointT>::AddSensorData(const PointCloudPtr& cloud) {
 template <typename PointT>
 void DataCollector<PointT>::CloudPreProcessing() {
   while (true) {
+    // 如果为真,则退出线程
     if (kill_cloud_preprocessing_thread_) {
       break;
     }
+    // 如果处理数据较少, 则等一会，接收更多数据
     if (cloud_data_before_preprocessing_.size() < 2) {
       SimpleTime::from_sec(0.005).sleep();
       continue;
     }
-
+    // 定义点云时间
     SimpleTime next_data_time;
+    // 声明点云
     PointCloudData data;
     {
+      // 现用线程锁锁上,来读取数据
       Locker locker(mutex_[kPointCloudData]);
+      // 从容器中取数据, 取点云数据，取完后后再抛出
       data = cloud_data_before_preprocessing_.front();
       cloud_data_before_preprocessing_.pop_front();
 
+      // 这个时候表示点云的处理时间
       next_data_time = cloud_data_before_preprocessing_.front().time;
     }
     data.delta_time_in_cloud = (next_data_time - data.time).toSec();
     // filtering cloud
+    // !@brief 这里开始滤波
     PointCloudPtr filtered_cloud(new PointCloudType);
     {
       REGISTER_BLOCK("Filtering Cloud");
