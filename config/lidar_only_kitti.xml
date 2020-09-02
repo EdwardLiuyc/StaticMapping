@@ -21,6 +21,9 @@
       <filter name="AxisRange" >
         <param type="1" name="min"> -1.6 </param>
       </filter>
+      <filter name="Semantic">
+        <!--Try to Construct the Semantic Filter for the SLAM Algorithm.-->
+      </filter>
       <!-- <filter name="GroundRemoval2" >
         <param type="1" name="r_min"> 0.1 </param>
         <param type="1" name="start_ground_height"> -1.5 </param>

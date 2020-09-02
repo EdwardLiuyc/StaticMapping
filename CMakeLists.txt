@@ -153,6 +153,22 @@ if(ENABLE_PROF)
 endif(ENABLE_PROF)
 
 #######################################################
+### PYTHON LIBRARY FOR DEEP LEARNING
+#######################################################
+
+find_package(PythonLibs REQUIRED)
+if(NOT PythonLibs_FOUND)
+  message(FATAL_ERROR "PYTHON LIBS NOT FOUND!")
+else()
+  message("FOUND PYTHON LIBS!")
+  message("PYTHON LIBS DIRECTORY: " ${PYTHON_LIBRARY})
+endif()
+
+include_directories(/home/robotics/Application/Anaconda/anaconda3/envs/Object_Detection/include)
+include_directories(/usr/include/python3.6/)
+list(APPEND require_libs /usr/lib/x86_64-linux-gnu/libpython3.6m.so)
+
+#######################################################
 ###  Source files
 #######################################################
 add_subdirectory(common)

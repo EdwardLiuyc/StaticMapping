@@ -290,9 +290,9 @@ int main(int argc, char** argv) {
   }
   map_builder->EnableUsingOdom(use_odom);
   map_builder->EnableUsingGps(use_gps);
-  // map_builder->SetShowMapFunction(show_function);
-  // map_builder->SetShowPathFunction(publish_path);
-  // map_builder->SetShowSubmapFunction(show_submap_function);
+  map_builder->SetShowMapFunction(show_function);
+  map_builder->SetShowPathFunction(publish_path);
+  map_builder->SetShowSubmapFunction(show_submap_function);
 
   REGISTER_FUNC;
 

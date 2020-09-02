@@ -1,0 +1,1 @@
+/usr/bin/c++   -Wall -Wextra -Wfloat-conversion -O3 -DNDEBUG  -rdynamic CMakeFiles/example-MGRS.dir/example-MGRS.cpp.o  -o example-MGRS -Wl,-rpath,/home/robotics/Lab_Project/ROS_WorkSpace/StaticMapping/setup/GeographicLib-1.50.1/build/src ../src/libGeographic.so.19.0.1 

@@ -37,6 +37,7 @@
 #include "pre_processors/filter_range_image.h"
 #include "pre_processors/filter_statistic_removal.h"
 #include "pre_processors/filter_voxel_grid.h"
+#include "pre_processors/filter_semantic.h"
 
 namespace static_map {
 namespace pre_processers {
@@ -139,6 +140,10 @@ void Factory<PointT>::RegisterSupportedFilters() {
                              std::make_shared<VoxelGrid<PointT>>());
   supported_filters_.emplace("AxisRange",
                              std::make_shared<AxisRange<PointT>>());
+  /*supported_filters_.emplace("Semantic",
+                             std::make_shared<SemanticFilter<PointT>>());*/
+
+
 }
 
 }  // namespace filter
