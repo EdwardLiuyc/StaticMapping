@@ -39,7 +39,7 @@
 #include "common/macro_defines.h"
 #include "common/math.h"
 
-#if defined _OPENMP && defined _USE_TBB_
+#if defined _OPENMP
 #include <tbb/atomic.h>
 #include <tbb/concurrent_unordered_map.h>
 #include <tbb/concurrent_vector.h>
@@ -51,10 +51,6 @@ typedef uint8_t Probability;
 
 constexpr size_t kTableSize = (1 << (sizeof(Probability) * 8));
 constexpr Probability kUnknown = (kTableSize >> 1);
-constexpr float kMinHitProb = 0.501f;
-constexpr float kMaxMissProb = 0.499f;
-constexpr float kMaxProb = 0.9f;
-constexpr float kMinProb = 0.1f;
 
 constexpr int kTrue = 1;
 constexpr int kFalse = 0;
@@ -83,7 +79,6 @@ class MultiResolutionVoxelMap {
 
   using KeyInt3 = Eigen::Vector3i;
 
-#ifdef _USE_TBB_
   using PointVector =
       tbb::concurrent_vector<PointT, Eigen::aligned_allocator<PointT>>;
   using IndexVector = tbb::concurrent_vector<KeyInt3>;
@@ -95,21 +90,6 @@ class MultiResolutionVoxelMap {
   template <typename T>
   using VoxelMap =
       tbb::concurrent_unordered_map<KeyInt3, T, std::hash<KeyInt3>>;
-#else
-  using PointVector = std::vector<PointT, Eigen::aligned_allocator<PointT>>;
-  using IndexVector = std::vector<KeyInt3>;
-  using AtomicBool = std::atomic<int>;
-  using AtomicInt = std::atomic<int>;
-
-  struct VectorCompare {
-    bool operator()(const KeyInt3 a, const KeyInt3 b) const {
-      return std::forward_as_tuple(a[0], a[1], a[2]) <
-             std::forward_as_tuple(b[0], b[1], b[2]);
-    }
-  };
-  template <typename T>
-  using VoxelMap = std::map<KeyInt3, T, VectorCompare>;
-#endif
 
   MultiResolutionVoxelMap() {
     for (int i = 0; i < kTableSize; ++i) {

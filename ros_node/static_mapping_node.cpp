@@ -187,6 +187,9 @@ int main(int argc, char** argv) {
     return -1;
   }
 
+  std::string pub_topics = "";
+  pcl::console::parse_argument(argc, argv, "-pubs", pub_topics);
+
   ros::Publisher map_publisher =
       n.advertise<sensor_msgs::PointCloud2>("/optimized_map", 1);
   ros::Publisher submap_publisher =
@@ -290,9 +293,17 @@ int main(int argc, char** argv) {
   }
   map_builder->EnableUsingOdom(use_odom);
   map_builder->EnableUsingGps(use_gps);
-  // map_builder->SetShowMapFunction(show_function);
-  // map_builder->SetShowPathFunction(publish_path);
-  // map_builder->SetShowSubmapFunction(show_submap_function);
+  if (!pub_topics.empty()) {
+    if (std::strstr(pub_topics.c_str(), "[map]")) {
+      map_builder->SetShowMapFunction(show_function);
+    }
+    if (std::strstr(pub_topics.c_str(), "[submap]")) {
+      map_builder->SetShowSubmapFunction(show_submap_function);
+    }
+    if (std::strstr(pub_topics.c_str(), "[path]")) {
+      map_builder->SetShowPathFunction(publish_path);
+    }
+  }
 
   REGISTER_FUNC;
 

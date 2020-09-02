@@ -26,7 +26,8 @@ sudo apt -y install cmake \
   libgoogle-glog-dev \
   libatlas-base-dev \
   libsuitesparse-dev \
-  imagemagick
+  imagemagick \
+  libtbb-dev
 
 ## install pcl 
 ## tested in pcl-1.7 (ubuntu16.04) and pcl-1.8 (ubuntu18.04)
@@ -176,6 +177,9 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 # TODO
 - **Loop Close factor should be rubust**
 - **using docker to run**
+- another mode for the imu which provides attitude
+- trajectory and loop closure edges in rviz
+- Kitti evaluation
 - separate normal estimation from icp_fast, then we can no longer do it again in submap matching
 - seperate map_builder class into several smaller classes
 - preprocessor: remove points under the ground

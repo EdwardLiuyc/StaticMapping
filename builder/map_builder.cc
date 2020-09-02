@@ -46,6 +46,7 @@ namespace {
 constexpr int kOdomMsgMaxSize = 100;
 constexpr int kSubmapResSize = 100;
 constexpr double kExpolatorMinDuration = 0.001;  // second
+constexpr double kLocalMapRange = 30.;           // m
 }  // namespace
 
 MapBuilder::MapBuilder()
@@ -84,10 +85,6 @@ int MapBuilder::InitialiseInside() {
       options_.front_end_options.accumulate_cloud_num;
   data_collector_ = std::make_unique<DataCollector<PointType>>(
       data_collector_options, &filter_factory_);
-
-#ifdef _USE_TBB_
-  PRINT_INFO("Enable TBB.");
-#endif
 
 #ifdef _USE_OPENVDB_
   PRINT_INFO("Init openvdb.");
@@ -337,11 +334,11 @@ void MapBuilder::ScanMatchProcessing() {
 
     // motion compensation using guess
     // still in test
-    // scan_matcher_->DisableInnerCompensation();
+    // scan_matcher_->EnableInnerCompensation();
 
     scan_matcher_->SetInputTarget(target_cloud);
-    if (options_.front_end_options.motion_compensation_options.enable &&
-        options_.front_end_options.motion_compensation_options.use_average) {
+    // && options_.front_end_options.motion_compensation_options.use_average
+    if (options_.front_end_options.motion_compensation_options.enable) {
       PointCloudType compensated_source_cloud;
       MotionCompensation(source_cloud, source_cloud_delta_time, guess,
                          &compensated_source_cloud);
@@ -353,9 +350,7 @@ void MapBuilder::ScanMatchProcessing() {
     {
       REGISTER_BLOCK("scan match");
       scan_matcher_->Align(guess, align_result);
-      // std::cout << scan_matcher_->GetFitnessScore() << std::endl;
     }
-    // common::PrintTransform(align_result);
 
     if (options_.front_end_options.motion_compensation_options.enable) {
       Eigen::Matrix4d average_transform = align_result;
@@ -376,9 +371,18 @@ void MapBuilder::ScanMatchProcessing() {
     accumulative_transform *= align_result;
     if (extrapolator_) {
       extrapolator_->AddPose(source_time, pose_source);
+      // const Eigen::Quaterniond gravity_alignment =
+      //     extrapolator_->EstimateGravityOrientation(source_time);
+
+      // Eigen::Matrix4d gravity_alignment_transform =
+      // Eigen::Matrix4d::Identity(); gravity_alignment_transform.block(0, 0, 3,
+      // 3) =
+      //     gravity_alignment.inverse().toRotationMatrix();
+      // pose_source = pose_source * gravity_alignment_transform;
+      // accumulative_transform =
+      //     accumulative_transform * gravity_alignment_transform;
     }
-    // const Eigen::Quaterniond gravity_alignment =
-    //     extrapolator_->EstimateGravityOrientation(source_time);
+
     const float accu_translation =
         common::Translation(accumulative_transform).norm();
     Eigen::Vector3d euler_angles = common::RotationMatrixToEulerAngles(
@@ -522,7 +526,6 @@ void MapBuilder::ConnectAllSubmap() {
     }
 
     if (show_map_function_) {
-      constexpr double kLocalMapRange = 50.;
       PointCloudPtr local_map(new PointCloudType);
       for (auto& submap : *current_trajectory_) {
         if (submap->GetId().submap_index > current_finished_index) {
@@ -542,11 +545,11 @@ void MapBuilder::ConnectAllSubmap() {
         *local_map += *transformed_cloud;
       }
 
-      pcl::ApproximateVoxelGrid<PointType> approximate_voxel_filter;
-      approximate_voxel_filter.setLeafSize(0.1, 0.1, 0.1);
       PointCloudPtr filtered_final_cloud(new PointCloudType);
-      approximate_voxel_filter.setInputCloud(local_map);
-      approximate_voxel_filter.filter(*filtered_final_cloud);
+      pre_processers::filter::RandomSampler<PointType> random_sample;
+      random_sample.SetInputCloud(local_map);
+      random_sample.SetValue("sampling_rate", 0.05);
+      random_sample.Filter(filtered_final_cloud);
       show_map_function_(filtered_final_cloud);
       filtered_final_cloud.reset();
     }

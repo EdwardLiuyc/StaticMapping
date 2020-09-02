@@ -25,6 +25,12 @@
 #include "common/point_utils.h"
 
 namespace static_map {
+namespace {
+constexpr float kMinHitProb = 0.501f;
+constexpr float kMaxMissProb = 0.499f;
+constexpr float kMaxProb = 0.9f;
+constexpr float kMinProb = 0.1f;
+}  // namespace
 
 template <typename PointT>
 void MultiResolutionVoxelMap<PointT>::Initialise(const MrvmSettings& settings) {
@@ -63,7 +69,7 @@ void MultiResolutionVoxelMap<PointT>::InsertPointCloud(
   const size_t cloud_size = cloud->size();
   const float resolution = settings_.high_resolution;
   VoxelMap<bool> end_voxels;
-#if defined _OPENMP && defined _USE_TBB_
+#if defined _OPENMP
 #pragma omp parallel for private(point_index) num_threads(LOCAL_OMP_THREADS_NUM)
 #endif
   for (point_index = 0; point_index < cloud_size; ++point_index) {
