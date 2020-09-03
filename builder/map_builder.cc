@@ -58,11 +58,13 @@ MapBuilder::MapBuilder()
 MapBuilder::~MapBuilder() {}
 
 int MapBuilder::InitialiseInside() {
+  // 初始化Scan_Matcher模块
   PRINT_INFO("Init scan matchers.");
   scan_matcher_ = registrator::CreateMatcher<PointType>(
       options_.front_end_options.scan_matcher_options, true);
   CHECK(scan_matcher_) << "scan match failed to init.";
 
+  // 是否用IMU，用Options来决定
   use_imu_ = options_.front_end_options.imu_options.enabled;
   if (use_imu_) {
     CHECK_GT(options_.front_end_options.imu_options.frequency, 1.e-6);
@@ -72,6 +74,7 @@ int MapBuilder::InitialiseInside() {
   }
 
   PRINT_INFO("Init isam optimizer.");
+  // 初始化ISAM优化器
   isam_optimizer_.reset(new back_end::IsamOptimizer<PointType>(
       options_.back_end_options.isam_optimizer_options,
       options_.back_end_options.loop_detector_setting));
@@ -79,6 +82,7 @@ int MapBuilder::InitialiseInside() {
   isam_optimizer_->SetTransformOdomToLidar(transform_odom_lidar_);
   isam_optimizer_->SetTrackingToGps(tracking_to_gps_);
 
+  // 收集数据->Data容器初始化
   DataCollectorOptions data_collector_options;
   data_collector_options.accumulate_cloud_num =
       options_.front_end_options.accumulate_cloud_num;
@@ -99,9 +103,12 @@ int MapBuilder::InitialiseInside() {
   registrator::cuda::init_cuda_device();
 #endif
 
+  // 启动轨迹追踪
   AddNewTrajectory();
 
+  // 线程启动初始化
   PRINT_INFO("Init threads.");
+  // 启动匹配线程
   scan_match_thread_ = std::make_unique<std::thread>(
       std::bind(&MapBuilder::ScanMatchProcessing, this));
   while (!scan_match_thread_running_.load()) {
@@ -280,16 +287,43 @@ void MotionCompensation(const MapBuilder::PointCloudPtr& raw_cloud,
     output_cloud->points.push_back(new_point);
   }
 }
+<<<<<<< HEAD
+
+// TODO(edward) use slerp
+// TODO->用球面插值算法来实现位姿计算
+Eigen::Matrix4d AverageTransforms(
+    const std::vector<Eigen::Matrix4d>& transforms) {
+  CHECK(!transforms.empty());
+  Eigen::Vector3d angles(0, 0, 0);
+  Eigen::Vector3d translation(0, 0, 0);
+  for (Eigen::Matrix4d transform : transforms) {
+    translation += transform.block(0, 3, 3, 1);
+    angles += common::RotationMatrixToEulerAngles(
+        Eigen::Matrix3d(transform.block(0, 0, 3, 3)));
+  }
+  translation /= static_cast<float>(transforms.size());
+  angles /= static_cast<float>(transforms.size());
+  Eigen::Matrix4d result = Eigen::Matrix4d::Identity();
+  result.block(0, 0, 3, 3) = common::EulerAnglesToRotationMatrix(angles);
+  result.block(0, 3, 3, 1) = translation;
+
+  return result;
+}
+=======
+>>>>>>> 5698495f31021f834ee53bd4aeec9bc2df66a500
 }  // namespace
 
 void MapBuilder::ScanMatchProcessing() {
+  // 使用刚体运动位姿表示
   using Pose3d = PoseExtrapolator::RigidPose3d;
-
+  // 说明scan-match算法线程现在开启
   scan_match_thread_running_ = true;
 
   PointCloudPtr target_cloud;
   PointCloudPtr source_cloud;
+  // 位姿初始化值
   Pose3d pose_target = Pose3d::Identity();
+  // 位姿终值推算值
   Pose3d final_transform = Pose3d::Identity();
   Pose3d accumulative_transform = Pose3d::Identity();
   SimpleTime last_source_time;
@@ -299,6 +333,7 @@ void MapBuilder::ScanMatchProcessing() {
   PointCloudPtr history_cloud = nullptr;
   while (true) {
     source_cloud = data_collector_->GetNewCloud(&source_cloud_delta_time);
+    // 如果输入点云不为空，则....
     if (source_cloud != nullptr) {
       if (!got_first_point_cloud_) {
         got_first_point_cloud_ = true;
@@ -350,6 +385,7 @@ void MapBuilder::ScanMatchProcessing() {
       scan_matcher_->SetInputSource(source_cloud);
     }
     Eigen::Matrix4d align_result = Eigen::Matrix4d::Identity();
+    // 这个块包含应该没必要,可以去掉
     {
       REGISTER_BLOCK("scan match");
       scan_matcher_->Align(guess, align_result);
