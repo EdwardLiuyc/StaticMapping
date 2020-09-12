@@ -8,11 +8,57 @@
 # 简介
 <img src="doc/mapping.png" width="800" />
 
+# KITTI 数据集建图
+<img src="doc/kitti_rgb.png" width="800" />
+
 # 构建 & 编译
+## 本地环境构建项目
+### 依赖项
+> 首先你应该已经安装了 ROS 环境，按照[官方文档](http://wiki.ros.org/kinetic/Installation/Ubuntu)来进行安装，项目在 kinetic 和 melodic 版本中都经过了测试。
+
+```bash
+## 基础依赖项
+sudo apt -y install cmake \
+  libboost-dev \
+  libeigen3-dev \
+  libpng-dev \
+  libgoogle-glog-dev \
+  libatlas-base-dev \
+  libsuitesparse-dev \
+  imagemagick \
+  libtbb-dev
+
+## install pcl 
+sudo apt -y install libpcl-dev
+
+cd your_own_workspace 
+## 比如 /home/user/3rd_parties
+## 或者你可以直接 cd 到当前项目的 third_parties 目录下
+## GeoGraphic
+./path_of_StaticMapping/setup/install_geographiclib.sh
+## GTSAM(4.0 or higher is needed)
+./path_of_StaticMapping/setup/install_gtsam.sh
+## libnabo
+./path_of_StaticMapping/setup/install_libnabo.sh
+## libpointmatcher
+./path_of_StaticMapping/setup/install_libpointmatcher.sh
+```
+
+### 选配项
+- **CUDA**: 我尝试过使用 cuda 加速 kdtree，尝试来加速 ICP，但是测试下来发现也只达到 libnabo 的 1.5x ~ 2x 的速度，所以暂时没有继续跟进。
+- **cuda_utils**: 
+
+### 编译项目
+```bash
+mkdir build && cd build
+cmake ..
+make -j8
+```
+
 ## 使用 Docker
 在 ubuntu 18.04 下，用 docker 来构建是最好的方式，后面会针对加入 ubuntu 16.04 等其他系统的 docker。
 ### 获取 docker 镜像
-#### 中国大陆区域
+#### 中国大陆地区
 在中国大陆，最快的方式就是直接从阿里云获取镜像：
 ```docker
 docker pull registry.cn-hangzhou.aliyuncs.com/edward_slam/static_mapping:master_bionic_latest
@@ -22,7 +68,7 @@ docker pull registry.cn-hangzhou.aliyuncs.com/edward_slam/static_mapping:master_
 docker build --rm -t slam/static_mapping:latest . 
 ```
 
-#### 其他区域
+#### 其他地区
 首先，移除掉 dockerfile 中针对中国大陆区域优化的部分：
 ```docker
 COPY ./config/tsinghua_source.txt /etc/apt/sources.list
@@ -45,49 +91,6 @@ docker run -it --rm -v --net=host `pwd`:'/home/docker/src/StaticMapping' \
 
 ## in the container 
 mkdir -p build && cd build
-cmake ..
-make -j8
-```
-
-## 本地环境构建项目
-### 依赖项
-> 首先你应该已经安装了 ROS 环境，按照[官方文档](http://wiki.ros.org/kinetic/Installation/Ubuntu)来进行安装，项目在 kinetic 和 melodic 版本中都经过了测试。
-
-```bash
-## 基础依赖项
-sudo apt -y install cmake \
-  libboost-dev \
-  libeigen3-dev \
-  libpng-dev \
-  libgoogle-glog-dev \
-  libatlas-base-dev \
-  libsuitesparse-dev \
-  imagemagick
-
-## install pcl 
-sudo apt -y install libpcl-dev
-
-cd your_own_workspace 
-## 比如 /home/user/3rd_parties
-## 或者你可以直接 cd 到当前项目的 third_parties 目录下
-## GeoGraphic
-./path_of_StaticMapping/setup/install_geographiclib.sh
-## GTSAM(4.0 or higher is needed)
-./path_of_StaticMapping/setup/install_gtsam.sh
-## libnabo
-./path_of_StaticMapping/setup/install_libnabo.sh
-## libpointmatcher
-./path_of_StaticMapping/setup/install_libpointmatcher.sh
-```
-
-### 选配项
-- **CUDA**: 我尝试过使用 cuda 加速 kdtree，尝试来加速 ICP，但是测试下来发现也只达到 libnabo 的 1.5x ~ 2x 的速度，所以暂时没有继续跟进。
-- **cuda_utils**: 
-- **TBB**: 在项目中我使用了 tbb 库中的一些线程安全的容器等，如果把 tbb 使用选项关掉，代码中会自动切换到 stl 容器，这样很多功能会退化到单线程，所以**强烈建议**打开 tbb 的选项。
-
-### 编译项目
-```bash
-mkdir build && cd build
 cmake ..
 make -j8
 ```

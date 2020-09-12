@@ -49,7 +49,6 @@ cd your_own_workspace
 ### Optional libs
 - **CUDA**: We have made some attempts in fasting the kdtree in ICP by creating the kdtree on GPU, but the GPU Kdtree is not fast enough(just 1.5~2 times faster than libnabo). Notice that if you use CUDA, your g++ version should be lower than 6.0 because the nvcc does not support the 6.0 or high version g++.  
 - **cuda_utils**: 
-- **TBB**: We have used concurrency containers in TBB for many multi-thread situations, if you turn off this options, the process will use stl containers such as std::vector instead and many multi-thread algorithm will degenerate into single-thread. So, Using TBB is **strongly recommended**.
 
 ### compiling
 ```bash
@@ -181,7 +180,7 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - trajectory and loop closure edges in rviz
 - Kitti evaluation
 - separate normal estimation from icp_fast, then we can no longer do it again in submap matching
-- seperate map_builder class into several smaller classes
+- seperate map_builder class into several smaller classes : map_option_loader / front_end / back_end
 - preprocessor: remove points under the ground
 - Fix bug for bool parameters of registrators
 - use glog or other logging lib instead of print macro
