@@ -146,6 +146,13 @@ if(ENABLE_PROF)
   execute_process (COMMAND bash -c "mkdir -p ~/${PROF_LOG_DIR}")
 endif(ENABLE_PROF)
 
+cmake_policy(SET CMP0022 NEW)
+option(ENABLE_TEST "" OFF)
+if(ENABLE_TEST)
+  add_subdirectory(third_parties/gtest)
+  enable_testing()
+endif(ENABLE_TEST)
+
 #######################################################
 ###  Source files
 #######################################################
