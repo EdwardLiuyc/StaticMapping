@@ -106,6 +106,7 @@ struct Matches {
   Ids ids;
 
   double GetDistsQuantile(const double quantile) const {
+    // REGISTER_FUNC;
     // build array
     CHECK(quantile >= 0.0 && quantile <= 1.0);
     std::vector<double> values;
@@ -135,103 +136,73 @@ struct ErrorElements {
   BuildData reference;     //!< reference point cloud
   OutlierWeights weights;  //!< weights for every association
   Matches matches;         //!< associations
-  int nbRejectedMatches;   //!< number of matches with zero weights
-  int nbRejectedPoints;    //!< number of points with all matches set to zero
-                           //!< weights
-  double pointUsedRatio;   //!< the ratio of how many points were used for error
-                           //!< minimization
-  double weightedPointUsedRatio;  //!< the ratio of how many points were used
-                                  //!< (with weight) for error minimization
 
   ErrorElements();
   ErrorElements(const BuildData& source_points, const BuildData& target_points,
                 const OutlierWeights& weights, const Matches& matches) {
+    REGISTER_FUNC;
     CHECK_GT(matches.ids.rows(), 0);
     CHECK_GT(matches.ids.cols(), 0);
     CHECK(matches.ids.cols() == source_points.points.cols());  // nbpts
     CHECK(weights.rows() == matches.ids.rows());               // knn
+    CHECK_EQ(weights.rows(), 1);
 
-    const int knn = weights.rows();
-    const int dimPoints = source_points.points.rows();
+    const int dim_points = source_points.points.rows();
 
     // Count points with no weights
-    const int pointsCount = (weights.array() != 0.0).count();
-    CHECK_GT(pointsCount, 0) << "no point to minimize";
+    const int points_count = (weights.array() != 0.0).count();
+    CHECK_GT(points_count, 0) << "no point to minimize";
 
-    Matrix keptPoints(dimPoints, pointsCount);
-    std::vector<double> kept_points_factor(pointsCount);
-    Matches keptMatches(1, pointsCount);
-    OutlierWeights keptWeights(1, pointsCount);
+    Matrix kept_points(dim_points, points_count);
+    std::vector<double> kept_points_factor(points_count);
+    Matches kept_matches(1, points_count);
+    OutlierWeights kept_weights(1, points_count);
 
     int j = 0;
-    int rejectedMatchCount = 0;
-    int rejectedPointCount = 0;
-    bool matchExist = false;
-    this->weightedPointUsedRatio = 0;
-
     for (int i = 0; i < source_points.points.cols(); ++i) {
-      matchExist = false;
-      for (int k = 0; k < knn; k++) {
-        const auto matchDist = matches.dists(k, i);
-        if (matchDist == NNS::InvalidValue) {
-          continue;
-        }
-
-        if (weights(k, i) != 0.0) {
-          keptPoints.col(j) = source_points.points.col(i);
-          kept_points_factor[j] = source_points.factors[i];
-          keptMatches.ids(0, j) = matches.ids(k, i);
-          keptMatches.dists(0, j) = matchDist;
-          keptWeights(0, j) = weights(k, i);
-          ++j;
-          this->weightedPointUsedRatio += weights(k, i);
-          matchExist = true;
-        } else {
-          rejectedMatchCount++;
-        }
+      const auto match_dist = matches.dists(0, i);
+      if (match_dist == NNS::InvalidValue) {
+        continue;
       }
 
-      if (matchExist == false) {
-        rejectedPointCount++;
+      if (weights(0, i) != 0.0) {
+        kept_points.col(j) = source_points.points.col(i);
+        kept_points_factor[j] = source_points.factors[i];
+        kept_matches.ids(0, j) = matches.ids(0, i);
+        kept_matches.dists(0, j) = match_dist;
+        kept_weights(0, j) = weights(0, i);
+        ++j;
       }
     }
+    CHECK_EQ(j, points_count);
+    CHECK_EQ(dim_points, target_points.points.rows());
 
-    CHECK_EQ(j, pointsCount);
-
-    this->pointUsedRatio =
-        static_cast<double>(j) / (knn * source_points.points.cols());
-    this->weightedPointUsedRatio /=
-        static_cast<double>(knn * source_points.points.cols());
-
-    CHECK_EQ(dimPoints, target_points.points.rows());
     const int dim_target_normals = target_points.normals.rows();
     Matrix associated_target_normals;
     if (dim_target_normals > 0) {
-      associated_target_normals = Matrix(dim_target_normals, pointsCount);
+      associated_target_normals = Matrix(dim_target_normals, points_count);
     }
 
-    Matrix associatedPoints(dimPoints, pointsCount);
+    Matrix associated_points(dim_points, points_count);
     // Fetch matched points
-    for (int i = 0; i < pointsCount; ++i) {
-      const int refIndex(keptMatches.ids(i));
-      associatedPoints.col(i) =
-          target_points.points.block(0, refIndex, dimPoints, 1);
+    for (int i = 0; i < points_count; ++i) {
+      const int ref_index(kept_matches.ids(i));
+      associated_points.col(i) =
+          target_points.points.block(0, ref_index, dim_points, 1);
 
       if (dim_target_normals > 0)
         associated_target_normals.col(i) =
-            target_points.normals.block(0, refIndex, dim_target_normals, 1);
+            target_points.normals.block(0, ref_index, dim_target_normals, 1);
     }
 
     // Copy final data to structure
-    reading.points = keptPoints;
+    reading.points = kept_points;
     reading.factors = std::move(kept_points_factor);
-    reference.points = associatedPoints;
+    reference.points = associated_points;
     reference.normals = associated_target_normals;
 
-    this->weights = keptWeights;
-    this->matches = keptMatches;
-    this->nbRejectedMatches = rejectedMatchCount;
-    this->nbRejectedPoints = rejectedPointCount;
+    this->weights = kept_weights;
+    this->matches = kept_matches;
   }
 };
 
@@ -268,7 +239,7 @@ inline size_t ArgMax(const Eigen::Vector3d& v) {
 //   IV.C. "Unconstrained Least Squares" part
 // TODO(yongchuan) Try more normal estimation methods.
 void CalculateNormals(BuildData* const data, const int first, const int last) {
-  // REGISTER_FUNC;
+  REGISTER_FUNC;
   const int col_count = last - first;
   // build nearest neighbors list
   Matrix d(kDim, col_count);
@@ -357,15 +328,10 @@ void BuildNormals(BuildData* const data, const int first, const int last,
 
 Matches FindClosests(const std::shared_ptr<NNS>& nns_kdtree,
                      const BuildData& source_cloud) {
+  REGISTER_FUNC;
   const int points_count(source_cloud.points.cols());
   const int search_count = 1;
   const double epsilon = 3.16;
-  // Matches matches(typename Matches::Dists(knn, points_count),
-  //                 typename Matches::Ids(knn, points_count));
-
-  // static_assert(NNS::InvalidIndex == Matches::InvalidId, "");
-  // static_assert(NNS::InvalidValue == Matches::InvalidDist, "");
-  // this->visitCounter +=
   //! A dense integer matrix
   Matches matches(search_count, points_count);
   nns_kdtree->knn(source_cloud.points, matches.ids, matches.dists, search_count,
@@ -408,8 +374,8 @@ void SolvePossiblyUnderdeterminedLinearSystem(const Matrix& A, const Vector& b,
   BOOST_AUTO(Aqr, A.fullPivHouseholderQr());
   if (!Aqr.isInvertible()) {
     // Solve reduced problem R1 x = Q1^T b instead of QR x = b, where Q = [Q1
-    // Q2] and R = [ R1 ; R2 ] such that ||R2|| is small (or zero) and therefore
-    // A = QR ~= Q1 * R1
+    // Q2] and R = [ R1 ; R2 ] such that ||R2|| is small (or zero) and
+    // therefore A = QR ~= Q1 * R1
     const int rank = Aqr.rank();
     const int rows = A.rows();
     const Matrix Q1t = Aqr.matrixQ().transpose().block(0, 0, rank, rows);
@@ -424,11 +390,6 @@ void SolvePossiblyUnderdeterminedLinearSystem(const Matrix& A, const Vector& b,
 
     BOOST_AUTO(ax, (A * x).eval());
     if (!b.isApprox(ax, 1e-5)) {
-      // LOG(INFO)
-      //     << "PointMatcher::icp - encountered almost singular matrix while "
-      //        "minimizing point to plane distance. QR solution was too "
-      //        "inaccurate. "
-      //        "Trying more accurate approach using double precision SVD.";
       x = A.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(b);
       ax = A * x;
 
@@ -448,7 +409,6 @@ void SolvePossiblyUnderdeterminedLinearSystem(const Matrix& A, const Vector& b,
     }
   } else {
     // Cholesky decomposition
-    // std::cout << "icp_fast test0.." << std::endl;
     x = A.llt().solve(b);
   }
 }
@@ -458,6 +418,7 @@ Eigen::Matrix4d ComputePointToPlane(const BuildData& source_cloud,
                                     const Eigen::MatrixXd& weights,
                                     const Matches& matches,
                                     bool compensation = false) {
+  REGISTER_FUNC;
   const Eigen::MatrixXd target_normals = target_cloud.normals;
   CHECK_EQ(target_normals.rows(), kDim);
   CHECK_EQ(target_normals.cols(), target_cloud.points.cols());
@@ -529,8 +490,8 @@ Eigen::Matrix4d ComputePointToPoint(BuildData& source_cloud,  // NOLINT
   CHECK_EQ(source_cloud.points.cols(), target_cloud.points.cols());
 
   // const int dimCount(mPts.reading.features.rows());
-  // const int ptsCount(mPts.reading.features.cols()); //Both point clouds have
-  // now the same number of (matched) point
+  // const int ptsCount(mPts.reading.features.cols()); //Both point clouds
+  // have now the same number of (matched) point
 
   const Vector w = weights.row(0);
   const double w_sum_inv = 1. / w.sum();
@@ -555,10 +516,10 @@ Eigen::Matrix4d ComputePointToPoint(BuildData& source_cloud,  // NOLINT
   const Eigen::JacobiSVD<Matrix> svd(m,
                                      Eigen::ComputeThinU | Eigen::ComputeThinV);
   Matrix rotMatrix(svd.matrixU() * svd.matrixV().transpose());
-  // It is possible to get a reflection instead of a rotation. In this case, we
-  // take the second best solution, guaranteed to be a rotation. For more
-  // details, read the tech report: "Least-Squares Rigid Motion Using SVD", Olga
-  // Sorkine http://igl.ethz.ch/projects/ARAP/svd_rot.pdf
+  // It is possible to get a reflection instead of a rotation. In this case,
+  // we take the second best solution, guaranteed to be a rotation. For more
+  // details, read the tech report: "Least-Squares Rigid Motion Using SVD",
+  // Olga Sorkine http://igl.ethz.ch/projects/ARAP/svd_rot.pdf
   if (rotMatrix.determinant() < 0.) {
     Matrix tmpV = svd.matrixV().transpose();
     tmpV.row(kDim - 1) *= -1.;
@@ -681,13 +642,12 @@ bool IcpFast<PointT>::Align(const Eigen::Matrix4d& guess,
   Eigen::Matrix4d T_target_mean = Eigen::Matrix4d::Identity();
   T_target_mean.block(0, 3, 3, 1) = target_mean;
 
-  // std::cout << "target mean: \n" << std::flush;
-  // common::PrintTransform(T_target_mean);
-
   target_cloud_->points.colwise() -= target_mean;
-  nns_kdtree_.reset(
-      NNS::create(target_cloud_->points, kDim, NNS::KDTREE_LINEAR_HEAP));
-
+  {
+    // REGISTER_BLOCK("BuildKdTree");
+    nns_kdtree_.reset(
+        NNS::create(target_cloud_->points, kDim, NNS::KDTREE_LINEAR_HEAP));
+  }
   BuildData init_source_cloud = *source_cloud_;
   Eigen::Matrix4d T_target_mean_init_guess = T_target_mean.inverse() * guess;
   TransformData(&init_source_cloud, T_target_mean_init_guess);
@@ -703,6 +663,7 @@ bool IcpFast<PointT>::Align(const Eigen::Matrix4d& guess,
 
   int iterator = 0;
   while (true) {
+    REGISTER_BLOCK("Iteration");
     // step1 Find Closest points
     BuildData step_cloud(init_source_cloud);
     if (this->inner_compensation_) {
@@ -734,30 +695,13 @@ bool IcpFast<PointT>::Align(const Eigen::Matrix4d& guess,
     iterator++;
     rotations_iter.emplace_back(Eigen::Matrix3d(T_iter.block(0, 0, 3, 3)));
     translations_iter.push_back(T_iter.block(0, 3, 3, 1));
-    if (CheckConvergence(rotations_iter, translations_iter)) {
+    if (CheckConvergence(rotations_iter, translations_iter) ||
+        iterator >= options_.max_iteration) {
+      const double average_dist = error_elements.matches.dists.sum() /
+                                  error_elements.matches.dists.cols();
+      this->final_score_ = std::exp(-average_dist);
       break;
     }
-    if (iterator >= options_.max_iteration) {
-      break;
-    }
-  }
-
-  // calculate the score
-  {
-    TransformData(&init_source_cloud, T_iter);
-    const Matches matches(FindClosests(nns_kdtree_, init_source_cloud));
-
-    const double limit = matches.GetDistsQuantile(options_.dist_outlier_ratio);
-    const Matrix output_weights =
-        (matches.dists.array() <= limit).cast<double>();
-    ErrorElements error_elements(init_source_cloud, *target_cloud_,
-                                 output_weights, matches);
-
-    CHECK_GT(error_elements.matches.dists.cols(), 0);
-    // @todo(edward) use dist instead of squared dists
-    const double average_dist = error_elements.matches.dists.sum() /
-                                error_elements.matches.dists.cols();
-    this->final_score_ = std::exp(-average_dist);
   }
 
   result = T_target_mean * T_iter * T_target_mean_init_guess;

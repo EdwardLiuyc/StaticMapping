@@ -34,41 +34,41 @@ include_directories("third_parties" "." "builder")
 set(require_libs )
 
 #### cuda ####
-option(USE_CUDA "Enable Cuda?" OFF)
-if(USE_CUDA)
-  find_package(CUDA REQUIRED)
-  include_directories(${CUDA_INCLUDE_DIRS})
-  find_package(CudaUtils REQUIRED)
-  include_directories(${CUDA_UTILS_INCLUDE_DIR})
+# option(USE_CUDA "Enable Cuda?" OFF)
+# if(USE_CUDA)
+#   find_package(CUDA REQUIRED)
+#   include_directories(${CUDA_INCLUDE_DIRS})
+  # find_package(CudaUtils REQUIRED)
+  # include_directories(${CUDA_UTILS_INCLUDE_DIR})
 
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_ICP_USE_CUDA_")
-  set_directory_properties(PROPERTIES COMPILE_DEFINITIONS "")
+  # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_ICP_USE_CUDA_")
+  # set_directory_properties(PROPERTIES COMPILE_DEFINITIONS "")
 
-  set(CUDA_CHECKER_TARGET_FILE ${PROJECT_SOURCE_DIR}/tools/check_cuda)
-  set(CUDA_CHECKER_SRC_FILE ${PROJECT_SOURCE_DIR}/tools/check_cuda.cu)
-  execute_process(COMMAND nvcc -lcuda ${CUDA_CHECKER_SRC_FILE} -o ${CUDA_CHECKER_TARGET_FILE})
-  execute_process(COMMAND ${CUDA_CHECKER_TARGET_FILE}
-                  RESULT_VARIABLE CUDA_RETURN_CODE
-                  OUTPUT_VARIABLE CUDA_ARCH)
-  if(${CUDA_RETURN_CODE} EQUAL 0)
-    set(CUDA_SUCCESS TRUE)
-  else()
-    set(CUDA_SUCCESS FALSE)
-  endif()
+  # set(CUDA_CHECKER_TARGET_FILE ${PROJECT_SOURCE_DIR}/tools/check_cuda)
+  # set(CUDA_CHECKER_SRC_FILE ${PROJECT_SOURCE_DIR}/tools/check_cuda.cu)
+  # execute_process(COMMAND nvcc -lcuda ${CUDA_CHECKER_SRC_FILE} -o ${CUDA_CHECKER_TARGET_FILE})
+  # execute_process(COMMAND ${CUDA_CHECKER_TARGET_FILE}
+  #                 RESULT_VARIABLE CUDA_RETURN_CODE
+  #                 OUTPUT_VARIABLE CUDA_ARCH)
+  # if(${CUDA_RETURN_CODE} EQUAL 0)
+  #   set(CUDA_SUCCESS TRUE)
+  # else()
+  #   set(CUDA_SUCCESS FALSE)
+  # endif()
 
-  if (${CUDA_SUCCESS})
-    message(STATUS "CUDA Architecture: ${CUDA_ARCH}")
-    message(STATUS "CUDA Version: ${CUDA_VERSION_STRING}")
-    message(STATUS "CUDA Path: ${CUDA_TOOLKIT_ROOT_DIR}")
-    message(STATUS "CUDA Libararies: ${CUDA_LIBRARIES}")
-    message(STATUS "CUDA Performance Primitives: ${CUDA_npp_LIBRARY}")
-  endif()
-  set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-O3;${CUDA_ARCH};--use_fast_math;-Xcompiler -fopenmp)
+  # if (${CUDA_SUCCESS})
+  #   message(STATUS "CUDA Architecture: ${CUDA_ARCH}")
+  #   message(STATUS "CUDA Version: ${CUDA_VERSION_STRING}")
+  #   message(STATUS "CUDA Path: ${CUDA_TOOLKIT_ROOT_DIR}")
+  #   message(STATUS "CUDA Libararies: ${CUDA_LIBRARIES}")
+  #   message(STATUS "CUDA Performance Primitives: ${CUDA_npp_LIBRARY}")
+  # endif()
+  # set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-O3;${CUDA_ARCH};--use_fast_math;-Xcompiler -fopenmp)
 
-  add_subdirectory(registrators/cuda)
-  list(APPEND require_libs registrators_cuda)
+  # add_subdirectory(registrators/cuda)
+  # list(APPEND require_libs registrators_cuda)
 
-endif(USE_CUDA)
+# endif(USE_CUDA)
 
 #### pcl ####
 find_package(PCL REQUIRED QUIET)
@@ -145,6 +145,12 @@ if(ENABLE_PROF)
   add_definitions(-D_PROF_LOG_DIR_=".static_mapping_log")
   execute_process (COMMAND bash -c "mkdir -p ~/${PROF_LOG_DIR}")
 endif(ENABLE_PROF)
+
+option(ENABLE_TEST "" OFF)
+if(ENABLE_TEST)
+  find_package(Boost REQUIRED COMPONENTS unit_test_framework)
+  enable_testing()
+endif(ENABLE_TEST)
 
 #######################################################
 ###  Source files
