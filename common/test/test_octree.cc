@@ -21,13 +21,13 @@
 // SOFTWARE.
 
 #include "common/octree.h"
-
-#include "gtest/gtest.h"
+#define BOOST_TEST_MODULE OctreeTest
+#include <boost/test/unit_test.hpp>
 
 namespace static_map {
 namespace common {
 
-TEST(Octree, InitWithPointCloud) {
+BOOST_AUTO_TEST_CASE(InitWithPointCloud) {
   OctreeConfig config;
   config.max_depth = 10;
   config.max_num_points_in_voxel = 4;
@@ -53,7 +53,7 @@ TEST(Octree, InitWithPointCloud) {
     3., 1., -2.;
   // clang-format on
   octree.InitWithPointCloud(points.transpose());
-  EXPECT_EQ(2, octree.GetMaxDepth());
+  BOOST_CHECK_EQUAL(2, octree.GetMaxDepth());
   // octree.RecursiveOutput();
 }
 }  // namespace common

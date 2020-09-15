@@ -21,63 +21,71 @@
 // SOFTWARE.
 
 #include "common/bounding_box.h"
-
-#include "gtest/gtest.h"
+#define BOOST_TEST_MODULE BoundingBoxTest
+#include <boost/test/unit_test.hpp>
 
 namespace static_map {
 namespace common {
 
-TEST(BoundingBox, Constructor) {
-  EXPECT_NO_THROW(BoundingBox bbox(Eigen::Vector3d(0, 0, 0), 2.));
-  EXPECT_NO_THROW(
+BOOST_AUTO_TEST_CASE(Constructor) {
+  BOOST_CHECK_NO_THROW(BoundingBox bbox(Eigen::Vector3d(0, 0, 0), 2.));
+  BOOST_CHECK_NO_THROW(
       BoundingBox bbox(Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(2, 2, 2)));
   // EXPECT_ANY_THROW(
   //     BoundingBox bbox(Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(2, 2, 1)));
 }
 
-TEST(BoundingBox, GenerateSubBoxes) {
+BOOST_AUTO_TEST_CASE(GenerateSubBoxes) {
   BoundingBox bbox(Eigen::Vector3d(0, 0, 0), 2.);
   const auto sub_boxes = bbox.GenerateSubBoxes();
 
-  EXPECT_EQ(8, sub_boxes.size());
-  EXPECT_EQ(Eigen::Vector3d(0.5, 0.5, 0.5), sub_boxes[0].GetCenter());
-  EXPECT_EQ(Eigen::Vector3d(-0.5, 0.5, 0.5), sub_boxes[1].GetCenter());
-  EXPECT_EQ(Eigen::Vector3d(-0.5, -0.5, 0.5), sub_boxes[2].GetCenter());
-  EXPECT_EQ(Eigen::Vector3d(0.5, -0.5, 0.5), sub_boxes[3].GetCenter());
-  EXPECT_EQ(Eigen::Vector3d(0.5, 0.5, -0.5), sub_boxes[4].GetCenter());
-  EXPECT_EQ(Eigen::Vector3d(-0.5, 0.5, -0.5), sub_boxes[5].GetCenter());
-  EXPECT_EQ(Eigen::Vector3d(-0.5, -0.5, -0.5), sub_boxes[6].GetCenter());
-  EXPECT_EQ(Eigen::Vector3d(0.5, -0.5, -0.5), sub_boxes[7].GetCenter());
+  BOOST_CHECK_EQUAL(8, sub_boxes.size());
+  BOOST_CHECK_EQUAL(Eigen::Vector3d(0.5, 0.5, 0.5), sub_boxes[0].GetCenter());
+  BOOST_CHECK_EQUAL(Eigen::Vector3d(-0.5, 0.5, 0.5), sub_boxes[1].GetCenter());
+  BOOST_CHECK_EQUAL(Eigen::Vector3d(-0.5, -0.5, 0.5), sub_boxes[2].GetCenter());
+  BOOST_CHECK_EQUAL(Eigen::Vector3d(0.5, -0.5, 0.5), sub_boxes[3].GetCenter());
+  BOOST_CHECK_EQUAL(Eigen::Vector3d(0.5, 0.5, -0.5), sub_boxes[4].GetCenter());
+  BOOST_CHECK_EQUAL(Eigen::Vector3d(-0.5, 0.5, -0.5), sub_boxes[5].GetCenter());
+  BOOST_CHECK_EQUAL(Eigen::Vector3d(-0.5, -0.5, -0.5),
+                    sub_boxes[6].GetCenter());
+  BOOST_CHECK_EQUAL(Eigen::Vector3d(0.5, -0.5, -0.5), sub_boxes[7].GetCenter());
 }
 
-TEST(BoundingBox, ContainsPoint) {
+BOOST_AUTO_TEST_CASE(ContainsPoint) {
   BoundingBox bbox(Eigen::Vector3d(0, 0, 0), 2.);
-  EXPECT_TRUE(bbox.ContainsPoint(Eigen::Vector3d(1, 1, 1)));
-  EXPECT_TRUE(bbox.ContainsPoint(Eigen::Vector3d(1, 1, 0)));
-  EXPECT_TRUE(bbox.ContainsPoint(Eigen::Vector3d(1, 1, -1)));
-  EXPECT_TRUE(bbox.ContainsPoint(Eigen::Vector3d(-1, 1, 1)));
-  EXPECT_TRUE(bbox.ContainsPoint(Eigen::Vector3d(0, 0, 0)));
+  BOOST_CHECK(bbox.ContainsPoint(Eigen::Vector3d(1, 1, 1)));
+  BOOST_CHECK(bbox.ContainsPoint(Eigen::Vector3d(1, 1, 0)));
+  BOOST_CHECK(bbox.ContainsPoint(Eigen::Vector3d(1, 1, -1)));
+  BOOST_CHECK(bbox.ContainsPoint(Eigen::Vector3d(-1, 1, 1)));
+  BOOST_CHECK(bbox.ContainsPoint(Eigen::Vector3d(0, 0, 0)));
 
-  EXPECT_FALSE(bbox.ContainsPoint(Eigen::Vector3d(1, 1, 1.001)));
-  EXPECT_FALSE(bbox.ContainsPoint(Eigen::Vector3d(0, 0, -1.001)));
-  EXPECT_FALSE(bbox.ContainsPoint(Eigen::Vector3d(0, 1.0003, 0)));
+  BOOST_CHECK(!bbox.ContainsPoint(Eigen::Vector3d(1, 1, 1.001)));
+  BOOST_CHECK(!bbox.ContainsPoint(Eigen::Vector3d(0, 0, -1.001)));
+  BOOST_CHECK(!bbox.ContainsPoint(Eigen::Vector3d(0, 1.0003, 0)));
 }
 
-TEST(BoundingBox, GetSubBoxIndexForPoint_1) {
+BOOST_AUTO_TEST_CASE(GetSubBoxIndexForPoint_1) {
   BoundingBox bbox(Eigen::Vector3d(0, 0, 0), 2.);
-  EXPECT_EQ(0, bbox.GetSubBoxIndexForPoint(Eigen::Vector3d(0.5, 0.5, 0.5)));
-  EXPECT_EQ(6, bbox.GetSubBoxIndexForPoint(Eigen::Vector3d(-0.5, -0.5, -0.5)));
-  EXPECT_EQ(-1, bbox.GetSubBoxIndexForPoint(Eigen::Vector3d(1.003, 0.5, 0.5)));
+  BOOST_CHECK_EQUAL(
+      0, bbox.GetSubBoxIndexForPoint(Eigen::Vector3d(0.5, 0.5, 0.5)));
+  BOOST_CHECK_EQUAL(
+      6, bbox.GetSubBoxIndexForPoint(Eigen::Vector3d(-0.5, -0.5, -0.5)));
+  BOOST_CHECK_EQUAL(
+      -1, bbox.GetSubBoxIndexForPoint(Eigen::Vector3d(1.003, 0.5, 0.5)));
 }
 
-TEST(BoundingBox, GetSubBoxIndexForPoint_2) {
+BOOST_AUTO_TEST_CASE(GetSubBoxIndexForPoint_2) {
   BoundingBox bbox(Eigen::Vector3d(-1, -1, -1), Eigen::Vector3d(1, 1, 1));
-  EXPECT_EQ(0, bbox.GetSubBoxIndexForPoint(Eigen::Vector3d(0.5, 0.5, 0.5)));
-  EXPECT_EQ(0, bbox.GetSubBoxIndexForPoint(Eigen::Vector3d(0., 0., 0.)));
-  EXPECT_EQ(6, bbox.GetSubBoxIndexForPoint(Eigen::Vector3d(-0.5, -0.5, -0.5)));
-  EXPECT_EQ(-1, bbox.GetSubBoxIndexForPoint(Eigen::Vector3d(1.003, 0.5, 0.5)));
+  BOOST_CHECK_EQUAL(
+      0, bbox.GetSubBoxIndexForPoint(Eigen::Vector3d(0.5, 0.5, 0.5)));
+  BOOST_CHECK_EQUAL(0,
+                    bbox.GetSubBoxIndexForPoint(Eigen::Vector3d(0., 0., 0.)));
+  BOOST_CHECK_EQUAL(
+      6, bbox.GetSubBoxIndexForPoint(Eigen::Vector3d(-0.5, -0.5, -0.5)));
+  BOOST_CHECK_EQUAL(
+      -1, bbox.GetSubBoxIndexForPoint(Eigen::Vector3d(1.003, 0.5, 0.5)));
 
-  EXPECT_EQ(Eigen::Vector3d(0, 0, 0), bbox.GetCenter());
+  BOOST_CHECK_EQUAL(Eigen::Vector3d(0, 0, 0), bbox.GetCenter());
 }
 
 }  // namespace common
