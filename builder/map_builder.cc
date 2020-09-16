@@ -287,20 +287,16 @@ void MapBuilder::ScanMatchProcessing() {
   PointCloudPtr target_cloud;
   PointCloudPtr source_cloud;
   Pose3d pose_target = Pose3d::Identity();
-  Pose3d final_transform = Pose3d::Identity();
   Pose3d accumulative_transform = Pose3d::Identity();
-  SimpleTime last_source_time;
   float source_cloud_delta_time = 0.;
 
   bool first_in_accumulate = true;
-  PointCloudPtr history_cloud = nullptr;
   while (true) {
     source_cloud = data_collector_->GetNewCloud(&source_cloud_delta_time);
     if (source_cloud != nullptr) {
       if (!got_first_point_cloud_) {
         got_first_point_cloud_ = true;
         target_cloud = source_cloud;
-        history_cloud = target_cloud;
         InsertFrameForSubmap(source_cloud, Eigen::Matrix4d::Identity(), 1.);
 
         if (extrapolator_) {
@@ -313,7 +309,7 @@ void MapBuilder::ScanMatchProcessing() {
       if (end_all_thread_.load()) {
         break;
       }
-      SimpleTime::from_sec(0.01).sleep();
+      SimpleTime::from_sec(0.005).sleep();
       continue;
     }
 
@@ -335,20 +331,29 @@ void MapBuilder::ScanMatchProcessing() {
     // motion compensation using guess
     // still in test
     // scan_matcher_->EnableInnerCompensation();
-
-    scan_matcher_->SetInputTarget(target_cloud);
-    // && options_.front_end_options.motion_compensation_options.use_average
-    if (options_.front_end_options.motion_compensation_options.enable) {
-      PointCloudType compensated_source_cloud;
-      MotionCompensation(source_cloud, source_cloud_delta_time, guess,
-                         &compensated_source_cloud);
-      scan_matcher_->SetInputSource(compensated_source_cloud.makeShared());
-    } else {
-      scan_matcher_->SetInputSource(source_cloud);
-    }
     Eigen::Matrix4d align_result = Eigen::Matrix4d::Identity();
     {
-      REGISTER_BLOCK("scan match");
+      REGISTER_BLOCK("scan match:target");
+
+      if (first_in_accumulate) {
+        scan_matcher_->SetInputTarget(target_cloud);
+        //   std::cout << target_cloud.get() << std::endl;
+      }
+
+      // && options_.front_end_options.motion_compensation_options.use_average
+      if (options_.front_end_options.motion_compensation_options.enable) {
+        PointCloudType compensated_source_cloud;
+        const Pose3d motion_in_source_cloud =
+            accumulative_transform.inverse() * guess;
+        MotionCompensation(source_cloud, source_cloud_delta_time,
+                           motion_in_source_cloud, &compensated_source_cloud);
+        scan_matcher_->SetInputSource(compensated_source_cloud.makeShared());
+      } else {
+        scan_matcher_->SetInputSource(source_cloud);
+      }
+    }
+    {
+      REGISTER_BLOCK("scan match:align");
       scan_matcher_->Align(guess, align_result);
     }
 
@@ -363,12 +368,13 @@ void MapBuilder::ScanMatchProcessing() {
       // motion compensation using align result
       PointCloudType compensated_source_cloud;
       MotionCompensation(source_cloud, source_cloud_delta_time,
-                         average_transform, &compensated_source_cloud);
+                         accumulative_transform.inverse() * average_transform,
+                         &compensated_source_cloud);
       *source_cloud = compensated_source_cloud;
     }
 
     pose_source = pose_target * align_result;
-    accumulative_transform *= align_result;
+    accumulative_transform = align_result;
     if (extrapolator_) {
       extrapolator_->AddPose(source_time, pose_source);
       // const Eigen::Quaterniond gravity_alignment =
@@ -391,34 +397,21 @@ void MapBuilder::ScanMatchProcessing() {
         (std::fabs(euler_angles[0]) + std::fabs(euler_angles[1]) +
          std::fabs(euler_angles[2])) *
         (180. / M_PI);
+    // Meet the condition of inserting new key frame.
     if (accu_translation >=
             options_.front_end_options.motion_filter.translation_range ||
         (options_.front_end_options.motion_filter.angle_range > 1e-3 &&
          accu_angles >= options_.front_end_options.motion_filter.angle_range)) {
-      // re-align if nessary
-      if (!first_in_accumulate) {
-        REGISTER_BLOCK("another match");
-        scan_matcher_->SetInputSource(source_cloud);
-        scan_matcher_->SetInputTarget(history_cloud);
-        Eigen::Matrix4d tmp_result;
-        scan_matcher_->Align(accumulative_transform, tmp_result);
-        accumulative_transform = tmp_result;
-      }
-
-      final_transform *= accumulative_transform;
-      pose_source = final_transform;
-      InsertFrameForSubmap(source_cloud, final_transform,
+      InsertFrameForSubmap(source_cloud, pose_source,
                            scan_matcher_->GetFitnessScore());
 
       accumulative_transform = Pose3d::Identity();
-      history_cloud = source_cloud;
+      target_cloud = source_cloud;
       first_in_accumulate = true;
+      pose_target = pose_source;
     } else {
       first_in_accumulate = false;
     }
-
-    target_cloud = source_cloud;
-    pose_target = pose_source;
   }
 
   scan_match_thread_running_ = false;
@@ -444,12 +437,18 @@ void MapBuilder::SubmapPairMatch(const int source_index,
   CHECK(matcher);
 
   matcher->SetInputSource(source_submap->Cloud());
-  matcher->SetInputTarget(target_submap->Cloud());
+  {
+    // REGISTER_BLOCK("SubmapPairMatch:target");
+    matcher->SetInputTarget(target_submap->Cloud());
+  }
   Eigen::Matrix4d result = Eigen::Matrix4d::Identity();
   Eigen::Matrix4d guess =
       target_submap->GetFrames()[0]->GlobalPose().inverse() *
       source_submap->GetFrames()[0]->GlobalPose();
-  matcher->Align(guess, result);
+  {
+    // REGISTER_BLOCK("SubmapPairMatch:align");
+    matcher->Align(guess, result);
+  }
   common::NormalizeRotation(result);
   double submap_match_score = matcher->GetFitnessScore();
   source_submap->match_score_to_previous_submap_ = submap_match_score;
@@ -611,19 +610,21 @@ void MapBuilder::ConnectAllSubmap() {
     // output the whole map instead of seperated
     MultiResolutionVoxelMap<PointType> map;
     map.Initialise(options_.output_mrvm_settings);
+    // PointCloudPtr whole_map(new PointCloudType);
     PointCloudPtr output_cloud(new PointCloudType);
     const int submaps_size = current_trajectory_->size();
     for (auto& submap : *current_trajectory_) {
       std::cout << "submap index: " << submap->GetId().submap_index << " / "
                 << submaps_size - 1 << "\r" << std::flush;
       {
-        REGISTER_BLOCK("mrvp_insert_one_frame");
+        // REGISTER_BLOCK("mrvp_insert_one_frame");
         for (auto& frame : submap->GetFrames()) {
           output_cloud->clear();
           pcl::transformPointCloud(*(frame->Cloud()), *output_cloud,
                                    frame->GlobalPose());
           map.InsertPointCloud(output_cloud,
                                frame->GlobalTranslation().cast<float>());
+          // *whole_map += *output_cloud;
         }
       }
       submap->ClearCloud();
@@ -633,8 +634,10 @@ void MapBuilder::ConnectAllSubmap() {
     map.OutputToPointCloud(
         options_.output_mrvm_settings.prob_threshold,
         options_.whole_options.export_file_path + "static_map.pcd");
+    // pcl::io::savePCDFileBinaryCompressed(
+    //     options_.whole_options.export_file_path + "whole_map.pcd",
+    //     *whole_map);
   }
-
   data_collector_->ClearAllCloud();
 }
 

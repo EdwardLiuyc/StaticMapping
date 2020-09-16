@@ -29,7 +29,8 @@ BAG_FILE=/mnt/Data/visual/map_test/20200507124024_1_NoPlace.bag
   -pc_frame_id ${POINT_CLOUD_FRAME_ID} \
   -imu ${IMU_TOPIC} \
   -imu_frame_id ${IMU_FRAME_ID} \
-  -bag ${BAG_FILE}
+  -bag ${BAG_FILE} \
+  -pubs [map][path]
 
 exit 0 
 
