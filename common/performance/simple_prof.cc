@@ -82,17 +82,40 @@ TimerManager::~TimerManager() {
     int factored_time = time * output_factor[unit_].second;
     return (factored_time >= 1 ? std::to_string(factored_time) : "<1");
   };
+  const auto merge_vectors_into_one =
+      [](const std::unordered_map<std::thread::id, std::vector<int64_t>>&
+             id_vectors) -> std::vector<int64_t> {
+    std::vector<int64_t> all_in_one;
+    for (const auto& id_vector : id_vectors) {
+      for (const auto& time : id_vector.second) {
+        all_in_one.push_back(time);
+      }
+    }
+    return all_in_one;
+  };
 
   for (auto& name_block : durations_) {
-    for (auto& id_vector : name_block.second) {
-      const auto statistics = GetStatistics(&id_vector.second);
-
+    if (all_thread_in_one_) {
+      auto all_in_one_name = merge_vectors_into_one(name_block.second);
+      const auto statistics = GetStatistics(&all_in_one_name);
       std::cout << std::setw(25) << name_block.first << " | " << std::setw(8)
                 << statistics.size << " | " << std::setw(9)
                 << time_to_string(statistics.average) << " | " << std::setw(10)
                 << time_to_string(statistics.sum) << " | " << std::setw(9)
                 << time_to_string(statistics.min) << " | " << std::setw(9)
                 << time_to_string(statistics.max) << std::endl;
+    } else {
+      for (auto& id_vector : name_block.second) {
+        const auto statistics = GetStatistics(&id_vector.second);
+
+        std::cout << std::setw(25) << name_block.first << " | " << std::setw(8)
+                  << statistics.size << " | " << std::setw(9)
+                  << time_to_string(statistics.average) << " | "
+                  << std::setw(10) << time_to_string(statistics.sum) << " | "
+                  << std::setw(9) << time_to_string(statistics.min) << " | "
+                  << std::setw(9) << time_to_string(statistics.max)
+                  << std::endl;
+      }
     }
   }
   std::cout << std::endl;
