@@ -82,6 +82,8 @@ class TimerManager {
   enum OutputUnit { kS, kMs, kUs };
   void SetUnit(const OutputUnit unit) { unit_ = unit; }
 
+  void MergeAllThreadIntoOne(bool flag = true) { all_thread_in_one_ = flag; }
+
  private:
   TimerManager() = default;
 
@@ -94,6 +96,7 @@ class TimerManager {
   OutputUnit unit_ = kUs;
 
   ProcessProfiler profiler_;
+  bool all_thread_in_one_ = false;
 };
 
 }  // namespace performance
@@ -117,12 +120,17 @@ class TimerManager {
   static_map::common::performance::TimerManager::Instance()->SetUnit( \
       static_map::common::performance::TimerManager::OutputUnit::kS);
 
+#define SIMPLE_PROF_MERGE_OUTPUT                            \
+  static_map::common::performance::TimerManager::Instance() \
+      ->MergeAllThreadIntoOne(true);
+
 #else
 
 #define REGISTER_BLOCK(NAME)
 #define REGISTER_FUNC
 #define SIMPLE_PROF_USE_MS
 #define SIMPLE_PROF_USE_SECOND
+#define SIMPLE_PROF_MERGE_OUTPUT
 
 #endif
 

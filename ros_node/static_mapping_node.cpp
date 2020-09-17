@@ -86,6 +86,7 @@ int main(int argc, char** argv) {
   ros::NodeHandle n;
 
   SIMPLE_PROF_USE_MS;
+  SIMPLE_PROF_MERGE_OUTPUT;
 
   google::InitGoogleLogging(argv[0]);
   FLAGS_alsologtostderr = true;

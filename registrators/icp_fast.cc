@@ -61,7 +61,9 @@ struct BuildData {
     indices.resize(size);
     factors.resize(size);
     points.resize(kDim, size);
-    normals.resize(kDim, size);
+    // We leave normals not inited, because we will need the normals only if we
+    // use the cloud as a target, so initialize them later.
+
     for (int i = 0; i < size; ++i) {
       indices[i] = i;
       factors[i] = static_cast<double>(i) / size;
@@ -588,6 +590,7 @@ void IcpFast<PointT>::SetInputTarget(const PointCloudTargetPtr& cloud) {
   // it is the reference cloud
   target_cloud_.reset(new BuildData);
   target_cloud_->FromPointCloud<PointT>(cloud);
+  target_cloud_->normals.resize(kDim, cloud->size());
 
   // step1 normal estimation and filtering
   BuildNormals(target_cloud_.get(), 0, cloud->size(),
@@ -704,6 +707,7 @@ bool IcpFast<PointT>::Align(const Eigen::Matrix4d& guess,
     }
   }
 
+  target_cloud_->points.colwise() += target_mean;
   result = T_target_mean * T_iter * T_target_mean_init_guess;
   return true;
 }

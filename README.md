@@ -196,6 +196,7 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - add tests 
 - **lidar motion compensation after optimization**
 - lidar motion compensation inside ICP
+- Normal estimation using GPU
 - ICP using GPU 
 - use ground detection to label the pointcloud 
 - use some machine learning or deep learning method to add semantic labels
