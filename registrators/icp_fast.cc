@@ -45,33 +45,7 @@ constexpr int kDim = 3;
 using Matrix = Eigen::MatrixXd;
 using Vector = Eigen::VectorXd;
 using OutlierWeights = Matrix;
-
-struct BuildData {
-  std::vector<int> indices;
-  std::vector<int> indices_to_keep;
-  std::vector<double> factors;
-  Matrix points;
-  Matrix normals;
-
-  template <typename PointType>
-  void FromPointCloud(const typename pcl::PointCloud<PointType>::Ptr& cloud) {
-    CHECK(cloud && !cloud->empty());
-
-    const int size = cloud->size();
-    indices.resize(size);
-    factors.resize(size);
-    points.resize(kDim, size);
-    // We leave normals not inited, because we will need the normals only if we
-    // use the cloud as a target, so initialize them later.
-
-    for (int i = 0; i < size; ++i) {
-      indices[i] = i;
-      factors[i] = static_cast<double>(i) / size;
-      points.col(i) << cloud->points[i].x, cloud->points[i].y,
-          cloud->points[i].z;
-    }
-  }
-};
+using sensors::BuildData;
 
 void MotionCompensation(const Eigen::Matrix4d& delta_transform,
                         BuildData* const in_output_cloud) {

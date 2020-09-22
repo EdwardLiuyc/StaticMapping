@@ -181,6 +181,7 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - Kitti evaluation
 - separate normal estimation from icp_fast, then we can no longer do it again in submap matching
 - seperate map_builder class into several smaller classes : map_option_loader / front_end / back_end
+- use one thread-pool to take care of all threads
 - preprocessor: remove points under the ground
 - Fix bug for bool parameters of registrators
 - use glog or other logging lib instead of print macro

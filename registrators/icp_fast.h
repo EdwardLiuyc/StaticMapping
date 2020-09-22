@@ -26,13 +26,13 @@
 #include <memory>
 #include <vector>
 
+#include "builder/sensors.h"
 #include "nabo/nabo.h"
 #include "registrators/interface.h"
 
 namespace static_map {
 namespace registrator {
 
-struct BuildData;
 using NNS = Nabo::NearestNeighbourSearch<double>;
 
 template <typename PointType>
@@ -50,8 +50,8 @@ class IcpFast : public Interface<PointType> {
   bool Align(const Eigen::Matrix4d& guess, Eigen::Matrix4d& result) override;
 
  private:
-  std::shared_ptr<BuildData> source_cloud_;
-  std::shared_ptr<BuildData> target_cloud_;
+  std::shared_ptr<sensors::BuildData> source_cloud_;
+  std::shared_ptr<sensors::BuildData> target_cloud_;
   std::shared_ptr<NNS> nns_kdtree_;
 
   struct {
