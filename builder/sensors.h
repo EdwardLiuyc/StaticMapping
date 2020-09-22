@@ -28,8 +28,12 @@
 #include <cmath>
 #include <memory>
 #include <string>
+#include <vector>
 // local
 #include "common/simple_time.h"
+#include "glog/logging.h"
+#include "pcl/point_cloud.h"
+#include "pcl/point_types.h"
 
 namespace static_map {
 namespace sensors {
@@ -184,6 +188,46 @@ struct TimedPose {
   SimpleTime time;
   Eigen::Matrix4d pose;
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+};
+
+struct BuildData {
+  std::vector<int> indices;
+  std::vector<int> indices_to_keep;
+  std::vector<double> factors;
+  Eigen::MatrixXd points;
+  Eigen::MatrixXd normals;
+
+  template <typename PointType>
+  void FromPointCloud(const typename pcl::PointCloud<PointType>::Ptr &cloud) {
+    CHECK(cloud && !cloud->empty());
+
+    const int size = cloud->size();
+    indices.resize(size);
+    factors.resize(size);
+    // We assume points are in 3d by default.
+    points.resize(3, size);
+    // We leave normals not inited, because we will need the normals only if we
+    // use the cloud as a target, so initialize them later.
+
+    for (int i = 0; i < size; ++i) {
+      indices[i] = i;
+      factors[i] = static_cast<double>(i) / size;
+      points.col(i) << cloud->points[i].x, cloud->points[i].y,
+          cloud->points[i].z;
+    }
+  }
+
+  bool HasNormals() const { return normals.rows() > 0; }
+};
+
+template <typename PointT>
+struct InnerPointCloudData {
+  SimpleTime time;
+  float delta_time_in_cloud;
+  typename pcl::PointCloud<PointT>::Ptr cloud;
+  std::shared_ptr<BuildData> build_data;
+
+  using Ptr = std::shared_ptr<InnerPointCloudData<PointT>>;
 };
 
 }  // namespace sensors

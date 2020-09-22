@@ -74,12 +74,6 @@ class DataCollector {
   DataCollector(const DataCollector&) = delete;
   DataCollector& operator=(const DataCollector&) = delete;
 
-  struct PointCloudData {
-    SimpleTime time;
-    float delta_time_in_cloud;
-    PointCloudPtr cloud;
-  };
-
   struct ImuData {
     SimpleTime time;
     Eigen::Vector3d acceleration;
@@ -144,8 +138,9 @@ class DataCollector {
   std::mutex mutex_[kDataTypeCount];
   const DataCollectorOptions options_;
 
-  std::deque<PointCloudData> cloud_data_;
-  std::deque<PointCloudData> cloud_data_before_preprocessing_;
+  std::deque<typename sensors::InnerPointCloudData<PointT>::Ptr> cloud_data_;
+  std::deque<typename sensors::InnerPointCloudData<PointT>::Ptr>
+      cloud_data_before_preprocessing_;
   bool kill_cloud_preprocessing_thread_ = false;
   std::thread cloud_processing_thread_;
   pre_processers::filter::Factory<PointT>* filter_factory_;

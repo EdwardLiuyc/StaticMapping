@@ -166,11 +166,12 @@ void DataCollector<PointT>::AddSensorData(const PointCloudPtr& cloud) {
     first_time_in_accmulated_cloud_ = ToLocalTime(cloud->header.stamp);
   }
 
-  PointCloudData data_before_processing;
-  data_before_processing.time = first_time_in_accmulated_cloud_;
-  data_before_processing.cloud.reset(new PointCloudType);
-  *data_before_processing.cloud = *accumulated_point_cloud_;
-  data_before_processing.cloud->header.stamp =
+  auto data_before_processing =
+      std::make_shared<sensors::InnerPointCloudData<PointT>>();
+  data_before_processing->time = first_time_in_accmulated_cloud_;
+  data_before_processing->cloud.reset(new PointCloudType);
+  *data_before_processing->cloud = *accumulated_point_cloud_;
+  data_before_processing->cloud->header.stamp =
       first_time_in_accmulated_cloud_.toNSec() / 1000ull;
 
   cloud->points.clear();
@@ -193,25 +194,24 @@ void DataCollector<PointT>::CloudPreProcessing() {
     }
 
     SimpleTime next_data_time;
-    PointCloudData data;
+    typename sensors::InnerPointCloudData<PointT>::Ptr data;
     {
       Locker locker(mutex_[kPointCloudData]);
       data = cloud_data_before_preprocessing_.front();
       cloud_data_before_preprocessing_.pop_front();
-
-      next_data_time = cloud_data_before_preprocessing_.front().time;
+      next_data_time = cloud_data_before_preprocessing_.front()->time;
     }
-    data.delta_time_in_cloud = (next_data_time - data.time).toSec();
+    data->delta_time_in_cloud = (next_data_time - data->time).toSec();
     // filtering cloud
     PointCloudPtr filtered_cloud(new PointCloudType);
     {
       REGISTER_BLOCK("Filtering Cloud");
-      filter_factory_->SetInputCloud(data.cloud);
+      filter_factory_->SetInputCloud(data->cloud);
       filter_factory_->Filter(filtered_cloud);
     }
     // insert new data
     Locker locker(mutex_[kPointCloudData]);
-    data.cloud = filtered_cloud;
+    data->cloud = filtered_cloud;
     cloud_data_.push_back(data);
 
     // LOG(INFO) << data.time.toNSec() << " "
@@ -219,7 +219,7 @@ void DataCollector<PointT>::CloudPreProcessing() {
     //           "
     //           << data.delta_time_in_cloud;
 
-    CHECK(data.time == ToLocalTime(data.cloud->header.stamp));
+    CHECK(data->time == ToLocalTime(data->cloud->header.stamp));
 
     // just for debug
     got_clouds_count_++;
@@ -239,8 +239,8 @@ DataCollector<PointT>::GetNewCloud(float* const delta_time) {
     return nullptr;
   }
 
-  PointCloudPtr cloud = cloud_data_.front().cloud;
-  *delta_time = cloud_data_.front().delta_time_in_cloud;
+  PointCloudPtr cloud = cloud_data_.front()->cloud;
+  *delta_time = cloud_data_.front()->delta_time_in_cloud;
   cloud_data_.pop_front();
   return cloud;
 }
@@ -411,8 +411,8 @@ void DataCollector<PointT>::ClearAllCloud() {
   Locker locker(mutex_[kPointCloudData]);
   // clear all source clouds
   for (auto& frame : cloud_data_) {
-    frame.cloud->points.clear();
-    frame.cloud->points.shrink_to_fit();
+    frame->cloud->points.clear();
+    frame->cloud->points.shrink_to_fit();
   }
   cloud_data_.clear();
   cloud_data_.shrink_to_fit();
