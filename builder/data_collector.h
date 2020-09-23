@@ -117,7 +117,7 @@ class DataCollector {
   /// it is a boost::optional object so it can be empty
   boost::optional<GeographicLib::LocalCartesian> GetGpsReference() const;
   /// @brief get
-  PointCloudPtr GetNewCloud(float* const delta_time);
+  typename sensors::InnerPointCloudData<PointT>::Ptr GetNewCloud();
   /// @brief output gps(enu) path to .pcd file for review
   void RawGpsDataToFile(const std::string& filename) const;
   /// @brief output odom path to .pcd file for review
