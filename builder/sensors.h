@@ -190,7 +190,7 @@ struct TimedPose {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-struct BuildData {
+struct EigenPointCloud {
   std::vector<int> indices;
   std::vector<int> indices_to_keep;
   std::vector<double> factors;
@@ -225,7 +225,7 @@ struct InnerPointCloudData {
   SimpleTime time;
   float delta_time_in_cloud;
   typename pcl::PointCloud<PointT>::Ptr cloud;
-  std::shared_ptr<BuildData> build_data;
+  std::shared_ptr<EigenPointCloud> build_data;
 
   using Ptr = std::shared_ptr<InnerPointCloudData<PointT>>;
 };
