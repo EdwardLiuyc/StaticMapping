@@ -45,10 +45,10 @@ constexpr int kDim = 3;
 using Matrix = Eigen::MatrixXd;
 using Vector = Eigen::VectorXd;
 using OutlierWeights = Matrix;
-using sensors::BuildData;
+using sensors::EigenPointCloud;
 
 void MotionCompensation(const Eigen::Matrix4d& delta_transform,
-                        BuildData* const in_output_cloud) {
+                        EigenPointCloud* const in_output_cloud) {
   const size_t cloud_size = in_output_cloud->points.cols();
   CHECK_EQ(cloud_size, in_output_cloud->factors.size());
 
@@ -108,13 +108,14 @@ struct Matches {
 };
 
 struct ErrorElements {
-  BuildData reading;       //!< reading point cloud
-  BuildData reference;     //!< reference point cloud
-  OutlierWeights weights;  //!< weights for every association
-  Matches matches;         //!< associations
+  EigenPointCloud reading;    //!< reading point cloud
+  EigenPointCloud reference;  //!< reference point cloud
+  OutlierWeights weights;     //!< weights for every association
+  Matches matches;            //!< associations
 
   ErrorElements();
-  ErrorElements(const BuildData& source_points, const BuildData& target_points,
+  ErrorElements(const EigenPointCloud& source_points,
+                const EigenPointCloud& target_points,
                 const OutlierWeights& weights, const Matches& matches) {
     REGISTER_FUNC;
     CHECK_GT(matches.ids.rows(), 0);
@@ -184,11 +185,11 @@ struct ErrorElements {
 
 struct CompareDim {
   const int dim;
-  const BuildData& buildData;
-  CompareDim(const int dim, const BuildData& buildData)
-      : dim(dim), buildData(buildData) {}
+  const EigenPointCloud& cloud;
+  CompareDim(const int dim, const EigenPointCloud& eigen_point_cloud)
+      : dim(dim), cloud(eigen_point_cloud) {}
   bool operator()(const int& p0, const int& p1) {
-    return buildData.points(dim, p0) < buildData.points(dim, p1);
+    return cloud.points(dim, p0) < cloud.points(dim, p1);
   }
 };
 
@@ -214,7 +215,8 @@ inline size_t ArgMax(const Eigen::Vector3d& v) {
 //   H. Badino, D. Huber, Y. Park and T. Kanade
 //   IV.C. "Unconstrained Least Squares" part
 // TODO(yongchuan) Try more normal estimation methods.
-void CalculateNormals(BuildData* const data, const int first, const int last) {
+void CalculateNormals(EigenPointCloud* const data, const int first,
+                      const int last) {
   REGISTER_FUNC;
   const int col_count = last - first;
   // build nearest neighbors list
@@ -245,7 +247,8 @@ void CalculateNormals(BuildData* const data, const int first, const int last) {
   data->normals.col(k) = normal.normalized();
 }
 
-void TransformData(BuildData* const data, const Eigen::Matrix4d& transform) {
+void TransformData(EigenPointCloud* const data,
+                   const Eigen::Matrix4d& transform) {
   const int points_count = data->points.cols();
   CHECK_GT(points_count, 0);
   Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> homo_data(4,
@@ -261,7 +264,7 @@ void TransformData(BuildData* const data, const Eigen::Matrix4d& transform) {
   }
 }
 
-void BuildNormals(BuildData* const data, const int first, const int last,
+void BuildNormals(EigenPointCloud* const data, const int first, const int last,
                   Eigen::Vector3d&& minValues, Eigen::Vector3d&& maxValues) {
   const int count(last - first);
   if (count <= kNormalEstimationKnn) {
@@ -271,7 +274,7 @@ void BuildNormals(BuildData* const data, const int first, const int last,
   }
 
   // find the largest dimension of the box
-  const int cutDim = ArgMax(maxValues - minValues);
+  const int cut_dim = ArgMax(maxValues - minValues);
 
   // compute number of elements
   const int rightCount(count / 2);
@@ -281,18 +284,18 @@ void BuildNormals(BuildData* const data, const int first, const int last,
   // sort, hack std::nth_element
   std::nth_element(data->indices.begin() + first,
                    data->indices.begin() + first + leftCount,
-                   data->indices.begin() + last, CompareDim(cutDim, *data));
+                   data->indices.begin() + last, CompareDim(cut_dim, *data));
 
   // get value
   const int cut_index(data->indices[first + leftCount]);
-  const double cutVal(data->points(cutDim, cut_index));
+  const double cutVal(data->points(cut_dim, cut_index));
 
   // update bounds for left
   Eigen::Vector3d leftMaxValues(maxValues);
-  leftMaxValues[cutDim] = cutVal;
+  leftMaxValues[cut_dim] = cutVal;
   // update bounds for right
   Eigen::Vector3d rightMinValues(minValues);
-  rightMinValues[cutDim] = cutVal;
+  rightMinValues[cut_dim] = cutVal;
 
   // recurse
   BuildNormals(data, first, first + leftCount,
@@ -303,7 +306,7 @@ void BuildNormals(BuildData* const data, const int first, const int last,
 }
 
 Matches FindClosests(const std::shared_ptr<NNS>& nns_kdtree,
-                     const BuildData& source_cloud) {
+                     const EigenPointCloud& source_cloud) {
   REGISTER_FUNC;
   const int points_count(source_cloud.points.cols());
   const int search_count = 1;
@@ -389,8 +392,8 @@ void SolvePossiblyUnderdeterminedLinearSystem(const Matrix& A, const Vector& b,
   }
 }
 
-Eigen::Matrix4d ComputePointToPlane(const BuildData& source_cloud,
-                                    const BuildData& target_cloud,
+Eigen::Matrix4d ComputePointToPlane(const EigenPointCloud& source_cloud,
+                                    const EigenPointCloud& target_cloud,
                                     const Eigen::MatrixXd& weights,
                                     const Matches& matches,
                                     bool compensation = false) {
@@ -459,8 +462,8 @@ Eigen::Matrix4d ComputePointToPlane(const BuildData& source_cloud,
   return result;
 }
 
-Eigen::Matrix4d ComputePointToPoint(BuildData& source_cloud,  // NOLINT
-                                    BuildData& target_cloud,  // NOLINT
+Eigen::Matrix4d ComputePointToPoint(EigenPointCloud& source_cloud,  // NOLINT
+                                    EigenPointCloud& target_cloud,  // NOLINT
                                     const Eigen::MatrixXd& weights,
                                     const Matches& matches) {
   CHECK_EQ(source_cloud.points.cols(), target_cloud.points.cols());
@@ -555,14 +558,14 @@ IcpFast<PointT>::IcpFast() : Interface<PointT>() {
 
 template <typename PointT>
 void IcpFast<PointT>::SetInputSource(const PointCloudSourcePtr& cloud) {
-  source_cloud_.reset(new BuildData);
+  source_cloud_.reset(new EigenPointCloud);
   source_cloud_->FromPointCloud<PointT>(cloud);
 }
 
 template <typename PointT>
 void IcpFast<PointT>::SetInputTarget(const PointCloudTargetPtr& cloud) {
   // it is the reference cloud
-  target_cloud_.reset(new BuildData);
+  target_cloud_.reset(new EigenPointCloud);
   target_cloud_->FromPointCloud<PointT>(cloud);
   target_cloud_->normals.resize(kDim, cloud->size());
 
@@ -625,7 +628,7 @@ bool IcpFast<PointT>::Align(const Eigen::Matrix4d& guess,
     nns_kdtree_.reset(
         NNS::create(target_cloud_->points, kDim, NNS::KDTREE_LINEAR_HEAP));
   }
-  BuildData init_source_cloud = *source_cloud_;
+  EigenPointCloud init_source_cloud = *source_cloud_;
   Eigen::Matrix4d T_target_mean_init_guess = T_target_mean.inverse() * guess;
   TransformData(&init_source_cloud, T_target_mean_init_guess);
 
@@ -642,7 +645,7 @@ bool IcpFast<PointT>::Align(const Eigen::Matrix4d& guess,
   while (true) {
     REGISTER_BLOCK("Iteration");
     // step1 Find Closest points
-    BuildData step_cloud(init_source_cloud);
+    EigenPointCloud step_cloud(init_source_cloud);
     if (this->inner_compensation_) {
       MotionCompensation(T_iter, &step_cloud);
     } else {
