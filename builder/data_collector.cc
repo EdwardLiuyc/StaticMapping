@@ -232,17 +232,16 @@ void DataCollector<PointT>::CloudPreProcessing() {
 }
 
 template <typename PointT>
-typename DataCollector<PointT>::PointCloudPtr
-DataCollector<PointT>::GetNewCloud(float* const delta_time) {
+typename sensors::InnerPointCloudData<PointT>::Ptr
+DataCollector<PointT>::GetNewCloud() {
   Locker locker(mutex_[kPointCloudData]);
   if (cloud_data_.empty()) {
     return nullptr;
   }
 
-  PointCloudPtr cloud = cloud_data_.front()->cloud;
-  *delta_time = cloud_data_.front()->delta_time_in_cloud;
+  auto ret = cloud_data_.front();
   cloud_data_.pop_front();
-  return cloud;
+  return ret;
 }
 
 template <typename PointT>

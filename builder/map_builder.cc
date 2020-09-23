@@ -236,7 +236,6 @@ void MapBuilder::InsertFrameForSubmap(const PointCloudPtr& cloud_ptr,
                                       const double match_score) {
   auto frame = std::make_shared<Frame<PointType>>();
   frame->SetCloud(cloud_ptr);
-  frame->CalculateDescriptor();
   frame->SetTimeStamp(ToLocalTime(cloud_ptr->header.stamp));
   frame->SetGlobalPose(global_pose);
 
@@ -246,12 +245,10 @@ void MapBuilder::InsertFrameForSubmap(const PointCloudPtr& cloud_ptr,
 
 namespace {
 void MotionCompensation(const MapBuilder::PointCloudPtr& raw_cloud,
-                        const float delta_time,
                         const Eigen::Matrix4d& delta_transform,
                         MapBuilder::PointCloudType* const output_cloud) {
   CHECK(raw_cloud);
   CHECK(output_cloud);
-  CHECK_GT(delta_time, 1.e-6);
   output_cloud->clear();
   const size_t cloud_size = raw_cloud->size();
   output_cloud->header = raw_cloud->header;
@@ -288,24 +285,11 @@ void MapBuilder::ScanMatchProcessing() {
   PointCloudPtr source_cloud;
   Pose3d pose_target = Pose3d::Identity();
   Pose3d accumulative_transform = Pose3d::Identity();
-  float source_cloud_delta_time = 0.;
 
   bool first_in_accumulate = true;
   while (true) {
-    source_cloud = data_collector_->GetNewCloud(&source_cloud_delta_time);
-    if (source_cloud != nullptr) {
-      if (!got_first_point_cloud_) {
-        got_first_point_cloud_ = true;
-        target_cloud = source_cloud;
-        InsertFrameForSubmap(source_cloud, Eigen::Matrix4d::Identity(), 1.);
-
-        if (extrapolator_) {
-          extrapolator_->AddPose(ToLocalTime(source_cloud->header.stamp),
-                                 Eigen::Matrix4d::Identity());
-        }
-        continue;
-      }
-    } else {
+    auto new_inner_cloud = data_collector_->GetNewCloud();
+    if (new_inner_cloud == nullptr) {
       if (end_all_thread_.load()) {
         break;
       }
@@ -313,6 +297,20 @@ void MapBuilder::ScanMatchProcessing() {
       continue;
     }
 
+    source_cloud = new_inner_cloud->cloud;
+    CHECK(source_cloud);
+    if (!got_first_point_cloud_) {
+      got_first_point_cloud_ = true;
+      target_cloud = source_cloud;
+      InsertFrameForSubmap(source_cloud, Eigen::Matrix4d::Identity(), 1.);
+      if (extrapolator_) {
+        extrapolator_->AddPose(ToLocalTime(source_cloud->header.stamp),
+                               Eigen::Matrix4d::Identity());
+      }
+      continue;
+    }
+
+    REGISTER_BLOCK("FrontEndOneFrame");
     const auto source_time = ToLocalTime(source_cloud->header.stamp);
     if (extrapolator_ && source_time < extrapolator_->GetLastPoseTime()) {
       PRINT_INFO("Extrapolator still initialising...");
@@ -345,8 +343,8 @@ void MapBuilder::ScanMatchProcessing() {
         PointCloudType compensated_source_cloud;
         const Pose3d motion_in_source_cloud =
             accumulative_transform.inverse() * guess;
-        MotionCompensation(source_cloud, source_cloud_delta_time,
-                           motion_in_source_cloud, &compensated_source_cloud);
+        MotionCompensation(source_cloud, motion_in_source_cloud,
+                           &compensated_source_cloud);
         scan_matcher_->SetInputSource(compensated_source_cloud.makeShared());
       } else {
         scan_matcher_->SetInputSource(source_cloud);
@@ -367,7 +365,7 @@ void MapBuilder::ScanMatchProcessing() {
       }
       // motion compensation using align result
       PointCloudType compensated_source_cloud;
-      MotionCompensation(source_cloud, source_cloud_delta_time,
+      MotionCompensation(source_cloud,
                          accumulative_transform.inverse() * average_transform,
                          &compensated_source_cloud);
       *source_cloud = compensated_source_cloud;
@@ -607,6 +605,7 @@ void MapBuilder::ConnectAllSubmap() {
   if (options_.map_package_options.enable) {
     SaveMapPackage();
   } else {
+    REGISTER_BLOCK("generating static map");
     // output the whole map instead of seperated
     MultiResolutionVoxelMap<PointType> map;
     map.Initialise(options_.output_mrvm_settings);
