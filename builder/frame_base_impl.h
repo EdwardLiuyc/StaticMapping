@@ -23,6 +23,8 @@
 #ifndef BUILDER_FRAME_BASE_IMPL_H_
 #define BUILDER_FRAME_BASE_IMPL_H_
 
+#include <string>
+
 namespace static_map {
 
 template <typename PointType>
@@ -131,7 +133,7 @@ inline void FrameBase<PointType>::SetDescriptor(
 template <typename PointType>
 inline void FrameBase<PointType>::CalculateDescriptor() {
   descriptor::M2dp<PointType> m2dp;
-  if (m2dp.setInputCloud(cloud_)) {
+  if (m2dp.setInputCloud(inner_cloud_->GetPclCloud())) {
     descriptor_ = m2dp.getFinalDescriptor();
   } else {
     PRINT_ERROR("did not get a descriptor for the frame.");
@@ -139,28 +141,27 @@ inline void FrameBase<PointType>::CalculateDescriptor() {
 }
 
 template <typename PointType>
-inline void FrameBase<PointType>::SetCloud(const PointCloudPtr& cloud) {
-  cloud_ = cloud;
+inline void FrameBase<PointType>::SetCloud(
+    typename FrameBase<PointType>::InnerCloudPtr cloud) {
+  inner_cloud_ = cloud;
 }
 
 template <typename PointType>
 inline void FrameBase<PointType>::ClearCloud() {
-  if (cloud_) {
-    cloud_->clear();
-    cloud_->points.shrink_to_fit();
+  if (inner_cloud_) {
+    inner_cloud_->Clear();
   }
 }
 
 template <typename PointType>
 void FrameBase<PointType>::ToPcdFile(const std::string& filename) {
-  if (cloud_ == nullptr || cloud_->empty()) {
+  if (!inner_cloud_ || inner_cloud_->Empty()) {
     return;
   }
-  if (!filename.empty()) {
-    pcl::io::savePCDFileBinaryCompressed(filename, *cloud_);
-  } else {
-    pcl::io::savePCDFileBinaryCompressed("simple_frame.pcd", *cloud_);
-  }
+  const std::string actual_filename =
+      filename.empty() ? "simple_frame.pcd" : filename;
+  pcl::io::savePCDFileBinaryCompressed(actual_filename,
+                                       *(inner_cloud_->GetPclCloud()));
 }
 
 }  // namespace static_map

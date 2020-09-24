@@ -20,8 +20,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BUILDER_SENSORS_H_
-#define BUILDER_SENSORS_H_
+#ifndef BUILDER_DATA_TYPES_H_
+#define BUILDER_DATA_TYPES_H_
 // third party
 #include <Eigen/Eigen>
 // stl
@@ -32,6 +32,7 @@
 // local
 #include "common/simple_time.h"
 #include "glog/logging.h"
+#include "pcl/common/transforms.h"
 #include "pcl/point_cloud.h"
 #include "pcl/point_types.h"
 
@@ -39,18 +40,6 @@ namespace static_map {
 namespace sensors {
 
 struct Header {
- public:
-  Header() = default;
-  ~Header() = default;
-
-  Header &operator=(const Header &header) {
-    seq = header.seq;
-    stamp = header.stamp;
-    frame_id = header.frame_id;
-
-    return *this;
-  }
-
   uint32_t seq;
   SimpleTime stamp;
   std::string frame_id;
@@ -58,10 +47,6 @@ struct Header {
 
 enum ImuType { kNormalImu, kInsCombinedImu, kImuTypeCount };
 struct ImuMsg {
- public:
-  ImuMsg() = default;
-  ~ImuMsg() = default;
-
   typedef double Convariance[9];
 
   Header header;
@@ -153,18 +138,9 @@ struct OdomMsg {
     double covariance[36];
   } twist;
 
-  Eigen::Matrix4d PoseInMatrix() const {
-    Eigen::Matrix4d pose_in_matrix = Eigen::Matrix4d::Identity();
-    pose_in_matrix.block(0, 3, 3, 1) = pose.pose.position;
-    pose_in_matrix.block(0, 0, 3, 3) = pose.pose.orientation.toRotationMatrix();
-    return pose_in_matrix;
-  }
+  Eigen::Matrix4d PoseInMatrix() const;
 
-  void SetPose(const Eigen::Matrix4d &pose_mat) {
-    pose.pose.position = pose_mat.block(0, 3, 3, 1);
-    pose.pose.orientation =
-        Eigen::Quaterniond(Eigen::Matrix3d(pose_mat.block(0, 0, 3, 3)));
-  }
+  void SetPose(const Eigen::Matrix4d &pose_mat);
 
   Eigen::Quaterniond RotationInMatrix() const { return pose.pose.orientation; }
 };
@@ -183,54 +159,107 @@ struct GpsEnuMsg {
 };
 
 struct TimedPose {
-  TimedPose() {}
+  TimedPose() = default;
   TimedPose(const SimpleTime &t, const Eigen::Matrix4d &p) : time(t), pose(p) {}
   SimpleTime time;
   Eigen::Matrix4d pose;
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-struct EigenPointCloud {
+class EigenPointCloud {
+ public:
+  EigenPointCloud() = default;
+
+  template <typename PointType>
+  void FromPointCloud(const typename pcl::PointCloud<PointType>::Ptr &cloud);
+
+  bool HasNormals() const;
+
+  void ApplyTransform(const Eigen::Matrix4d &transform);
+
+  void ApplyMotionCompensation(const Eigen::Matrix4d &transform);
+
+  void CalculateNormals();
+
   std::vector<int> indices;
   std::vector<int> indices_to_keep;
   std::vector<double> factors;
   Eigen::MatrixXd points;
   Eigen::MatrixXd normals;
+};
 
-  template <typename PointType>
-  void FromPointCloud(const typename pcl::PointCloud<PointType>::Ptr &cloud) {
-    CHECK(cloud && !cloud->empty());
+template <typename PointType>
+void EigenPointCloud::FromPointCloud(
+    const typename pcl::PointCloud<PointType>::Ptr &cloud) {
+  CHECK(cloud && !cloud->empty());
 
-    const int size = cloud->size();
-    indices.resize(size);
-    factors.resize(size);
-    // We assume points are in 3d by default.
-    points.resize(3, size);
-    // We leave normals not inited, because we will need the normals only if we
-    // use the cloud as a target, so initialize them later.
+  const int size = cloud->size();
+  indices.resize(size);
+  factors.resize(size);
+  // We assume points are in 3d by default.
+  points.resize(3, size);
+  // We leave normals not inited, because we will need the normals only if we
+  // use the cloud as a target, so initialize them later.
 
-    for (int i = 0; i < size; ++i) {
-      indices[i] = i;
-      factors[i] = static_cast<double>(i) / size;
-      points.col(i) << cloud->points[i].x, cloud->points[i].y,
-          cloud->points[i].z;
+  for (int i = 0; i < size; ++i) {
+    indices[i] = i;
+    factors[i] = static_cast<double>(i) / size;
+    points.col(i) << cloud->points[i].x, cloud->points[i].y, cloud->points[i].z;
+  }
+}
+
+template <typename PointT>
+class InnerPointCloudData {
+ public:
+  using PclCloudType = pcl::PointCloud<PointT>;
+  using PclCloudPtr = typename PclCloudType::Ptr;
+
+  SimpleTime time;
+  float delta_time_in_cloud;
+  std::shared_ptr<EigenPointCloud> eigen_cloud;
+
+  using Ptr = std::shared_ptr<InnerPointCloudData<PointT>>;
+
+  bool Empty() { return pcl_cloud_ == nullptr || pcl_cloud_->points.empty(); }
+
+  void Clear() {
+    pcl_cloud_.reset(new PclCloudType);
+    eigen_cloud.reset(new EigenPointCloud);
+  }
+
+  void TransformCloud(const Eigen::Matrix4d &T) {
+    if (!Empty()) {
+      typename pcl::PointCloud<PointT>::Ptr transformed_cloud(
+          new typename pcl::PointCloud<PointT>);
+      pcl::transformPointCloud(*pcl_cloud_, *transformed_cloud, T);
+      pcl_cloud_ = transformed_cloud;
+    }
+    if (eigen_cloud) {
+      eigen_cloud->ApplyTransform(T);
     }
   }
 
-  bool HasNormals() const { return normals.rows() > 0; }
-};
+  void CalculateNormals() {
+    CHECK(eigen_cloud);
+    eigen_cloud->CalculateNormals();
+  }
 
-template <typename PointT>
-struct InnerPointCloudData {
-  SimpleTime time;
-  float delta_time_in_cloud;
-  typename pcl::PointCloud<PointT>::Ptr cloud;
-  std::shared_ptr<EigenPointCloud> build_data;
+  void SetPclCloud(const PclCloudPtr cloud) {
+    pcl_cloud_ = cloud;
+    if (!pcl_cloud_) {
+      return;
+    }
+    eigen_cloud.reset(new EigenPointCloud);
+    eigen_cloud->template FromPointCloud<PointT>(pcl_cloud_);
+  }
 
-  using Ptr = std::shared_ptr<InnerPointCloudData<PointT>>;
+  PclCloudPtr GetPclCloud() const { return pcl_cloud_; }
+
+ private:
+  PclCloudPtr pcl_cloud_;
 };
 
 }  // namespace sensors
 }  // namespace static_map
 
-#endif  // BUILDER_SENSORS_H_
+#endif  // BUILDER_DATA_TYPES_H_

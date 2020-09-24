@@ -124,6 +124,8 @@ class MapBuilder {
   using PointCloudType = pcl::PointCloud<PointType>;
   using PointCloudPtr = PointCloudType::Ptr;
   using PointCloudConstPtr = PointCloudType::ConstPtr;
+  using InnerCloud = sensors::InnerPointCloudData<PointType>;
+
   // call back function for ROS
   using ShowMapFunction = std::function<void(const PointCloudPtr&)>;
   using ShowSubmapFunction = ShowMapFunction;
@@ -183,7 +185,7 @@ class MapBuilder {
   /// @brief thread for scan to scan matching
   void ScanMatchProcessing();
   /// @brief it ia a new frame in current submap, with input cloud and pose
-  void InsertFrameForSubmap(const PointCloudPtr& cloud_ptr,
+  void InsertFrameForSubmap(InnerCloud::Ptr cloud_ptr,
                             const Eigen::Matrix4d& global_pose,
                             const double match_score);
   /// @brief thread for all operations on submaps

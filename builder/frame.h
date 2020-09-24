@@ -63,6 +63,7 @@ class Frame : public FrameBase<PointType> {
   using PointCloudType = pcl::PointCloud<PointType>;
   using PointCloudPtr = typename PointCloudType::Ptr;
   using PointCloudConstPtr = typename PointCloudType::ConstPtr;
+  using InnerCloudPtr = typename sensors::InnerPointCloudData<PointType>::Ptr;
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
@@ -76,7 +77,7 @@ class Frame : public FrameBase<PointType> {
 
   void ToPcdFile(const std::string& filename) override;
 
-  PointCloudPtr Cloud() override;
+  InnerCloudPtr Cloud() override;
 };
 
 }  // namespace static_map

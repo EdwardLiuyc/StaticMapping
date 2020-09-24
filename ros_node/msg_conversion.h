@@ -32,7 +32,7 @@
 #include "sensor_msgs/Imu.h"
 #include "sensor_msgs/NavSatFix.h"
 
-#include "builder/sensors.h"
+#include "builder/data_types.h"
 
 namespace static_map_ros {
 

@@ -27,8 +27,8 @@
 #include <memory>
 
 #include "Eigen/Eigen"
+#include "builder/data_types.h"
 #include "builder/imu_tracker.h"
-#include "builder/sensors.h"
 #include "common/math.h"
 #include "common/mutex.h"
 #include "common/simple_time.h"

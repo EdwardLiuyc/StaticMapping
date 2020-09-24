@@ -31,19 +31,17 @@
 #include <string>
 #include <vector>
 
-#include "builder/sensors.h"
-#include "common/mutex.h"
-#include "pre_processors/filter_factory.h"
-
-#include "pcl/point_cloud.h"
-#include "pcl/point_types.h"
-
-#include <boost/optional.hpp>
 #include "GeographicLib/GeoCoords.hpp"
 #include "GeographicLib/Geocentric.hpp"
 #include "GeographicLib/Geoid.hpp"
 #include "GeographicLib/LocalCartesian.hpp"
 #include "GeographicLib/MagneticModel.hpp"
+#include "boost/optional.hpp"
+#include "builder/data_types.h"
+#include "common/mutex.h"
+#include "pcl/point_cloud.h"
+#include "pcl/point_types.h"
+#include "pre_processors/filter_factory.h"
 
 namespace static_map {
 
@@ -65,6 +63,8 @@ class DataCollector {
   using PointCloudType = typename pcl::PointCloud<PointT>;
   using PointCloudPtr = typename PointCloudType::Ptr;
   using PointCloudConstPtr = typename PointCloudType::ConstPtr;
+  using InnerCloud = typename sensors::InnerPointCloudData<PointT>;
+  using InnerCloudPtr = typename InnerCloud::Ptr;
   using Locker = std::lock_guard<std::mutex>;
 
   DataCollector(const DataCollectorOptions& options,
@@ -117,7 +117,7 @@ class DataCollector {
   /// it is a boost::optional object so it can be empty
   boost::optional<GeographicLib::LocalCartesian> GetGpsReference() const;
   /// @brief get
-  typename sensors::InnerPointCloudData<PointT>::Ptr GetNewCloud();
+  InnerCloudPtr GetNewCloud();
   /// @brief output gps(enu) path to .pcd file for review
   void RawGpsDataToFile(const std::string& filename) const;
   /// @brief output odom path to .pcd file for review
@@ -138,9 +138,8 @@ class DataCollector {
   std::mutex mutex_[kDataTypeCount];
   const DataCollectorOptions options_;
 
-  std::deque<typename sensors::InnerPointCloudData<PointT>::Ptr> cloud_data_;
-  std::deque<typename sensors::InnerPointCloudData<PointT>::Ptr>
-      cloud_data_before_preprocessing_;
+  std::deque<InnerCloudPtr> cloud_data_;
+  std::deque<InnerCloudPtr> cloud_data_before_preprocessing_;
   bool kill_cloud_preprocessing_thread_ = false;
   std::thread cloud_processing_thread_;
   pre_processers::filter::Factory<PointT>* filter_factory_;

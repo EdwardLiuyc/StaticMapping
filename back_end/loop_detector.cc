@@ -20,13 +20,14 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#include "back_end/loop_detector.h"
+
 #include <algorithm>
 #include <limits>
 
-#include "back_end/loop_detector.h"
 #include "builder/submap.h"
 #include "common/simple_thread_pool.h"
-#include "registrators/icp_pointmatcher.h"
+#include "registrators/icp_fast.h"
 #include "tbb/task_group.h"
 
 namespace static_map {
@@ -256,7 +257,8 @@ bool LoopDetector<PointT>::CloseLoop(const int target_id, const int source_id,
     init_guess.block(0, 3, 3, 1) = delta_enu;
   }
 
-  registrator::IcpUsingPointMatcher<PointT> scan_matcher;
+  // TODO(edward) Load the config for submap matching.
+  registrator::IcpFast<PointT> scan_matcher;
   scan_matcher.SetInputSource(all_frames_[source_id]->Cloud());
   scan_matcher.SetInputTarget(all_frames_[target_id]->Cloud());
   scan_matcher.Align(init_guess, *result);
@@ -277,9 +279,10 @@ bool LoopDetector<PointT>::CloseLoop(const int target_id, const int source_id,
       PRINT_DEBUG_FMT("match score: %lf, score: %lf", match_score, *score);
       typename pcl::PointCloud<PointT>::Ptr matched_cloud(
           new typename pcl::PointCloud<PointT>);
-      pcl::transformPointCloud(*all_frames_.at(source_id)->Cloud(),
-                               *matched_cloud, *result);
-      *matched_cloud += *all_frames_.at(target_id)->Cloud();
+      pcl::transformPointCloud(
+          *all_frames_.at(source_id)->Cloud()->GetPclCloud(), *matched_cloud,
+          *result);
+      *matched_cloud += *all_frames_.at(target_id)->Cloud()->GetPclCloud();
       pcl::io::savePCDFile("pcd/matched_" + std::to_string(target_id) + "_" +
                                std::to_string(source_id) + ".pcd",
                            *matched_cloud);

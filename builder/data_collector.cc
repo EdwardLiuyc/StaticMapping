@@ -169,10 +169,10 @@ void DataCollector<PointT>::AddSensorData(const PointCloudPtr& cloud) {
   auto data_before_processing =
       std::make_shared<sensors::InnerPointCloudData<PointT>>();
   data_before_processing->time = first_time_in_accmulated_cloud_;
-  data_before_processing->cloud.reset(new PointCloudType);
-  *data_before_processing->cloud = *accumulated_point_cloud_;
-  data_before_processing->cloud->header.stamp =
-      first_time_in_accmulated_cloud_.toNSec() / 1000ull;
+
+  PointCloudPtr init_cloud(new PointCloudType(*accumulated_point_cloud_));
+  init_cloud->header.stamp = ToPclTime(first_time_in_accmulated_cloud_);
+  data_before_processing->SetPclCloud(init_cloud);
 
   cloud->points.clear();
   cloud->points.shrink_to_fit();
@@ -188,6 +188,7 @@ void DataCollector<PointT>::CloudPreProcessing() {
     if (kill_cloud_preprocessing_thread_) {
       break;
     }
+    // TODO(edward) Fix this, which will drop the last pointcloud
     if (cloud_data_before_preprocessing_.size() < 2) {
       SimpleTime::from_sec(0.005).sleep();
       continue;
@@ -204,22 +205,15 @@ void DataCollector<PointT>::CloudPreProcessing() {
     data->delta_time_in_cloud = (next_data_time - data->time).toSec();
     // filtering cloud
     PointCloudPtr filtered_cloud(new PointCloudType);
-    {
-      REGISTER_BLOCK("Filtering Cloud");
-      filter_factory_->SetInputCloud(data->cloud);
-      filter_factory_->Filter(filtered_cloud);
-    }
+    filter_factory_->SetInputCloud(data->GetPclCloud());
+    filter_factory_->Filter(filtered_cloud);
+    data->SetPclCloud(filtered_cloud);
+
     // insert new data
     Locker locker(mutex_[kPointCloudData]);
-    data->cloud = filtered_cloud;
     cloud_data_.push_back(data);
 
-    // LOG(INFO) << data.time.toNSec() << " "
-    //           << sensors::ToLocalTime(data.cloud->header.stamp).toNSec() << "
-    //           "
-    //           << data.delta_time_in_cloud;
-
-    CHECK(data->time == ToLocalTime(data->cloud->header.stamp));
+    CHECK(data->time == ToLocalTime(filtered_cloud->header.stamp));
 
     // just for debug
     got_clouds_count_++;
@@ -409,9 +403,8 @@ template <typename PointT>
 void DataCollector<PointT>::ClearAllCloud() {
   Locker locker(mutex_[kPointCloudData]);
   // clear all source clouds
-  for (auto& frame : cloud_data_) {
-    frame->cloud->points.clear();
-    frame->cloud->points.shrink_to_fit();
+  for (auto& inner_cloud : cloud_data_) {
+    inner_cloud->Clear();
   }
   cloud_data_.clear();
   cloud_data_.shrink_to_fit();

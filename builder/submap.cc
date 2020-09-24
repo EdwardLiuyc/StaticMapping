@@ -63,7 +63,8 @@ Submap<PointType>::Submap(const SubmapOptions& options)
       is_cloud_in_memory_(false),
       got_matched_transform_to_next_(false),
       cloud_inactive_time_(0) {
-  this->cloud_.reset(new PointCloudType);
+  this->inner_cloud_.reset(new
+                           typename sensors::InnerPointCloudData<PointType>);
 }
 
 template <typename PointType>
@@ -89,13 +90,12 @@ void Submap<PointType>::InsertFrame(
   }
 
   if (full_.load()) {
-    PointCloudPtr output_cloud(new PointCloudType);
-
     if (options_.enable_inner_mrvm) {
       REGISTER_BLOCK("MRVM in submap");
       MultiResolutionVoxelMap<PointType> map;
+      PointCloudPtr output_cloud(new PointCloudType);
       for (auto& frame : frames_) {
-        pcl::transformPointCloud(*frame->Cloud(), *output_cloud,
+        pcl::transformPointCloud(*frame->Cloud()->GetPclCloud(), *output_cloud,
                                  frame->LocalPose());
         if (options_.enable_check) {
           FATAL_CHECK_CLOUD(output_cloud);
@@ -103,53 +103,48 @@ void Submap<PointType>::InsertFrame(
         map.InsertPointCloud(output_cloud,
                              frame->LocalTranslation().template cast<float>());
       }
+      // TODO(edward) Output to the cloud.
     } else {
+      PointCloudPtr added_cloud(new PointCloudType);
       for (auto& frame : frames_) {
-        pcl::transformPointCloud(*frame->Cloud(), *output_cloud,
-                                 frame->LocalPose());
+        PointCloudType transformed_cloud;
+        pcl::transformPointCloud(*frame->Cloud()->GetPclCloud(),
+                                 transformed_cloud, frame->LocalPose());
         if (options_.enable_check) {
-          FATAL_CHECK_CLOUD(output_cloud);
+          FATAL_CHECK_CLOUD(added_cloud);
         }
-        *(this->cloud_) += *output_cloud;
+        *(added_cloud) += transformed_cloud;
       }
-      this->cloud_->header.stamp = frames_[0]->Cloud()->header.stamp;
+      added_cloud->header.stamp =
+          frames_[0]->Cloud()->GetPclCloud()->header.stamp;
+      this->inner_cloud_->SetPclCloud(added_cloud);
     }
 
     // check if the submap is valid
     if (options_.enable_check) {
-      FATAL_CHECK_CLOUD(this->cloud_);
-    }
-
-    if (options_.enable_inner_multiview_icp) {
-      MultiviewRegistratorLumPcl<PointType> multi_matcher;
-      for (auto& frame : frames_) {
-        multi_matcher.AddNewCloud(frame->Cloud(),
-                                  frame->LocalPose().template cast<float>());
-      }
-      multi_matcher.AlignAll(this->cloud_);
+      FATAL_CHECK_CLOUD(this->inner_cloud_->GetPclCloud());
     }
 
     if (options_.enable_random_sampleing) {
       RandomSamplerWithPlaneDetect<PointType> random_sampler;
       random_sampler.SetSamplingRate(options_.random_sampling_rate);
-      random_sampler.SetInputCloud(this->cloud_);
+      random_sampler.SetInputCloud(this->inner_cloud_->GetPclCloud());
       PointCloudPtr filtered_final_cloud(new PointCloudType);
       random_sampler.Filter(filtered_final_cloud);
-      *this->cloud_ = *filtered_final_cloud;
-      filtered_final_cloud.reset();
+      this->inner_cloud_->SetPclCloud(filtered_final_cloud);
     }
 
-    if (options_.enable_voxel_filter && !this->cloud_->empty()) {
+    if (options_.enable_voxel_filter && !this->inner_cloud_->Empty()) {
       pcl::ApproximateVoxelGrid<PointType> approximate_voxel_filter;
       approximate_voxel_filter.setLeafSize(
           options_.voxel_size, options_.voxel_size, options_.voxel_size);
       PointCloudPtr filtered_final_cloud(new PointCloudType);
-      approximate_voxel_filter.setInputCloud(this->cloud_);
+      approximate_voxel_filter.setInputCloud(this->inner_cloud_->GetPclCloud());
       approximate_voxel_filter.filter(*filtered_final_cloud);
-      *this->cloud_ = *filtered_final_cloud;
-      filtered_final_cloud.reset();
+      this->inner_cloud_->SetPclCloud(filtered_final_cloud);
     }
 
+    this->inner_cloud_->CalculateNormals();
     is_cloud_in_memory_ = true;
   }
 }
@@ -206,17 +201,21 @@ void Submap<PointType>::SetMatchedTransformedToNext(const Eigen::Matrix4d& t) {
 }
 
 template <typename PointType>
-typename Submap<PointType>::PointCloudPtr Submap<PointType>::Cloud() {
+typename Submap<PointType>::InnerCloudPtr Submap<PointType>::Cloud() {
   cloud_inactive_time_ = 0;
   boost::upgrade_lock<ReadWriteMutex> locker(mutex_);
   if (!is_cloud_in_memory_.load()) {
     WriteMutexLocker write_locker(locker);
     CHECK(pcl::io::loadPCDFile<PointType>(save_path_ + save_filename_,
-                                          *this->cloud_) == 0);
+                                          *this->inner_cloud_->GetPclCloud()) ==
+          0);
     is_cloud_in_memory_ = true;
+
+    // TODO(edward) eigen cloud
+
     // PRINT_DEBUG_FMT("get submap data %d from disk.", id_.submap_index);
   }
-  return this->cloud_;
+  return this->inner_cloud_;
 }
 
 template <typename PointType>
@@ -233,8 +232,8 @@ bool Submap<PointType>::UpdateInactiveTime(const int update_time_in_sec) {
     cloud_inactive_time_ += update_time_in_sec;
     if (cloud_inactive_time_ > options_.disk_saving_delay) {
       WriteMutexLocker write_locker(locker);
-      this->cloud_->points.clear();
-      this->cloud_->points.shrink_to_fit();
+      this->inner_cloud_->GetPclCloud()->points.clear();
+      this->inner_cloud_->GetPclCloud()->points.shrink_to_fit();
       is_cloud_in_memory_ = false;
       // PRINT_DEBUG_FMT("Remove submap %d from RAM.", id_.submap_index);
     }
@@ -244,28 +243,28 @@ bool Submap<PointType>::UpdateInactiveTime(const int update_time_in_sec) {
 
 template <typename PointType>
 void Submap<PointType>::ToPcdFile(const std::string& filename) {
-  if (!full_.load() || this->cloud_ == nullptr || this->cloud_->empty()) {
+  if (!full_.load() || this->inner_cloud_->Empty()) {
     return;
   }
 
   // PRINT_INFO("Export submap pcd file.");
-  if (!filename.empty()) {
-    pcl::io::savePCDFileBinaryCompressed(filename, *this->cloud_);
-  } else {
-    pcl::io::savePCDFileBinaryCompressed(
-        "submap_" + std::to_string(id_.submap_index) + ".pcd", *this->cloud_);
-  }
+  std::string actual_filename =
+      filename.empty() ? "submap_" + std::to_string(id_.submap_index) + ".pcd"
+                       : filename;
+  pcl::io::savePCDFileBinaryCompressed(actual_filename,
+                                       *this->inner_cloud_->GetPclCloud());
 }
 
 template <typename PointType>
 void Submap<PointType>::ToVtkFile(const std::string& filename) {
-  if (!full_.load() || this->cloud_ == nullptr || this->cloud_->empty()) {
+  if (!full_.load() || this->inner_cloud_ == nullptr ||
+      this->inner_cloud_->Empty()) {
     return;
   }
 
   PRINT_INFO("Export submap vtk file.");
   pcl::PCLPointCloud2 cloud2;
-  pcl::toPCLPointCloud2(*this->cloud_, cloud2);
+  pcl::toPCLPointCloud2(*this->inner_cloud_->GetPclCloud(), cloud2);
   if (!filename.empty()) {
     pcl::io::saveVTKFile(filename, cloud2);
   } else {

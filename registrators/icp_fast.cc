@@ -47,25 +47,6 @@ using Vector = Eigen::VectorXd;
 using OutlierWeights = Matrix;
 using sensors::EigenPointCloud;
 
-void MotionCompensation(const Eigen::Matrix4d& delta_transform,
-                        EigenPointCloud* const in_output_cloud) {
-  const size_t cloud_size = in_output_cloud->points.cols();
-  CHECK_EQ(cloud_size, in_output_cloud->factors.size());
-
-  for (size_t i = 0; i < cloud_size; ++i) {
-    const Eigen::Matrix4d transform = common::InterpolateTransform(
-        Eigen::Matrix4d::Identity().eval(), delta_transform,
-        in_output_cloud->factors[i]);
-
-    const Eigen::Vector3d new_point_start =
-        transform.block(0, 0, 3, 3) *
-            in_output_cloud->points.col(i).topRows(3) +
-        transform.block(0, 3, 3, 1);
-
-    in_output_cloud->points.col(i).topRows(3) = new_point_start;
-  }
-}
-
 struct Matches {
   //!< Squared distances to closest points, dense matrix
   using Dists = Matrix;
@@ -182,128 +163,6 @@ struct ErrorElements {
     this->matches = kept_matches;
   }
 };
-
-struct CompareDim {
-  const int dim;
-  const EigenPointCloud& cloud;
-  CompareDim(const int dim, const EigenPointCloud& eigen_point_cloud)
-      : dim(dim), cloud(eigen_point_cloud) {}
-  bool operator()(const int& p0, const int& p1) {
-    return cloud.points(dim, p0) < cloud.points(dim, p1);
-  }
-};
-
-inline size_t ArgMax(const Eigen::Vector3d& v) {
-  // FIXME: Change that to use the new API. the new Eigen API (3.2.8) allows
-  // this with the call maxCoeff. See the section Visitors in
-  // https://eigen.tuxfamily.org/dox/group__TutorialReductionsVisitorsBroadcasting.html
-  // @todo(edward) use eigen api
-  const int size(v.size());
-  double maxVal(0.);
-  size_t maxIdx(0);
-  for (int i = 0; i < size; ++i) {
-    if (v[i] > maxVal) {
-      maxVal = v[i];
-      maxIdx = i;
-    }
-  }
-  return maxIdx;
-}
-
-// Refer to
-//   "Fast and Accurate Computation of Surface Normals from Range Images"
-//   H. Badino, D. Huber, Y. Park and T. Kanade
-//   IV.C. "Unconstrained Least Squares" part
-// TODO(yongchuan) Try more normal estimation methods.
-void CalculateNormals(EigenPointCloud* const data, const int first,
-                      const int last) {
-  REGISTER_FUNC;
-  const int col_count = last - first;
-  // build nearest neighbors list
-  Matrix d(kDim, col_count);
-  Matrix M_wave = Eigen::Matrix<double, kDim, kDim>::Zero();
-  for (int i = 0; i < col_count; ++i) {
-    d.col(i) = data->points.block(0, data->indices[first + i], kDim, 1);
-    M_wave += d.col(i) * d.col(i).transpose();
-  }
-  const Vector b_wave = d.rowwise().sum();
-  const Vector mean = b_wave / col_count;
-  const Matrix NN = (d.colwise() - mean);
-
-  // compute covariance
-  const Matrix C(NN * NN.transpose());
-  if (C.fullPivHouseholderQr().rank() + 1 < kDim) {
-    return;
-  }
-
-  Vector normal = M_wave.inverse() * Vector(b_wave);
-
-  // sampling in a simple way
-  // use just one point in a box
-  const int k = data->indices[first];
-  // Mark the indices which will be part of the final data
-  data->indices_to_keep.push_back(k);
-  data->points.col(k) = mean;
-  data->normals.col(k) = normal.normalized();
-}
-
-void TransformData(EigenPointCloud* const data,
-                   const Eigen::Matrix4d& transform) {
-  const int points_count = data->points.cols();
-  CHECK_GT(points_count, 0);
-  Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> homo_data(4,
-                                                                  points_count);
-  homo_data.setConstant(1.);
-  homo_data.block(0, 0, 3, points_count) = data->points;
-  data->points = (transform * homo_data).block(0, 0, 3, points_count);
-
-  if (data->normals.cols() > 0) {
-    CHECK_EQ(data->normals.cols(), points_count);
-    homo_data.block(0, 0, 3, points_count) = data->normals;
-    data->normals = (transform * homo_data).block(0, 0, 3, points_count);
-  }
-}
-
-void BuildNormals(EigenPointCloud* const data, const int first, const int last,
-                  Eigen::Vector3d&& minValues, Eigen::Vector3d&& maxValues) {
-  const int count(last - first);
-  if (count <= kNormalEstimationKnn) {
-    // compute for this range
-    CalculateNormals(data, first, last);
-    return;
-  }
-
-  // find the largest dimension of the box
-  const int cut_dim = ArgMax(maxValues - minValues);
-
-  // compute number of elements
-  const int rightCount(count / 2);
-  const int leftCount(count - rightCount);
-  CHECK_EQ(last - rightCount, first + leftCount);
-
-  // sort, hack std::nth_element
-  std::nth_element(data->indices.begin() + first,
-                   data->indices.begin() + first + leftCount,
-                   data->indices.begin() + last, CompareDim(cut_dim, *data));
-
-  // get value
-  const int cut_index(data->indices[first + leftCount]);
-  const double cutVal(data->points(cut_dim, cut_index));
-
-  // update bounds for left
-  Eigen::Vector3d leftMaxValues(maxValues);
-  leftMaxValues[cut_dim] = cutVal;
-  // update bounds for right
-  Eigen::Vector3d rightMinValues(minValues);
-  rightMinValues[cut_dim] = cutVal;
-
-  // recurse
-  BuildNormals(data, first, first + leftCount,
-               std::forward<Eigen::Vector3d>(minValues),
-               std::move(leftMaxValues));
-  BuildNormals(data, first + leftCount, last, std::move(rightMinValues),
-               std::forward<Eigen::Vector3d>(maxValues));
-}
 
 Matches FindClosests(const std::shared_ptr<NNS>& nns_kdtree,
                      const EigenPointCloud& source_cloud) {
@@ -557,39 +416,18 @@ IcpFast<PointT>::IcpFast() : Interface<PointT>() {
 }
 
 template <typename PointT>
-void IcpFast<PointT>::SetInputSource(const PointCloudSourcePtr& cloud) {
-  source_cloud_.reset(new EigenPointCloud);
-  source_cloud_->FromPointCloud<PointT>(cloud);
+void IcpFast<PointT>::SetInputSource(InnerCloudPtr cloud) {
+  CHECK(cloud);
+  CHECK(cloud->eigen_cloud);
+  source_cloud_.reset(new sensors::EigenPointCloud(*cloud->eigen_cloud));
 }
 
 template <typename PointT>
-void IcpFast<PointT>::SetInputTarget(const PointCloudTargetPtr& cloud) {
-  // it is the reference cloud
-  target_cloud_.reset(new EigenPointCloud);
-  target_cloud_->FromPointCloud<PointT>(cloud);
-  target_cloud_->normals.resize(kDim, cloud->size());
-
-  // step1 normal estimation and filtering
-  BuildNormals(target_cloud_.get(), 0, cloud->size(),
-               target_cloud_->points.rowwise().minCoeff(),
-               target_cloud_->points.rowwise().maxCoeff());
-
-  // step2 remove useless points
-  // Bring the data we keep to the front of the arrays then
-  // wipe the leftover unused space.
-  std::sort(target_cloud_->indices_to_keep.begin(),
-            target_cloud_->indices_to_keep.end());
-  const int points_count_remained = target_cloud_->indices_to_keep.size();
-  for (int i = 0; i < points_count_remained; ++i) {
-    const int k = target_cloud_->indices_to_keep[i];
-    CHECK(i <= k);
-    target_cloud_->points.col(i) = target_cloud_->points.col(k);
-    target_cloud_->normals.col(i) = target_cloud_->normals.col(k);
-  }
-  target_cloud_->points.conservativeResize(Eigen::NoChange,
-                                           points_count_remained);
-  target_cloud_->normals.conservativeResize(Eigen::NoChange,
-                                            points_count_remained);
+void IcpFast<PointT>::SetInputTarget(InnerCloudPtr cloud) {
+  CHECK(cloud);
+  CHECK(cloud->eigen_cloud);
+  CHECK(cloud->eigen_cloud->HasNormals());
+  target_cloud_.reset(new sensors::EigenPointCloud(*cloud->eigen_cloud));
 
   // for debug
   //
@@ -630,7 +468,7 @@ bool IcpFast<PointT>::Align(const Eigen::Matrix4d& guess,
   }
   EigenPointCloud init_source_cloud = *source_cloud_;
   Eigen::Matrix4d T_target_mean_init_guess = T_target_mean.inverse() * guess;
-  TransformData(&init_source_cloud, T_target_mean_init_guess);
+  init_source_cloud.ApplyTransform(T_target_mean_init_guess);
 
   // initialise all iter status
   Eigen::Matrix4d T_iter = Eigen::Matrix4d::Identity();
@@ -647,9 +485,9 @@ bool IcpFast<PointT>::Align(const Eigen::Matrix4d& guess,
     // step1 Find Closest points
     EigenPointCloud step_cloud(init_source_cloud);
     if (this->inner_compensation_) {
-      MotionCompensation(T_iter, &step_cloud);
+      step_cloud.ApplyMotionCompensation(T_iter);
     } else {
-      TransformData(&step_cloud, T_iter);
+      step_cloud.ApplyTransform(T_iter);
     }
 
     const Matches matches(FindClosests(nns_kdtree_, step_cloud));

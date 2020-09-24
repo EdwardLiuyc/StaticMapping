@@ -152,7 +152,8 @@ bool SaveTrajectoriesAsMapPackage(
         PointCloudPtr transformed_cloud(new PointCloudType);
         const Eigen::Matrix4d pose = submap->GlobalPose();
         const Eigen::Vector3d translation = submap->GlobalTranslation();
-        pcl::transformPointCloud(*(submap->Cloud()), *transformed_cloud, pose);
+        pcl::transformPointCloud(*(submap->Cloud()->GetPclCloud()),
+                                 *transformed_cloud, pose);
         PRINT_DEBUG_FMT("submap in piece[%d][%d] : %d / %d", x, y, i,
                         submaps_size - 1);
         if (inside_bbox(translation, part.bb_min, part.bb_max)) {

@@ -31,6 +31,7 @@
 #include <string>
 #include <unordered_map>
 
+#include "builder/data_types.h"
 #include "common/macro_defines.h"
 #include "common/pugixml.hpp"
 
@@ -66,13 +67,15 @@ struct MatcherOptions {
 template <typename PointType>
 class Interface {
  public:
-  typedef pcl::PointCloud<PointType> PointCloudSource;
-  typedef typename PointCloudSource::Ptr PointCloudSourcePtr;
-  typedef typename PointCloudSource::ConstPtr PointCloudSourceConstPtr;
+  using PointCloudSource = pcl::PointCloud<PointType>;
+  using PointCloudSourcePtr = typename PointCloudSource::Ptr;
+  using PointCloudSourceConstPtr = typename PointCloudSource::ConstPtr;
 
-  typedef pcl::PointCloud<PointType> PointCloudTarget;
-  typedef typename PointCloudTarget::Ptr PointCloudTargetPtr;
-  typedef typename PointCloudTarget::ConstPtr PointCloudTargetConstPtr;
+  using PointCloudTarget = PointCloudSource;
+  using PointCloudTargetPtr = typename PointCloudTarget::Ptr;
+  using PointCloudTargetConstPtr = typename PointCloudTarget::ConstPtr;
+
+  using InnerCloudPtr = typename sensors::InnerPointCloudData<PointType>::Ptr;
 
   Interface() = default;
   virtual ~Interface() {}
@@ -101,8 +104,8 @@ class Interface {
   /// @brief Print configs' value.
   void PrintOptions();
 
-  virtual void SetInputSource(const PointCloudSourcePtr& cloud);
-  virtual void SetInputTarget(const PointCloudTargetPtr& cloud);
+  virtual void SetInputSource(InnerCloudPtr source_cloud);
+  virtual void SetInputTarget(InnerCloudPtr target_cloud);
   virtual double GetFitnessScore() { return final_score_; }
 
   // need to be implemented by child class
@@ -112,8 +115,8 @@ class Interface {
  protected:
   double final_score_;
   Type type_ = kNoType;
-  PointCloudSourcePtr source_cloud_ = nullptr;
-  PointCloudTargetPtr target_cloud_ = nullptr;
+  InnerCloudPtr source_cloud_ = nullptr;
+  InnerCloudPtr target_cloud_ = nullptr;
   std::unordered_map<std::string, InnerOptionItem> inner_options_;
 
   bool inner_compensation_ = false;
@@ -131,30 +134,30 @@ void Interface<PointType>::DisableInnerCompensation() {
 
 template <typename PointType>
 void Interface<PointType>::SetInputSource(
-    const typename Interface<PointType>::PointCloudSourcePtr& cloud) {
-  if (!cloud) {
+    typename Interface<PointType>::InnerCloudPtr source_cloud) {
+  if (!source_cloud) {
     source_cloud_ = nullptr;
     return;
   }
-  if (cloud->empty()) {
+  if (source_cloud->Empty()) {
     PRINT_WARNING("cloud is empty.");
     return;
   }
-  source_cloud_ = cloud;
+  source_cloud_ = source_cloud;
 }
 
 template <typename PointType>
 void Interface<PointType>::SetInputTarget(
-    const typename Interface<PointType>::PointCloudTargetPtr& cloud) {
-  if (!cloud) {
+    typename Interface<PointType>::InnerCloudPtr target_cloud) {
+  if (!target_cloud) {
     target_cloud_ = nullptr;
     return;
   }
-  if (cloud->empty()) {
+  if (target_cloud->Empty()) {
     PRINT_WARNING("cloud is empty.");
     return;
   }
-  target_cloud_ = cloud;
+  target_cloud_ = target_cloud;
 }
 
 template <typename PointType>
@@ -248,7 +251,8 @@ std::shared_ptr<Interface<PointType>> CreateMatcher(
   using typename Interface<PointType>::PointCloudSource;    \
   using typename Interface<PointType>::PointCloudTarget;    \
   using typename Interface<PointType>::PointCloudSourcePtr; \
-  using typename Interface<PointType>::PointCloudTargetPtr;
+  using typename Interface<PointType>::PointCloudTargetPtr; \
+  using typename Interface<PointType>::InnerCloudPtr;
 
 #define REG_REGISTRATOR_INNER_OPTION(NAME, TYPE, VARIABLE) \
   this->inner_options_[NAME].data_type = TYPE;             \

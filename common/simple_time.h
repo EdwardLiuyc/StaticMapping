@@ -245,4 +245,8 @@ static inline SimpleTime ToLocalTime(const PclTimeStamp &time) {
   return SimpleTime::fromNSec(time * 1000ull);
 }
 
+static inline PclTimeStamp ToPclTime(const SimpleTime &time) {
+  return time.toNSec() / 1000ull;
+}
+
 }  // namespace static_map

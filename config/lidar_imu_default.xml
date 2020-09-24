@@ -103,7 +103,7 @@
         max_close_loop_distance="3"
         max_close_loop_z_distance="1."
         m2dp_match_score="0.96"
-        accept_scan_match_score="0.75"
+        accept_scan_match_score="0.8"
         nearest_history_pos_num="5" />
     </back_end_options>
     <output_mrvm_settings
