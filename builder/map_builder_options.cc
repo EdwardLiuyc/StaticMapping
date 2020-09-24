@@ -204,9 +204,6 @@ MapBuilderOptions& MapBuilder::Initialise(const char* config_file_name) {
                       submap_options.frame_count, int, int32_t);
     GET_SINGLE_OPTION(back_end_node, "submap_options", "enable_inner_mrvm",
                       submap_options.enable_inner_mrvm, bool, bool);
-    GET_SINGLE_OPTION(back_end_node, "submap_options",
-                      "enable_inner_multiview_icp",
-                      submap_options.enable_inner_multiview_icp, bool, bool);
     GET_SINGLE_OPTION(back_end_node, "submap_options", "enable_voxel_filter",
                       submap_options.enable_voxel_filter, bool, bool);
     GET_SINGLE_OPTION(back_end_node, "submap_options",

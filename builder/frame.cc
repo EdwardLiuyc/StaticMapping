@@ -26,16 +26,15 @@ namespace static_map {
 
 template <typename PointType>
 void Frame<PointType>::ToPcdFile(const std::string& filename) {
-  if (!filename.empty()) {
-    pcl::io::savePCDFileASCII(filename, *this->cloud_);
-  } else {
-    pcl::io::savePCDFileASCII(id_.DebugString() + ".pcd", *this->cloud_);
-  }
+  const std::string actual_filename =
+      filename.empty() ? id_.DebugString() + ".pcd" : filename;
+  pcl::io::savePCDFileASCII(actual_filename,
+                            *this->inner_cloud_->GetPclCloud());
 }
 
 template <typename PointType>
-typename Frame<PointType>::PointCloudPtr Frame<PointType>::Cloud() {
-  return this->cloud_;
+typename Frame<PointType>::InnerCloudPtr Frame<PointType>::Cloud() {
+  return this->inner_cloud_;
 }
 
 template class Frame<pcl::PointXYZI>;

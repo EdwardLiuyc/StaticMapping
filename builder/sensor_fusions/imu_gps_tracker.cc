@@ -24,7 +24,7 @@
 
 #include <memory>
 
-#include "builder/sensors.h"
+#include "builder/data_types.h"
 
 namespace static_map {
 namespace sensor_fusions {

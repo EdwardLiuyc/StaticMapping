@@ -87,27 +87,27 @@ IcpUsingPointMatcher<PointType>::~IcpUsingPointMatcher() {
 }
 
 template <typename PointType>
-void IcpUsingPointMatcher<PointType>::SetInputSource(
-    const PointCloudSourcePtr& cloud) {
-  if (!cloud || cloud->empty()) {
+void IcpUsingPointMatcher<PointType>::SetInputSource(InnerCloudPtr cloud) {
+  if (!cloud || cloud->Empty()) {
     PRINT_ERROR("Empty cloud.");
     return;
   }
+  const auto pcl_cloud = cloud->GetPclCloud();
   *(inner_->reading_cloud_) =
-      pclPointCloudToLibPointMatcherPoints<PointType>(cloud);
-  CHECK(inner_->reading_cloud_->getNbPoints() == cloud->points.size());
+      pclPointCloudToLibPointMatcherPoints<PointType>(pcl_cloud);
+  CHECK(inner_->reading_cloud_->getNbPoints() == pcl_cloud->points.size());
 }
 
 template <typename PointType>
-void IcpUsingPointMatcher<PointType>::SetInputTarget(
-    const PointCloudTargetPtr& cloud) {
-  if (!cloud || cloud->empty()) {
+void IcpUsingPointMatcher<PointType>::SetInputTarget(InnerCloudPtr cloud) {
+  if (!cloud || cloud->Empty()) {
     PRINT_ERROR("Empty cloud.");
     return;
   }
+  const auto pcl_cloud = cloud->GetPclCloud();
   *(inner_->reference_cloud_) =
-      pclPointCloudToLibPointMatcherPoints<PointType>(cloud);
-  CHECK(inner_->reference_cloud_->getNbPoints() == cloud->points.size());
+      pclPointCloudToLibPointMatcherPoints<PointType>(pcl_cloud);
+  CHECK(inner_->reference_cloud_->getNbPoints() == pcl_cloud->points.size());
 }
 
 template <typename PointType>

@@ -43,8 +43,8 @@ bool Ndt<PointType>::Align(const Eigen::Matrix4d& guess,
   if (!this->source_cloud_ || !this->target_cloud_) {
     return false;
   }
-  inner_matcher_.setInputSource(this->source_cloud_);
-  inner_matcher_.setInputTarget(this->target_cloud_);
+  inner_matcher_.setInputSource(this->source_cloud_->GetPclCloud());
+  inner_matcher_.setInputTarget(this->target_cloud_->GetPclCloud());
 
   PointCloudTargetPtr aligned_cloud(new PointCloudTarget);
   inner_matcher_.align(*aligned_cloud, guess.cast<float>());

@@ -65,14 +65,14 @@ bool NdtWithGicp<PointType>::Align(const Eigen::Matrix4d& guess,
       down_sampled_target_cloud_ = boost::make_shared<PointCloudTarget>();
     }
 
-    approximate_voxel_filter_.setInputCloud(this->source_cloud_);
+    approximate_voxel_filter_.setInputCloud(this->source_cloud_->GetPclCloud());
     approximate_voxel_filter_.filter(*down_sampled_source_cloud_);
 
-    approximate_voxel_filter_.setInputCloud(this->target_cloud_);
+    approximate_voxel_filter_.setInputCloud(this->target_cloud_->GetPclCloud());
     approximate_voxel_filter_.filter(*down_sampled_target_cloud_);
   } else {
-    down_sampled_source_cloud_ = this->source_cloud_;
-    down_sampled_target_cloud_ = this->target_cloud_;
+    down_sampled_source_cloud_ = this->source_cloud_->GetPclCloud();
+    down_sampled_target_cloud_ = this->target_cloud_->GetPclCloud();
   }
 
   PointCloudSourcePtr output_cloud(new PointCloudSource);

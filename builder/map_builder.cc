@@ -231,12 +231,12 @@ void MapBuilder::AddNewTrajectory() {
   PRINT_INFO_FMT("Add a new trajectory : %d", current_trajectory_->GetId());
 }
 
-void MapBuilder::InsertFrameForSubmap(const PointCloudPtr& cloud_ptr,
+void MapBuilder::InsertFrameForSubmap(InnerCloud::Ptr cloud_ptr,
                                       const Eigen::Matrix4d& global_pose,
                                       const double match_score) {
   auto frame = std::make_shared<Frame<PointType>>();
   frame->SetCloud(cloud_ptr);
-  frame->SetTimeStamp(ToLocalTime(cloud_ptr->header.stamp));
+  frame->SetTimeStamp(ToLocalTime(cloud_ptr->GetPclCloud()->header.stamp));
   frame->SetGlobalPose(global_pose);
 
   common::MutexLocker locker(&mutex_);
@@ -281,12 +281,10 @@ void MapBuilder::ScanMatchProcessing() {
 
   scan_match_thread_running_ = true;
 
-  PointCloudPtr target_cloud;
-  PointCloudPtr source_cloud;
+  InnerCloud::Ptr target_cloud;
+  InnerCloud::Ptr source_cloud;
   Pose3d pose_target = Pose3d::Identity();
   Pose3d accumulative_transform = Pose3d::Identity();
-
-  bool first_in_accumulate = true;
   while (true) {
     auto new_inner_cloud = data_collector_->GetNewCloud();
     if (new_inner_cloud == nullptr) {
@@ -297,21 +295,21 @@ void MapBuilder::ScanMatchProcessing() {
       continue;
     }
 
-    source_cloud = new_inner_cloud->cloud;
-    CHECK(source_cloud);
+    source_cloud = new_inner_cloud;
+    const auto source_time =
+        ToLocalTime(source_cloud->GetPclCloud()->header.stamp);
     if (!got_first_point_cloud_) {
       got_first_point_cloud_ = true;
       target_cloud = source_cloud;
+      target_cloud->CalculateNormals();
       InsertFrameForSubmap(source_cloud, Eigen::Matrix4d::Identity(), 1.);
       if (extrapolator_) {
-        extrapolator_->AddPose(ToLocalTime(source_cloud->header.stamp),
-                               Eigen::Matrix4d::Identity());
+        extrapolator_->AddPose(source_time, Eigen::Matrix4d::Identity());
       }
       continue;
     }
 
     REGISTER_BLOCK("FrontEndOneFrame");
-    const auto source_time = ToLocalTime(source_cloud->header.stamp);
     if (extrapolator_ && source_time < extrapolator_->GetLastPoseTime()) {
       PRINT_INFO("Extrapolator still initialising...");
       target_cloud = source_cloud;
@@ -330,25 +328,22 @@ void MapBuilder::ScanMatchProcessing() {
     // still in test
     // scan_matcher_->EnableInnerCompensation();
     Eigen::Matrix4d align_result = Eigen::Matrix4d::Identity();
+    auto pcl_cloud_without_compensation = source_cloud->GetPclCloud();
     {
       REGISTER_BLOCK("scan match:target");
-
-      if (first_in_accumulate) {
-        scan_matcher_->SetInputTarget(target_cloud);
-        //   std::cout << target_cloud.get() << std::endl;
-      }
+      scan_matcher_->SetInputTarget(target_cloud);
 
       // && options_.front_end_options.motion_compensation_options.use_average
       if (options_.front_end_options.motion_compensation_options.enable) {
-        PointCloudType compensated_source_cloud;
+        PointCloudPtr compensated_source_cloud(new PointCloudType);
         const Pose3d motion_in_source_cloud =
             accumulative_transform.inverse() * guess;
-        MotionCompensation(source_cloud, motion_in_source_cloud,
-                           &compensated_source_cloud);
-        scan_matcher_->SetInputSource(compensated_source_cloud.makeShared());
-      } else {
-        scan_matcher_->SetInputSource(source_cloud);
+        MotionCompensation(pcl_cloud_without_compensation,
+                           motion_in_source_cloud,
+                           compensated_source_cloud.get());
+        source_cloud->SetPclCloud(compensated_source_cloud);
       }
+      scan_matcher_->SetInputSource(source_cloud);
     }
     {
       REGISTER_BLOCK("scan match:align");
@@ -364,11 +359,11 @@ void MapBuilder::ScanMatchProcessing() {
         average_transform = common::AverageTransforms(transforms);
       }
       // motion compensation using align result
-      PointCloudType compensated_source_cloud;
-      MotionCompensation(source_cloud,
+      PointCloudPtr compensated_source_cloud(new PointCloudType);
+      MotionCompensation(pcl_cloud_without_compensation,
                          accumulative_transform.inverse() * average_transform,
-                         &compensated_source_cloud);
-      *source_cloud = compensated_source_cloud;
+                         compensated_source_cloud.get());
+      source_cloud->SetPclCloud(compensated_source_cloud);
     }
 
     pose_source = pose_target * align_result;
@@ -405,10 +400,8 @@ void MapBuilder::ScanMatchProcessing() {
 
       accumulative_transform = Pose3d::Identity();
       target_cloud = source_cloud;
-      first_in_accumulate = true;
+      target_cloud->CalculateNormals();
       pose_target = pose_source;
-    } else {
-      first_in_accumulate = false;
     }
   }
 
@@ -538,7 +531,8 @@ void MapBuilder::ConnectAllSubmap() {
 
         PointCloudPtr transformed_cloud(new PointCloudType);
         Eigen::Matrix4d pose = submap->GlobalPose();
-        pcl::transformPointCloud(*(submap->Cloud()), *transformed_cloud, pose);
+        pcl::transformPointCloud(*(submap->Cloud()->GetPclCloud()),
+                                 *transformed_cloud, pose);
         *local_map += *transformed_cloud;
       }
 
@@ -619,8 +613,8 @@ void MapBuilder::ConnectAllSubmap() {
         // REGISTER_BLOCK("mrvp_insert_one_frame");
         for (auto& frame : submap->GetFrames()) {
           output_cloud->clear();
-          pcl::transformPointCloud(*(frame->Cloud()), *output_cloud,
-                                   frame->GlobalPose());
+          pcl::transformPointCloud(*(frame->Cloud()->GetPclCloud()),
+                                   *output_cloud, frame->GlobalPose());
           map.InsertPointCloud(output_cloud,
                                frame->GlobalTranslation().cast<float>());
           // *whole_map += *output_cloud;
@@ -725,7 +719,7 @@ void MapBuilder::SubmapProcessing() {
 
     local_frames.clear();
     if (show_submap_function_) {
-      show_submap_function_(submap->GetFrames()[0]->Cloud());
+      show_submap_function_(submap->GetFrames()[0]->Cloud()->GetPclCloud());
     }
     if (current_submap_index > 0) {
       submap_match_thread_pool.enqueue([=]() {

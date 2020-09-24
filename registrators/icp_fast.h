@@ -26,7 +26,7 @@
 #include <memory>
 #include <vector>
 
-#include "builder/sensors.h"
+#include "builder/data_types.h"
 #include "nabo/nabo.h"
 #include "registrators/interface.h"
 
@@ -45,8 +45,8 @@ class IcpFast : public Interface<PointType> {
 
   PROHIBIT_COPY_AND_ASSIGN(IcpFast);
 
-  void SetInputSource(const PointCloudSourcePtr& cloud) override;
-  void SetInputTarget(const PointCloudTargetPtr& cloud) override;
+  void SetInputSource(InnerCloudPtr cloud) override;
+  void SetInputTarget(InnerCloudPtr cloud) override;
   bool Align(const Eigen::Matrix4d& guess, Eigen::Matrix4d& result) override;
 
  private:

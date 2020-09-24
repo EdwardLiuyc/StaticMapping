@@ -61,6 +61,7 @@ class Submap : public FrameBase<PointType> {
   using PointCloudType = pcl::PointCloud<PointType>;
   using PointCloudPtr = typename PointCloudType::Ptr;
   using PointCloudConstPtr = typename PointCloudType::ConstPtr;
+  using InnerCloudPtr = typename sensors::InnerPointCloudData<PointType>::Ptr;
 
   /// read write mutex
   /// when there is no writing in progress, several thread can access (read) the
@@ -106,7 +107,7 @@ class Submap : public FrameBase<PointType> {
   std::shared_ptr<Frame<PointType>> GetFrame(const FrameId& frame_id);
   /// @brief we do not just return the cloud
   /// @notice we update the active status and inactive time in this function
-  PointCloudPtr Cloud() override;
+  InnerCloudPtr Cloud() override;
   /// @brief we manage all submaps' memory in a single thread
   /// and this managing thread tells each submap how long has it been waited
   bool UpdateInactiveTime(const int update_time_in_sec);
