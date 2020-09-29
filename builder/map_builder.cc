@@ -705,13 +705,13 @@ void MapBuilder::SubmapProcessing() {
 
     const auto time = submap->GetTimeStamp();
     if (use_gps_) {
-      const auto gps_enu = data_collector_->InterpolateGps(time, 0.005, true);
+      const auto gps_enu = data_collector_->InterpolateGps(time, 0.001, true);
       if (gps_enu) {
         submap->SetRelatedGpsInENU(*gps_enu);
       }
     }
     if (use_odom_) {
-      const auto odom = data_collector_->InterpolateOdom(time, 0.005, true);
+      const auto odom = data_collector_->InterpolateOdom(time, 0.001, true);
       if (odom) {
         submap->SetRelatedOdom(*odom);
       }

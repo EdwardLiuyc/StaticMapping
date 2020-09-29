@@ -288,7 +288,7 @@ std::unique_ptr<Eigen::Vector3d> DataCollector<PointT>::InterpolateGps(
 
   const double delta_time = (latter_data.time - former_data.time).toSec();
   CHECK_GT(delta_time, 1.e-6);
-  if (delta_time > 1.) {
+  if (delta_time > 0.2) {
     PRINT_WARNING("some thing wrong with the search");
     return nullptr;
   }

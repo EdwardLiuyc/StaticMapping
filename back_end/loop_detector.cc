@@ -249,13 +249,16 @@ bool LoopDetector<PointT>::CloseLoop(const int target_id, const int source_id,
                                all_frames_[source_id]->GlobalPose();
   // @todo it is a trick, remove it
   init_guess(2, 3) = 0.f;
-  if (settings_.use_gps && all_frames_[target_id]->HasGps() &&
-      all_frames_[source_id]->HasGps()) {
-    // if use gps, update the translation part of guess
-    const EnuPosition delta_enu = all_frames_[source_id]->GetRelatedGpsInENU() -
-                                  all_frames_[target_id]->GetRelatedGpsInENU();
-    init_guess.block(0, 3, 3, 1) = delta_enu;
-  }
+  // TODO(edward) Fix this bug!! It is quite wrong to simply calculating like
+  // this.
+  // if (settings_.use_gps && all_frames_[target_id]->HasGps() &&
+  //     all_frames_[source_id]->HasGps()) {
+  //   // if use gps, update the translation part of guess
+  //   const EnuPosition delta_enu =
+  //   all_frames_[source_id]->GetRelatedGpsInENU() -
+  //                                 all_frames_[target_id]->GetRelatedGpsInENU();
+  //   init_guess.block(0, 3, 3, 1) = delta_enu;
+  // }
 
   // TODO(edward) Load the config for submap matching.
   registrator::IcpFast<PointT> scan_matcher;
