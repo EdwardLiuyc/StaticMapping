@@ -9,3 +9,4 @@ endfunction()
 
 add_boost_test(test_bbox)
 add_boost_test(test_octree)
+add_boost_test(test_simple_time)
