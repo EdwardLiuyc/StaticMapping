@@ -61,6 +61,7 @@ namespace NM = gtsam::noiseModel;
 #define VELOCITY_KEY(index) (gtsam::Symbol(VELOCITY_SYMBOL, (index)))
 #define ODOM_CALIB_KEY (gtsam::Symbol(CALIB_SYMBOL, 0))
 #define IMU_CALIB_KEY (gtsam::Symbol(CALIB_SYMBOL, 1))
+#define GPS_CALIB_KEY (gtsam::Symbol(CALIB_SYMBOL, 2))
 #define GPS_COORD_KEY (gtsam::Symbol(GPS_COORD_SYMBOL, 0))
 
 template <typename PointT>
@@ -113,6 +114,13 @@ gtsam::Values IsamOptimizer<PointT>::UpdateAllPose() {
     frames[i]->SetGlobalPose(pose);
     view_graph_.AddVertex(i, pose);
   }
+
+  // if (estimate_poses.exists<gtsam::Point3>(GPS_CALIB_KEY)) {
+  //   const gtsam::Point3 gps_tf_error =
+  //       estimate_poses.at<gtsam::Point3>(GPS_CALIB_KEY);
+  //   PRINT_INFO_FMT("gps tf error: %lf, %lf, %lf", gps_tf_error.x(),
+  //                  gps_tf_error.y(), gps_tf_error.z());
+  // }
 
   return estimate_poses;
 }
@@ -238,13 +246,16 @@ void IsamOptimizer<PointT>::AddFrame(
     // but gps has no rotation since it only provides longtitude, latitude
     // so we use only translation in the tracking_to_gps
     auto map_origin_in_gps = Pose3_(GPS_COORD_KEY);
+    auto tf_error = gtsam::Point3_(GPS_CALIB_KEY);
     auto pose = Pose3_(POSE_KEY(index));
     const gtsam::Point3 tracking_gps_translation(
         tf_tracking_gps_.block(0, 3, 3, 1));
     isam_factor_graph_->addExpressionFactor(
         gps_noise_model_, gtsam::Point3(enu),
-        gtsam::transform_from(gtsam::compose(map_origin_in_gps, pose),
-                              gtsam::Point3_(tracking_gps_translation)));
+        gtsam::transform_from(
+            gtsam::compose(map_origin_in_gps, pose),
+            gtsam::compose(gtsam::Point3_(tracking_gps_translation),
+                           tf_error)));
   };
 
   if (options_.use_gps && frame->HasGps()) {
@@ -320,8 +331,13 @@ void IsamOptimizer<PointT>::SolveGpsCorrdAlone() {
   initial_estimate_.insert(GPS_COORD_KEY, gps_coord_transform_);
   isam_factor_graph_->addExpressionFactor(
       NM::Diagonal::Sigmas(
-          (gtsam::Vector(6) << 0.2, 0.2, 0.2, 1., 1., 1.).finished()),
+          (gtsam::Vector(6) << 1., 1., 0.2, 1., 1., 1.).finished()),
       gps_coord_transform_, Pose3_(GPS_COORD_KEY));
+
+  initial_estimate_.insert(GPS_CALIB_KEY, gtsam::Point3(0, 0, 0));
+  isam_factor_graph_->addExpressionFactor(
+      NM::Diagonal::Sigmas((gtsam::Vector(3) << 1, 1, 0.2).finished()),
+      gtsam::Point3(0, 0, 0), gtsam::Point3_(GPS_CALIB_KEY));
 }
 
 template <typename PointT>

@@ -103,6 +103,7 @@ perhaps you would meet some error like ` conflicting declaration ‘typedef stru
 # How to use?
 ## step0 Read wiki
 > There are very essential explanations in [wiki](https://github.com/EdwardLiuyc/StaticMapping/wiki) page. Read them first.
+> For Now, mapping with gps or odom would not be a good choice since that I have not run enough test on them.
 
 ## step1 run the mapping process
 ```bash
@@ -177,9 +178,10 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - **Loop Close factor should be rubust**
 - **using docker to run**
 - another mode for the imu which provides attitude
-- trajectory and loop closure edges in rviz
+- loop closure edges in rviz
+- publish tf instead directly modify the submap cloud
+- Fix bug with loop-detector using gps
 - Kitti evaluation
-- separate normal estimation from icp_fast, then we can no longer do it again in submap matching
 - seperate map_builder class into several smaller classes : map_option_loader / front_end / back_end
 - use one thread-pool to take care of all threads
 - preprocessor: remove points under the ground
