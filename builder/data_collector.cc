@@ -33,24 +33,6 @@
 
 namespace static_map {
 
-template <typename DataTypeWithTime>
-std::pair<int, int> TimeStampBinarySearch(
-    const std::vector<DataTypeWithTime>& data_vector, const SimpleTime& time) {
-  int mid;
-  int start = 0;
-  int end = data_vector.size() - 1;
-  while (end - start > 1) {
-    mid = start + (end - start) / 2;
-    if (time < data_vector.at(mid).time) {
-      end = mid;
-    } else {
-      start = mid;
-    }
-  }
-  CHECK_EQ(end - start, 1);
-  return std::make_pair(start, end);
-}
-
 template <typename PointT>
 DataCollector<PointT>::DataCollector(
     const DataCollectorOptions& options,

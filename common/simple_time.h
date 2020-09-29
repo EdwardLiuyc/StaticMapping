@@ -30,7 +30,8 @@
  * @todo add the classes to namespace "common"
  */
 
-#pragma once
+#ifndef COMMON_SIMPLE_TIME_H_
+#define COMMON_SIMPLE_TIME_H_
 
 #include <stdio.h>
 #include <sys/time.h>
@@ -38,13 +39,15 @@
 #include <chrono>
 #include <cstring>
 #include <limits>
-#include <thread>
-
 #include <ostream>
 #include <sstream>
 #include <string>
+#include <thread>
+#include <utility>
+#include <vector>
 
 #include "common/macro_defines.h"
+#include "glog/logging.h"
 
 namespace static_map {
 /*!
@@ -249,4 +252,24 @@ static inline PclTimeStamp ToPclTime(const SimpleTime &time) {
   return time.toNSec() / 1000ull;
 }
 
+template <typename DataTypeWithTime>
+std::pair<int, int> TimeStampBinarySearch(
+    const std::vector<DataTypeWithTime> &data_vector, const SimpleTime &time) {
+  int mid;
+  int start = 0;
+  int end = data_vector.size() - 1;
+  while (end - start > 1) {
+    mid = start + (end - start) / 2;
+    if (time < data_vector.at(mid).time) {
+      end = mid;
+    } else {
+      start = mid;
+    }
+  }
+  CHECK_EQ(end - start, 1);
+  return std::make_pair(start, end);
+}
+
 }  // namespace static_map
+
+#endif  // COMMON_SIMPLE_TIME_H_
