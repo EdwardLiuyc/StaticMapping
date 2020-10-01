@@ -31,7 +31,8 @@ BAG_FILE=/mnt/Data/juxin_fisheye_0228/proj-29.bag
   -urdf ${URDF_FILE} \
   -gps ${GPS_TOPIC} \
   -gps_frame_id ${GPS_FRAME_ID} \
-  -bag ${BAG_FILE}
+  -bag ${BAG_FILE} \
+  -pubs [map][path]
 
 exit 0 
 

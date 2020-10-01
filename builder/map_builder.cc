@@ -197,7 +197,7 @@ void MapBuilder::InsertOdomMsg(const sensors::OdomMsg::Ptr& odom_msg) {
   LOG(FATAL) << "This function is temporarily for very percise odom such as "
                 "INS-RTK, and only the pose will be used. If you are in the "
                 "same situation, you can comment this line and use this "
-                "function, it will be really helpful";
+                "function, it will be really helpful.";
 
   {
     common::MutexLocker locker(&mutex_);
@@ -236,7 +236,7 @@ void MapBuilder::InsertFrameForSubmap(InnerCloud::Ptr cloud_ptr,
                                       const double match_score) {
   auto frame = std::make_shared<Frame<PointType>>();
   frame->SetCloud(cloud_ptr);
-  frame->SetTimeStamp(ToLocalTime(cloud_ptr->GetPclCloud()->header.stamp));
+  frame->SetTimeStamp(cloud_ptr->GetTime());
   frame->SetGlobalPose(global_pose);
 
   common::MutexLocker locker(&mutex_);
@@ -296,8 +296,7 @@ void MapBuilder::ScanMatchProcessing() {
     }
 
     source_cloud = new_inner_cloud;
-    const auto source_time =
-        ToLocalTime(source_cloud->GetPclCloud()->header.stamp);
+    const auto source_time = source_cloud->GetTime();
     if (!got_first_point_cloud_) {
       got_first_point_cloud_ = true;
       target_cloud = source_cloud;

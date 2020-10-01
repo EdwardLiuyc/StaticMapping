@@ -213,12 +213,10 @@ class InnerPointCloudData {
  public:
   using PclCloudType = pcl::PointCloud<PointT>;
   using PclCloudPtr = typename PclCloudType::Ptr;
-
-  SimpleTime time;
-  float delta_time_in_cloud;
-  std::shared_ptr<EigenPointCloud> eigen_cloud;
-
   using Ptr = std::shared_ptr<InnerPointCloudData<PointT>>;
+
+  InnerPointCloudData() = default;
+  explicit InnerPointCloudData(const PclCloudPtr cloud) { SetPclCloud(cloud); }
 
   bool Empty() { return pcl_cloud_ == nullptr || pcl_cloud_->points.empty(); }
 
@@ -244,6 +242,8 @@ class InnerPointCloudData {
     eigen_cloud->CalculateNormals();
   }
 
+  /// @brief SetPclCloud: The function will take care of all members inside,
+  /// including time&pcl_cloud&eigen_cloud.
   void SetPclCloud(const PclCloudPtr cloud) {
     pcl_cloud_ = cloud;
     if (!pcl_cloud_) {
@@ -251,12 +251,20 @@ class InnerPointCloudData {
     }
     eigen_cloud.reset(new EigenPointCloud);
     eigen_cloud->template FromPointCloud<PointT>(pcl_cloud_);
+
+    time_ = ToLocalTime(pcl_cloud_->header.stamp);
   }
 
   PclCloudPtr GetPclCloud() const { return pcl_cloud_; }
+  SimpleTime GetTime() const { return time_; }
+
+ public:
+  float delta_time_in_cloud;
+  std::shared_ptr<EigenPointCloud> eigen_cloud;
 
  private:
   PclCloudPtr pcl_cloud_;
+  SimpleTime time_;
 };
 
 }  // namespace sensors
