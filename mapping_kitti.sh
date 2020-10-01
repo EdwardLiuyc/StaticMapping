@@ -14,6 +14,7 @@ KITTI_PATH=/mnt/Data/kitti/lidar/00/velodyne
   -pc ${POINT_CLOUD_TOPIC} \
   -pc_frame_id ${POINT_CLOUD_FRAME_ID} \
   -urdf ${URDF_FILE} \
-  -kitti ${KITTI_PATH}
+  -kitti ${KITTI_PATH} \
+  -pubs [map][path][edge]
 
 exit 0 

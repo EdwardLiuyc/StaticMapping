@@ -87,7 +87,6 @@
       </submap_matcher_options>
       <submap_options 
         frame_count="2"
-        enable_inner_multiview_icp="false"
         enable_voxel_filter="false"
         enable_random_sampleing="true"
         enable_check="false"

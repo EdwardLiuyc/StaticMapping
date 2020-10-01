@@ -205,13 +205,13 @@ typename Submap<PointType>::InnerCloudPtr Submap<PointType>::Cloud() {
   boost::upgrade_lock<ReadWriteMutex> locker(mutex_);
   if (!is_cloud_in_memory_.load()) {
     WriteMutexLocker write_locker(locker);
+    const std::string filename = save_path_ + save_filename_;
+    PointCloudPtr loaded_cloud(new PointCloudType);
     CHECK(pcl::io::loadPCDFile<PointType>(save_path_ + save_filename_,
-                                          *this->inner_cloud_->GetPclCloud()) ==
-          0);
+                                          *loaded_cloud) == 0);
+    this->inner_cloud_->SetPclCloud(loaded_cloud);
+    this->inner_cloud_->CalculateNormals();
     is_cloud_in_memory_ = true;
-
-    // TODO(edward) eigen cloud
-
     // PRINT_DEBUG_FMT("get submap data %d from disk.", id_.submap_index);
   }
   return this->inner_cloud_;
@@ -219,10 +219,7 @@ typename Submap<PointType>::InnerCloudPtr Submap<PointType>::Cloud() {
 
 template <typename PointType>
 bool Submap<PointType>::UpdateInactiveTime(const int update_time_in_sec) {
-  if (!options_.enable_disk_saving) {
-    return true;
-  }
-  if (!got_matched_transform_to_next_.load()) {
+  if (!options_.enable_disk_saving || !got_matched_transform_to_next_.load()) {
     return true;
   }
 
@@ -231,9 +228,10 @@ bool Submap<PointType>::UpdateInactiveTime(const int update_time_in_sec) {
     cloud_inactive_time_ += update_time_in_sec;
     if (cloud_inactive_time_ > options_.disk_saving_delay) {
       WriteMutexLocker write_locker(locker);
-      this->inner_cloud_->GetPclCloud()->points.clear();
-      this->inner_cloud_->GetPclCloud()->points.shrink_to_fit();
+      this->inner_cloud_->Clear();
       is_cloud_in_memory_ = false;
+      // this->inner_cloud_->GetPclCloud()->points.clear();
+      // this->inner_cloud_->GetPclCloud()->points.shrink_to_fit();
       // PRINT_DEBUG_FMT("Remove submap %d from RAM.", id_.submap_index);
     }
   }

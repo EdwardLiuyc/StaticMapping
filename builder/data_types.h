@@ -222,7 +222,7 @@ class InnerPointCloudData {
 
   void Clear() {
     pcl_cloud_.reset(new PclCloudType);
-    eigen_cloud.reset(new EigenPointCloud);
+    eigen_cloud_.reset(new EigenPointCloud);
   }
 
   void TransformCloud(const Eigen::Matrix4d &T) {
@@ -232,14 +232,14 @@ class InnerPointCloudData {
       pcl::transformPointCloud(*pcl_cloud_, *transformed_cloud, T);
       pcl_cloud_ = transformed_cloud;
     }
-    if (eigen_cloud) {
-      eigen_cloud->ApplyTransform(T);
+    if (eigen_cloud_) {
+      eigen_cloud_->ApplyTransform(T);
     }
   }
 
   void CalculateNormals() {
-    CHECK(eigen_cloud);
-    eigen_cloud->CalculateNormals();
+    CHECK(eigen_cloud_);
+    eigen_cloud_->CalculateNormals();
   }
 
   /// @brief SetPclCloud: The function will take care of all members inside,
@@ -249,21 +249,24 @@ class InnerPointCloudData {
     if (!pcl_cloud_) {
       return;
     }
-    eigen_cloud.reset(new EigenPointCloud);
-    eigen_cloud->template FromPointCloud<PointT>(pcl_cloud_);
+    eigen_cloud_.reset(new EigenPointCloud);
+    eigen_cloud_->template FromPointCloud<PointT>(pcl_cloud_);
 
     time_ = ToLocalTime(pcl_cloud_->header.stamp);
   }
 
   PclCloudPtr GetPclCloud() const { return pcl_cloud_; }
+  std::shared_ptr<EigenPointCloud> GetEigenCloud() const {
+    return eigen_cloud_;
+  }
   SimpleTime GetTime() const { return time_; }
 
  public:
   float delta_time_in_cloud;
-  std::shared_ptr<EigenPointCloud> eigen_cloud;
 
  private:
   PclCloudPtr pcl_cloud_;
+  std::shared_ptr<EigenPointCloud> eigen_cloud_;
   SimpleTime time_;
 };
 

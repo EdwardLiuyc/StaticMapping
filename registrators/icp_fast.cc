@@ -418,16 +418,16 @@ IcpFast<PointT>::IcpFast() : Interface<PointT>() {
 template <typename PointT>
 void IcpFast<PointT>::SetInputSource(InnerCloudPtr cloud) {
   CHECK(cloud);
-  CHECK(cloud->eigen_cloud);
-  source_cloud_.reset(new sensors::EigenPointCloud(*cloud->eigen_cloud));
+  CHECK(cloud->GetEigenCloud());
+  source_cloud_.reset(new sensors::EigenPointCloud(*cloud->GetEigenCloud()));
 }
 
 template <typename PointT>
 void IcpFast<PointT>::SetInputTarget(InnerCloudPtr cloud) {
   CHECK(cloud);
-  CHECK(cloud->eigen_cloud);
-  CHECK(cloud->eigen_cloud->HasNormals());
-  target_cloud_.reset(new sensors::EigenPointCloud(*cloud->eigen_cloud));
+  CHECK(cloud->GetEigenCloud());
+  CHECK(cloud->GetEigenCloud()->HasNormals());
+  target_cloud_.reset(new sensors::EigenPointCloud(*cloud->GetEigenCloud()));
 
   // for debug
   //
