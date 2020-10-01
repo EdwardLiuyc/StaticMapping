@@ -60,14 +60,17 @@ class LoopDetector {
   };
 
   struct DetectResult {
-    DetectResult() : close_succeed(false) {}
     int current_frame_index;
     LoopStatus status;
-    bool close_succeed;
+    // Is it or not a good loop detection result.
+    bool close_succeed = false;
+    // Pairs of indices of frame that matched.
     tbb::concurrent_vector<std::pair<int, int>> close_pair;
+    // The transforms of pairs.
     tbb::concurrent_vector<Eigen::Matrix4d,
                            Eigen::aligned_allocator<Eigen::Matrix4d>>
         transform;
+    // Matching scores.
     tbb::concurrent_vector<double> constraint_score;
 
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -86,6 +89,8 @@ class LoopDetector {
  protected:
   bool CloseLoop(const int first_id, const int last_id,
                  Eigen::Matrix4d *const result, double *score);
+
+  bool CheckResult(const DetectResult &result);
 
  private:
   std::vector<std::shared_ptr<Submap<PointT>>> all_frames_;

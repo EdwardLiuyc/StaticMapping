@@ -199,6 +199,8 @@ int main(int argc, char** argv) {
       n.advertise<visualization_msgs::Marker>("/submap_pose", 1);
   ros::Publisher path_pub =
       n.advertise<nav_msgs::Path>("/static_mapping_path", 1);
+  ros::Publisher edge_markers_pub =
+      n.advertise<visualization_msgs::Marker>("/loop_edges", 1);
 
   auto show_function =
       [&](const static_map::MapBuilder::PointCloudPtr& cloud) -> void {
@@ -239,6 +241,53 @@ int main(int argc, char** argv) {
     }
     path_pub.publish(path);
   };
+
+  const auto publish_edges =
+      [&](const std::map<int64_t, static_map::back_end::ViewGraph::GraphItem>&
+              graph) {
+        visualization_msgs::Marker line_list;
+        line_list.header.frame_id = "/map";
+        line_list.id = 0;
+        line_list.type = visualization_msgs::Marker::LINE_LIST;
+        // LINE_STRIP/LINE_LIST markers use only the x component of scale, for
+        // the line width
+        line_list.scale.x = 0.1;
+        // Line list is red
+        line_list.color.b = 1.0;
+        line_list.color.a = 1.0;
+        // Create the vertices for the points and lines
+        for (const auto& index_to_connected_item : graph) {
+          if (index_to_connected_item.second.connections.size() <= 1) {
+            continue;
+          }
+          const Eigen::Vector3d self_translation =
+              index_to_connected_item.second.self_pose.block(0, 3, 3, 1);
+
+          for (const auto& connection :
+               index_to_connected_item.second.connections) {
+            if (connection.first - index_to_connected_item.first == 1) {
+              continue;
+            }
+            geometry_msgs::Point p_start;
+            p_start.x = self_translation[0];
+            p_start.y = self_translation[1];
+            p_start.z = self_translation[2];
+
+            line_list.points.push_back(p_start);
+
+            geometry_msgs::Point p_end;
+            const Eigen::Vector3d connected_translation =
+                graph.at(connection.first).self_pose.block(0, 3, 3, 1);
+            p_end.x = connected_translation[0];
+            p_end.y = connected_translation[1];
+            p_end.z = connected_translation[2];
+
+            line_list.points.push_back(p_end);
+          }
+        }
+
+        edge_markers_pub.publish(line_list);
+      };
 
   map_builder = std::make_shared<MapBuilder>();
 
@@ -303,6 +352,9 @@ int main(int argc, char** argv) {
     }
     if (std::strstr(pub_topics.c_str(), "[path]")) {
       map_builder->SetShowPathFunction(publish_path);
+    }
+    if (std::strstr(pub_topics.c_str(), "[edge]")) {
+      map_builder->SetShowEdgeFunction(publish_edges);
     }
   }
 

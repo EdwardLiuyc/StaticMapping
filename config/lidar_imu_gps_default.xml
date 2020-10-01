@@ -78,7 +78,8 @@
         saving_name_prefix="s_" />
       <isam_optimizer_options 
         use_odom="false"
-        use_gps="true" />
+        use_gps="true" 
+        output_graph_pic="false" />
       <loop_detector_setting 
         use_gps="false"
         use_descriptor="true"
