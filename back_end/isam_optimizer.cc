@@ -377,6 +377,12 @@ Eigen::Matrix4d IsamOptimizer<PointT>::GetGpsCoordTransform() {
 }
 
 template <typename PointT>
+std::map<int64_t, ViewGraph::GraphItem> IsamOptimizer<PointT>::GetWholeGraph()
+    const {
+  return view_graph_.GetWholeGraph();
+}
+
+template <typename PointT>
 void IsamOptimizer<PointT>::SetTransformOdomToLidar(const Eigen::Matrix4d &t) {
   tf_odom_lidar_ = t;
   loop_detector_->SetTransformOdomToLidar(t);

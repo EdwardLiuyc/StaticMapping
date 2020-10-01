@@ -37,8 +37,12 @@ template <typename PointT>
 typename LoopDetector<PointT>::DetectResult LoopDetector<PointT>::AddFrame(
     const std::shared_ptr<Submap<PointT>>& frame, bool do_loop_detect) {
   all_frames_.push_back(frame);
-  const Eigen::Vector3d translation = frame->GlobalTranslation();
-  all_frames_translation_.push_back(translation);
+
+  // Update all positions since they could have been changed.
+  all_frames_translation_.emplace_back();
+  for (size_t i = 0; i < all_frames_.size(); ++i) {
+    all_frames_translation_[i] = all_frames_[i]->GlobalTranslation();
+  }
 
   int32_t current_index = all_frames_.size() - 1;
   const char* mode_name[kLoopStatusCount] = {"No Loop", "Trying To Close Loop",
@@ -208,12 +212,7 @@ typename LoopDetector<PointT>::DetectResult LoopDetector<PointT>::AddFrame(
         result.constraint_score.push_back(constraint_score);
       }
     };
-    // using threadpool
-    // common::ThreadPool pool(pair_size);
-    // const int pair_size = maybe_close_pair.size();
-    // for (auto& pair : maybe_close_pair) {
-    //   pool.enqueue(pair_close_loop, pair);
-    // }
+
     tbb::task_group tasks;
     for (auto& pair : maybe_close_pair) {
       tasks.run([&] { pair_close_loop(pair); });
@@ -221,7 +220,7 @@ typename LoopDetector<PointT>::DetectResult LoopDetector<PointT>::AddFrame(
     tasks.wait();
 
     if (!result.close_pair.empty()) {
-      result.close_succeed = true;
+      result.close_succeed = CheckResult(result);
     }
   }
 
@@ -293,6 +292,16 @@ bool LoopDetector<PointT>::CloseLoop(const int target_id, const int source_id,
     return true;
   }
   return false;
+}
+
+template <typename PointT>
+bool LoopDetector<PointT>::CheckResult(
+    const typename LoopDetector<PointT>::DetectResult& result) {
+  if (result.close_pair.size() <= 1) {
+    return true;
+  }
+  // TODO(edward)
+  return true;
 }
 
 template <typename PointT>

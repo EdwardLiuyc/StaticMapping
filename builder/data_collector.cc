@@ -282,18 +282,14 @@ std::unique_ptr<Eigen::Vector3d> DataCollector<PointT>::InterpolateGps(
     }
   }
 
+  CHECK(time >= former_data.time && time <= latter_data.time);
   const double delta_time = (latter_data.time - former_data.time).toSec();
   CHECK_GT(delta_time, 1.e-6);
-  if (delta_time > 0.2) {
-    PRINT_WARNING("some thing wrong with the search");
+  if (delta_time > 0.2 || !former_data.status_fixed ||
+      !latter_data.status_fixed) {
     return nullptr;
   }
 
-  CHECK(time >= former_data.time && time <= latter_data.time);
-  if (!former_data.status_fixed || !latter_data.status_fixed) {
-    // PRINT_WARNING("no fixed gps data at this time.");
-    return nullptr;
-  }
   const double factor = (time - former_data.time).toSec() / delta_time;
   CHECK(factor >= 0. && factor <= 1.);
   const Eigen::Vector3d delta =

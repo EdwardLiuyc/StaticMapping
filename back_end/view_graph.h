@@ -31,21 +31,17 @@
 #include <utility>
 #include <vector>
 
+#include "common/macro_defines.h"
+
 namespace static_map {
 namespace back_end {
 
 class ViewGraph {
  public:
-  ViewGraph() {
-    min_bounding_ << std::numeric_limits<double>::max(),
-        std::numeric_limits<double>::max();
-    max_bounding_ << std::numeric_limits<double>::min(),
-        std::numeric_limits<double>::min();
-  }
-  ~ViewGraph() {}
+  ViewGraph();
+  ~ViewGraph() = default;
 
-  ViewGraph(const ViewGraph &) = delete;
-  ViewGraph &operator=(const ViewGraph &) = delete;
+  PROHIBIT_COPY_AND_ASSIGN(ViewGraph);
 
   // @todo matrix4d pitfalls
   using Connect =
@@ -66,6 +62,11 @@ class ViewGraph {
   /// @brief save the graph into a png image file (using OpenCV)
   void SaveImage(const std::string &filename, const double resolution = 0.05);
 
+  // We don't return the reference of `graph_map_` because it maybe changed when
+  // we are dealing with it, so, a little sacrifice of time to copy the whole
+  // graph. Maybe we will figure out a better way later. TODO(edward)
+  std::map<int64_t, GraphItem> GetWholeGraph() const { return graph_map_; }
+
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
  protected:
@@ -74,6 +75,7 @@ class ViewGraph {
  private:
   std::map<int64_t, GraphItem> graph_map_;
 
+  // TODO(edward) Use bbox instead.
   Eigen::Vector2d min_bounding_;
   Eigen::Vector2d max_bounding_;
 };

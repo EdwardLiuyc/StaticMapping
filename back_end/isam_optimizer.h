@@ -90,6 +90,8 @@ class IsamOptimizer {
 
   Eigen::Matrix4d GetGpsCoordTransform();
 
+  std::map<int64_t, ViewGraph::GraphItem> GetWholeGraph() const;
+
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
  protected:

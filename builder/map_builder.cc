@@ -543,6 +543,10 @@ void MapBuilder::ConnectAllSubmap() {
       show_map_function_(filtered_final_cloud);
       filtered_final_cloud.reset();
     }
+
+    if (show_edge_function_) {
+      show_edge_function_(isam_optimizer_->GetWholeGraph());
+    }
   }
 
   // for last submap
@@ -786,17 +790,20 @@ void MapBuilder::CalculateCoordTransformToGps() {
   }
 }
 
-void MapBuilder::SetShowMapFunction(const MapBuilder::ShowMapFunction& func) {
+void MapBuilder::SetShowMapFunction(const ShowMapFunction& func) {
   show_map_function_ = std::move(func);
 }
 
-void MapBuilder::SetShowPathFunction(const MapBuilder::ShowPathFunction& func) {
+void MapBuilder::SetShowPathFunction(const ShowPathFunction& func) {
   show_path_function_ = std::move(func);
 }
 
-void MapBuilder::SetShowSubmapFunction(
-    const MapBuilder::ShowMapFunction& func) {
+void MapBuilder::SetShowSubmapFunction(const ShowMapFunction& func) {
   show_submap_function_ = std::move(func);
+}
+
+void MapBuilder::SetShowEdgeFunction(const ShowEdgeFunction& func) {
+  show_edge_function_ = std::move(func);
 }
 
 void MapBuilder::EnableUsingOdom(bool flag) {

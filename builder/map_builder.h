@@ -34,6 +34,7 @@
 #include <pcl/point_types.h>
 
 // stl
+#include <map>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -131,6 +132,8 @@ class MapBuilder {
   using ShowSubmapFunction = ShowMapFunction;
   using ShowPathFunction =
       std::function<void(const std::vector<Eigen::Matrix4d>&)>;
+  using ShowEdgeFunction =
+      std::function<void(std::map<int64_t, back_end::ViewGraph::GraphItem>)>;
 
   using Ptr = std::shared_ptr<MapBuilder>;
   using ConstPtr = std::shared_ptr<const MapBuilder>;
@@ -146,6 +149,8 @@ class MapBuilder {
   void SetShowSubmapFunction(const ShowMapFunction& func);
   /// @brief set a callback function whem the pose updated
   void SetShowPathFunction(const ShowPathFunction& func);
+
+  void SetShowEdgeFunction(const ShowEdgeFunction& func);
   /// @brief get pointcloud and insert it into the inner container
   void InsertPointcloudMsg(const PointCloudPtr& point_cloud);
   /// @brief get imu msg from sensor and insert it into the inner container
@@ -254,6 +259,7 @@ class MapBuilder {
   ShowMapFunction show_map_function_;
   ShowSubmapFunction show_submap_function_;
   ShowPathFunction show_path_function_;
+  ShowEdgeFunction show_edge_function_;
 
   // trajectories
   std::vector<Trajectory<PointType>::Ptr> trajectories_;

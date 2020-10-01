@@ -32,10 +32,16 @@
 namespace static_map {
 namespace back_end {
 
+ViewGraph::ViewGraph() {
+  min_bounding_ << std::numeric_limits<double>::max(),
+      std::numeric_limits<double>::max();
+  max_bounding_ << std::numeric_limits<double>::min(),
+      std::numeric_limits<double>::min();
+}
+
 void ViewGraph::AddEdge(const int64_t a, const int64_t b,
                         const Eigen::Matrix4d &t) {
-  if (graph_map_.find(a) == graph_map_.end() ||
-      graph_map_.find(b) == graph_map_.end()) {
+  if (graph_map_.count(a) == 0 || graph_map_.count(b) == 0) {
     PRINT_ERROR("Cannot find the index a or b in the map.");
     return;
   }
@@ -43,11 +49,7 @@ void ViewGraph::AddEdge(const int64_t a, const int64_t b,
 }
 
 void ViewGraph::AddVertex(const int64_t index, const Eigen::Matrix4d &pose) {
-  if (graph_map_.find(index) == graph_map_.end()) {
-    graph_map_.emplace(index, GraphItem());
-  }
   graph_map_[index].self_pose = pose;
-
   // update bbox
   if (pose(0, 3) < min_bounding_[0]) {
     min_bounding_[0] = pose(0, 3);
