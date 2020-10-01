@@ -342,7 +342,7 @@ int main(int argc, char** argv) {
       // read bag in twice time of the bag speed
       // like : rosbag play ***.bag -r 2
       if (message.getTime() > last_message_time) {
-        usleep((message.getTime() - last_message_time).toSec() * 0.5 * 1000000);
+        usleep((message.getTime() - last_message_time).toSec() * 0.1 * 1000000);
       }
       last_message_time = message.getTime();
 

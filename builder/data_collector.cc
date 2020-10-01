@@ -150,17 +150,14 @@ void DataCollector<PointT>::AddSensorData(const PointCloudPtr& cloud) {
 
   auto data_before_processing =
       std::make_shared<sensors::InnerPointCloudData<PointT>>();
-  data_before_processing->time = first_time_in_accmulated_cloud_;
+  // data_before_processing->time = first_time_in_accmulated_cloud_;
 
   PointCloudPtr init_cloud(new PointCloudType(*accumulated_point_cloud_));
   init_cloud->header.stamp = ToPclTime(first_time_in_accmulated_cloud_);
   data_before_processing->SetPclCloud(init_cloud);
 
-  cloud->points.clear();
-  cloud->points.shrink_to_fit();
-  accumulated_cloud_count_ = 0;
-
   Locker locker(mutex_[kPointCloudData]);
+  accumulated_cloud_count_ = 0;
   cloud_data_before_preprocessing_.push_back(data_before_processing);
 }
 
@@ -177,25 +174,24 @@ void DataCollector<PointT>::CloudPreProcessing() {
     }
 
     SimpleTime next_data_time;
-    typename sensors::InnerPointCloudData<PointT>::Ptr data;
+    InnerCloudPtr data;
     {
       Locker locker(mutex_[kPointCloudData]);
       data = cloud_data_before_preprocessing_.front();
       cloud_data_before_preprocessing_.pop_front();
-      next_data_time = cloud_data_before_preprocessing_.front()->time;
+      next_data_time = cloud_data_before_preprocessing_.front()->GetTime();
     }
-    data->delta_time_in_cloud = (next_data_time - data->time).toSec();
+    data->delta_time_in_cloud = (next_data_time - data->GetTime()).toSec();
     // filtering cloud
     PointCloudPtr filtered_cloud(new PointCloudType);
     filter_factory_->SetInputCloud(data->GetPclCloud());
     filter_factory_->Filter(filtered_cloud);
+    CHECK(data->GetTime() == ToLocalTime(filtered_cloud->header.stamp));
     data->SetPclCloud(filtered_cloud);
 
     // insert new data
     Locker locker(mutex_[kPointCloudData]);
     cloud_data_.push_back(data);
-
-    CHECK(data->time == ToLocalTime(filtered_cloud->header.stamp));
 
     // just for debug
     got_clouds_count_++;

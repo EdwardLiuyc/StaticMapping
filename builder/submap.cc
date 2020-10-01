@@ -115,8 +115,7 @@ void Submap<PointType>::InsertFrame(
         }
         *(added_cloud) += transformed_cloud;
       }
-      added_cloud->header.stamp =
-          frames_[0]->Cloud()->GetPclCloud()->header.stamp;
+      added_cloud->header = frames_[0]->Cloud()->GetPclCloud()->header;
       this->inner_cloud_->SetPclCloud(added_cloud);
     }
 
