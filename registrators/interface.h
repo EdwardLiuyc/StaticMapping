@@ -75,7 +75,7 @@ class Interface {
   using PointCloudTargetPtr = typename PointCloudTarget::Ptr;
   using PointCloudTargetConstPtr = typename PointCloudTarget::ConstPtr;
 
-  using InnerCloudPtr = typename sensors::InnerPointCloudData<PointType>::Ptr;
+  using InnerCloudPtr = typename InnerPointCloudData<PointType>::Ptr;
 
   Interface() = default;
   virtual ~Interface() {}

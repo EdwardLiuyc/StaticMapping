@@ -125,7 +125,7 @@ class MapBuilder {
   using PointCloudType = pcl::PointCloud<PointType>;
   using PointCloudPtr = PointCloudType::Ptr;
   using PointCloudConstPtr = PointCloudType::ConstPtr;
-  using InnerCloud = sensors::InnerPointCloudData<PointType>;
+  using InnerCloud = InnerPointCloudData<PointType>;
 
   // call back function for ROS
   using ShowMapFunction = std::function<void(const PointCloudPtr&)>;

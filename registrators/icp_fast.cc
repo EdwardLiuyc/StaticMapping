@@ -45,7 +45,6 @@ constexpr int kDim = 3;
 using Matrix = Eigen::MatrixXd;
 using Vector = Eigen::VectorXd;
 using OutlierWeights = Matrix;
-using sensors::EigenPointCloud;
 
 struct Matches {
   //!< Squared distances to closest points, dense matrix
@@ -419,7 +418,7 @@ template <typename PointT>
 void IcpFast<PointT>::SetInputSource(InnerCloudPtr cloud) {
   CHECK(cloud);
   CHECK(cloud->GetEigenCloud());
-  source_cloud_.reset(new sensors::EigenPointCloud(*cloud->GetEigenCloud()));
+  source_cloud_.reset(new EigenPointCloud(*cloud->GetEigenCloud()));
 }
 
 template <typename PointT>
@@ -427,7 +426,7 @@ void IcpFast<PointT>::SetInputTarget(InnerCloudPtr cloud) {
   CHECK(cloud);
   CHECK(cloud->GetEigenCloud());
   CHECK(cloud->GetEigenCloud()->HasNormals());
-  target_cloud_.reset(new sensors::EigenPointCloud(*cloud->GetEigenCloud()));
+  target_cloud_.reset(new EigenPointCloud(*cloud->GetEigenCloud()));
 
   // for debug
   //

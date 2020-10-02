@@ -63,7 +63,8 @@ class DataCollector {
   using PointCloudType = typename pcl::PointCloud<PointT>;
   using PointCloudPtr = typename PointCloudType::Ptr;
   using PointCloudConstPtr = typename PointCloudType::ConstPtr;
-  using InnerCloud = typename sensors::InnerPointCloudData<PointT>;
+
+  using InnerCloud = InnerPointCloudData<PointT>;
   using InnerCloudPtr = typename InnerCloud::Ptr;
   using Locker = std::lock_guard<std::mutex>;
 

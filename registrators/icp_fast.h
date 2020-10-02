@@ -50,8 +50,8 @@ class IcpFast : public Interface<PointType> {
   bool Align(const Eigen::Matrix4d& guess, Eigen::Matrix4d& result) override;
 
  private:
-  std::shared_ptr<sensors::EigenPointCloud> source_cloud_;
-  std::shared_ptr<sensors::EigenPointCloud> target_cloud_;
+  std::shared_ptr<EigenPointCloud> source_cloud_;
+  std::shared_ptr<EigenPointCloud> target_cloud_;
   std::shared_ptr<NNS> nns_kdtree_;
 
   struct {
