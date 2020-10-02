@@ -20,7 +20,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include "builder/cloud_types.h"
+#include "builder/data/cloud_types.h"
 
 #include <algorithm>
 #include <utility>
@@ -30,6 +30,7 @@
 #include "common/performance/simple_prof.h"
 
 namespace static_map {
+namespace data {
 
 namespace {
 constexpr int kDim = 3;
@@ -267,4 +268,5 @@ SimpleTime InnerPointCloudData<PointT>::GetTime() const {
 template class InnerPointCloudData<pcl::PointXYZ>;
 template class InnerPointCloudData<pcl::PointXYZI>;
 
+}  // namespace data
 }  // namespace static_map

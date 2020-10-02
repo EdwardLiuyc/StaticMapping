@@ -41,9 +41,9 @@ class Interface {
   Interface() {}
   virtual ~Interface() {}
 
-  virtual void AddImuData(const sensors::ImuMsg&) = 0;
-  virtual void AddGpsData(const sensors::GpsEnuMsg&) = 0;
-  virtual void AddOdomData(const sensors::OdomMsg&) = 0;
+  virtual void AddImuData(const data::ImuMsg&) = 0;
+  virtual void AddGpsData(const data::GpsEnuMsg&) = 0;
+  virtual void AddOdomData(const data::OdomMsg&) = 0;
 };
 
 }  // namespace sensor_fusions

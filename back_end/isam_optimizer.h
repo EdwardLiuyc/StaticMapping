@@ -78,7 +78,7 @@ class IsamOptimizer {
   void AddFrame(const std::shared_ptr<Submap<PointT>> &frame,
                 const double match_score);
   /// @brief for imu factor in optimization
-  void AddImuData(const sensors::ImuMsg &imu_msg);
+  void AddImuData(const data::ImuMsg &imu_msg);
   /// @brief set static tf link from odom to lidar(cloud frame)
   void SetTransformOdomToLidar(const Eigen::Matrix4d &t);
   /// @brief get the odom->lidar tf after calibration

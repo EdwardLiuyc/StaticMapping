@@ -45,6 +45,7 @@ constexpr int kDim = 3;
 using Matrix = Eigen::MatrixXd;
 using Vector = Eigen::VectorXd;
 using OutlierWeights = Matrix;
+using data::EigenPointCloud;
 
 struct Matches {
   //!< Squared distances to closest points, dense matrix

@@ -166,6 +166,7 @@ add_subdirectory(third_parties)
 #######################################################
 # link_libraries(glog)
 list(APPEND static_mapping_libs ${PROJECT_NAME}_builder 
+  ${PROJECT_NAME}_builder_data
   ${PROJECT_NAME}_backend 
   ${PROJECT_NAME}_registrators
   ${PROJECT_NAME}_descriptor

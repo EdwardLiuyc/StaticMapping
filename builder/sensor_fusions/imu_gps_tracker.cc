@@ -66,7 +66,7 @@ ImuGpsTracker::ImuGpsTracker(const double imu_gravity_time_constant,
       param, prior_imu_bias);
 }
 
-void ImuGpsTracker::AddImuData(const sensors::ImuMsg& imu_msg) {
+void ImuGpsTracker::AddImuData(const data::ImuMsg& imu_msg) {
   // common::MutexLocker locker(&mutex_);
   double delta_time = (imu_msg.header.stamp - last_imu_time_).toSec();
   if (last_imu_time_ != SimpleTime()) {
@@ -84,7 +84,7 @@ void ImuGpsTracker::AddImuData(const sensors::ImuMsg& imu_msg) {
   last_imu_time_ = imu_msg.header.stamp;
 }
 
-void ImuGpsTracker::AddGpsData(const sensors::GpsEnuMsg& enu_msg) {
+void ImuGpsTracker::AddGpsData(const data::GpsEnuMsg& enu_msg) {
   gps_count_++;
 
   // step1. add imu factors

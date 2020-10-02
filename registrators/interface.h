@@ -31,7 +31,7 @@
 #include <string>
 #include <unordered_map>
 
-#include "builder/data_types.h"
+#include "builder/data/cloud_types.h"
 #include "common/macro_defines.h"
 #include "pugixml/pugixml.hpp"
 
@@ -75,7 +75,7 @@ class Interface {
   using PointCloudTargetPtr = typename PointCloudTarget::Ptr;
   using PointCloudTargetConstPtr = typename PointCloudTarget::ConstPtr;
 
-  using InnerCloudPtr = typename InnerPointCloudData<PointType>::Ptr;
+  using InnerCloudPtr = typename data::InnerPointCloudData<PointType>::Ptr;
 
   Interface() = default;
   virtual ~Interface() {}

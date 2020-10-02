@@ -57,9 +57,9 @@ class ImuGpsTracker : public Interface {
                          const double imu_frequency, SimpleTime time);
   ~ImuGpsTracker();
 
-  void AddImuData(const sensors::ImuMsg& imu_msg) final;
-  void AddGpsData(const sensors::GpsEnuMsg& gps_msg) final;
-  void AddOdomData(const sensors::OdomMsg&) final {
+  void AddImuData(const data::ImuMsg& imu_msg) final;
+  void AddGpsData(const data::GpsEnuMsg& gps_msg) final;
+  void AddOdomData(const data::OdomMsg&) final {
     LOG(FATAL) << "Not supported in this tracker.";
   }
 

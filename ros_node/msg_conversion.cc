@@ -25,8 +25,8 @@
 namespace static_map_ros {
 namespace {
 
-static_map::sensors::Header ToLocalHeader(const std_msgs::Header& header) {
-  static_map::sensors::Header local_header;
+static_map::data::Header ToLocalHeader(const std_msgs::Header& header) {
+  static_map::data::Header local_header;
 
   local_header.seq = header.seq;
   local_header.frame_id = header.frame_id;
@@ -45,8 +45,8 @@ static_map::SimpleTime ToLocalTime(const ros::Time& time) {
   return local_time;
 }
 
-static_map::sensors::ImuMsg ToLocalImu(const sensor_msgs::Imu& msg) {
-  static_map::sensors::ImuMsg local_imu;
+static_map::data::ImuMsg ToLocalImu(const sensor_msgs::Imu& msg) {
+  static_map::data::ImuMsg local_imu;
 
   local_imu.header = ToLocalHeader(msg.header);
 
@@ -74,8 +74,8 @@ static_map::sensors::ImuMsg ToLocalImu(const sensor_msgs::Imu& msg) {
   return std::move(local_imu);
 }
 
-static_map::sensors::OdomMsg ToLocalOdom(const nav_msgs::Odometry& msg) {
-  static_map::sensors::OdomMsg local_odom;
+static_map::data::OdomMsg ToLocalOdom(const nav_msgs::Odometry& msg) {
+  static_map::data::OdomMsg local_odom;
   local_odom.header = ToLocalHeader(msg.header);
 
   local_odom.pose.pose.position.x() = msg.pose.pose.position.x;
@@ -98,9 +98,9 @@ static_map::sensors::OdomMsg ToLocalOdom(const nav_msgs::Odometry& msg) {
   return std::move(local_odom);
 }
 
-static_map::sensors::NavSatFixMsg ToLocalNavSatMsg(
+static_map::data::NavSatFixMsg ToLocalNavSatMsg(
     const sensor_msgs::NavSatFix& msg) {
-  static_map::sensors::NavSatFixMsg local_navsat;
+  static_map::data::NavSatFixMsg local_navsat;
 
   local_navsat.header = ToLocalHeader(msg.header);
   local_navsat.status.status = msg.status.status;

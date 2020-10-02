@@ -56,7 +56,7 @@ class Submap : public FrameBase<PointType> {
   using PointCloudType = pcl::PointCloud<PointType>;
   using PointCloudPtr = typename PointCloudType::Ptr;
   using PointCloudConstPtr = typename PointCloudType::ConstPtr;
-  using InnerCloudPtr = typename InnerPointCloudData<PointType>::Ptr;
+  using InnerCloudPtr = typename data::InnerPointCloudData<PointType>::Ptr;
 
   /// read write mutex
   /// when there is no writing in progress, several thread can access (read) the

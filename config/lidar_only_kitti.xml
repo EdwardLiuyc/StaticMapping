@@ -101,7 +101,7 @@
         enable_random_sampleing="true"
         enable_check="false"
         random_sampling_rate="0.5"
-        enable_disk_saving="true"
+        enable_disk_saving="false"
         disk_saving_delay="30"
         saving_name_prefix="s_" />
       <isam_optimizer_options 

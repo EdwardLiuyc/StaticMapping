@@ -36,6 +36,8 @@
 
 namespace static_map {
 
+using data::InnerPointCloudData;
+
 bool SubmapId::operator==(const SubmapId& other) const {
   return std::forward_as_tuple(trajectory_index, submap_index) ==
          std::forward_as_tuple(other.trajectory_index, other.submap_index);

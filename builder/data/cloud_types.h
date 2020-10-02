@@ -20,8 +20,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BUILDER_CLOUD_TYPES_H_
-#define BUILDER_CLOUD_TYPES_H_
+#ifndef BUILDER_DATA_CLOUD_TYPES_H_
+#define BUILDER_DATA_CLOUD_TYPES_H_
 
 #include <cmath>
 #include <memory>
@@ -36,6 +36,7 @@
 #include "pcl/point_types.h"
 
 namespace static_map {
+namespace data {
 
 ///
 /// @class EigenPointCloud
@@ -143,6 +144,7 @@ class InnerPointCloudData {
   PROHIBIT_COPY_AND_ASSIGN(InnerPointCloudData);
 };
 
+}  // namespace data
 }  // namespace static_map
 
-#endif  // BUILDER_CLOUD_TYPES_H_
+#endif  // BUILDER_DATA_CLOUD_TYPES_H_

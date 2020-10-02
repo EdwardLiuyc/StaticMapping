@@ -20,8 +20,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BUILDER_DATA_TYPES_H_
-#define BUILDER_DATA_TYPES_H_
+#ifndef BUILDER_DATA_DATA_TYPES_H_
+#define BUILDER_DATA_DATA_TYPES_H_
 // third party
 #include <Eigen/Eigen>
 // stl
@@ -30,7 +30,7 @@
 #include <string>
 #include <vector>
 // local
-#include "builder/cloud_types.h"
+#include "builder/data/cloud_types.h"
 #include "common/simple_time.h"
 #include "glog/logging.h"
 #include "pcl/common/transforms.h"
@@ -38,7 +38,7 @@
 #include "pcl/point_types.h"
 
 namespace static_map {
-namespace sensors {
+namespace data {
 
 struct Header {
   uint32_t seq;
@@ -167,7 +167,7 @@ struct TimedPose {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-}  // namespace sensors
+}  // namespace data
 }  // namespace static_map
 
-#endif  // BUILDER_DATA_TYPES_H_
+#endif  // BUILDER_DATA_DATA_TYPES_H_

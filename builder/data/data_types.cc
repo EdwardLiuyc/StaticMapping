@@ -20,7 +20,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include "builder/data_types.h"
+#include "builder/data/data_types.h"
 
 #include <algorithm>
 #include <utility>
@@ -29,7 +29,7 @@
 #include "common/performance/simple_prof.h"
 
 namespace static_map {
-namespace sensors {
+namespace data {
 
 Eigen::Matrix4d OdomMsg::PoseInMatrix() const {
   Eigen::Matrix4d pose_in_matrix = Eigen::Matrix4d::Identity();
@@ -44,5 +44,5 @@ void OdomMsg::SetPose(const Eigen::Matrix4d& pose_mat) {
       Eigen::Quaterniond(Eigen::Matrix3d(pose_mat.block(0, 0, 3, 3)));
 }
 
-}  // namespace sensors
+}  // namespace data
 }  // namespace static_map
