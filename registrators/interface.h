@@ -33,7 +33,7 @@
 
 #include "builder/data_types.h"
 #include "common/macro_defines.h"
-#include "common/pugixml.hpp"
+#include "pugixml/pugixml.hpp"
 
 namespace static_map {
 namespace registrator {

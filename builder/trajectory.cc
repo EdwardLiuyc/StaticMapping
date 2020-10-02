@@ -25,7 +25,7 @@
 #include "builder/submap.h"
 #include "builder/trajectory.h"
 #include "common/file_utils.h"
-#include "common/pugixml.hpp"
+#include "pugixml/pugixml.hpp"
 
 namespace static_map {
 

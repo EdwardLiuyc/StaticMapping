@@ -27,7 +27,7 @@
 #include <pcl/point_types.h>
 #include <iostream>
 
-#include "common/pugixml.hpp"
+#include "pugixml/pugixml.hpp"
 
 int main(int argc, char** argv) {
   std::string pkg_filename = "";

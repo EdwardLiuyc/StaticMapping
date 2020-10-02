@@ -21,7 +21,7 @@
 // SOFTWARE.
 
 #include "builder/map_builder.h"
-#include "common/pugixml.hpp"
+#include "pugixml/pugixml.hpp"
 
 namespace static_map {
 

@@ -26,7 +26,7 @@
 #include "builder/trajectory.h"
 #include "common/file_utils.h"
 #include "common/math.h"
-#include "common/pugixml.hpp"
+#include "pugixml/pugixml.hpp"
 
 namespace static_map {
 

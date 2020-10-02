@@ -37,8 +37,8 @@
 #include "builder/memory_manager.h"
 #include "common/macro_defines.h"
 #include "common/performance/simple_prof.h"
-#include "common/pugixml.hpp"
 #include "descriptor/m2dp.h"
+#include "pugixml/pugixml.hpp"
 
 namespace static_map {
 
