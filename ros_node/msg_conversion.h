@@ -25,6 +25,7 @@
 
 #include <utility>
 
+#include "builder/data/data_types.h"
 #include "nav_msgs/Odometry.h"
 #include "pcl/point_cloud.h"
 #include "pcl/point_types.h"
@@ -32,17 +33,15 @@
 #include "sensor_msgs/Imu.h"
 #include "sensor_msgs/NavSatFix.h"
 
-#include "builder/data_types.h"
-
 namespace static_map_ros {
 
 static_map::SimpleTime ToLocalTime(const ros::Time& time);
 
-static_map::sensors::ImuMsg ToLocalImu(const sensor_msgs::Imu& msg);
+static_map::data::ImuMsg ToLocalImu(const sensor_msgs::Imu& msg);
 
-static_map::sensors::OdomMsg ToLocalOdom(const nav_msgs::Odometry& msg);
+static_map::data::OdomMsg ToLocalOdom(const nav_msgs::Odometry& msg);
 
-static_map::sensors::NavSatFixMsg ToLocalNavSatMsg(
+static_map::data::NavSatFixMsg ToLocalNavSatMsg(
     const sensor_msgs::NavSatFix& msg);
 
 }  // namespace static_map_ros

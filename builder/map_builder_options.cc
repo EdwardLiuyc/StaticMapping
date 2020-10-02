@@ -21,7 +21,7 @@
 // SOFTWARE.
 
 #include "builder/map_builder.h"
-#include "common/pugixml.hpp"
+#include "pugixml/pugixml.hpp"
 
 namespace static_map {
 
@@ -184,7 +184,7 @@ MapBuilderOptions& MapBuilder::Initialise(const char* config_file_name) {
     GET_SINGLE_OPTION(front_end_node, "imu_options", "use_imu",
                       imu_options.enabled, bool, bool);
     GET_SINGLE_OPTION(front_end_node, "imu_options", "type", imu_options.type,
-                      int, sensors::ImuType);
+                      int, data::ImuType);
     GET_SINGLE_OPTION(front_end_node, "imu_options", "imu_frequency",
                       imu_options.frequency, float, float);
     GET_SINGLE_OPTION(front_end_node, "imu_options", "gravity_constant",

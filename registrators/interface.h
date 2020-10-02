@@ -31,9 +31,9 @@
 #include <string>
 #include <unordered_map>
 
-#include "builder/data_types.h"
+#include "builder/data/cloud_types.h"
 #include "common/macro_defines.h"
-#include "common/pugixml.hpp"
+#include "pugixml/pugixml.hpp"
 
 namespace static_map {
 namespace registrator {
@@ -75,7 +75,7 @@ class Interface {
   using PointCloudTargetPtr = typename PointCloudTarget::Ptr;
   using PointCloudTargetConstPtr = typename PointCloudTarget::ConstPtr;
 
-  using InnerCloudPtr = typename sensors::InnerPointCloudData<PointType>::Ptr;
+  using InnerCloudPtr = typename data::InnerPointCloudData<PointType>::Ptr;
 
   Interface() = default;
   virtual ~Interface() {}

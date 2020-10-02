@@ -20,18 +20,19 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+#include "builder/data/data_collector.h"
+
 #include <memory>
 #include <utility>
 
-#include "builder/data_collector.h"
 #include "common/macro_defines.h"
 #include "common/math.h"
 #include "common/performance/simple_prof.h"
 #include "glog/logging.h"
-
 #include "pcl/io/pcd_io.h"
 
 namespace static_map {
+namespace data {
 
 template <typename PointT>
 DataCollector<PointT>::DataCollector(
@@ -77,7 +78,7 @@ void DataCollector<PointT>::RawOdomDataToFile(
 }
 
 template <typename PointT>
-void DataCollector<PointT>::AddSensorData(const sensors::ImuMsg& imu_msg) {
+void DataCollector<PointT>::AddSensorData(const ImuMsg& imu_msg) {
   ImuData imu_data;
   imu_data.time = imu_msg.header.stamp;
   imu_data.acceleration = imu_msg.linear_acceleration;
@@ -88,12 +89,11 @@ void DataCollector<PointT>::AddSensorData(const sensors::ImuMsg& imu_msg) {
 }
 
 template <typename PointT>
-void DataCollector<PointT>::AddSensorData(
-    const sensors::NavSatFixMsg& navsat_msg) {
+void DataCollector<PointT>::AddSensorData(const NavSatFixMsg& navsat_msg) {
   Locker locker(mutex_[kGpsData]);
   GpsData data;
   // save all data and its status
-  data.status_fixed = (navsat_msg.status.status == sensors::STATUS_FIX);
+  data.status_fixed = (navsat_msg.status.status == data::STATUS_FIX);
   data.time = navsat_msg.header.stamp;
 
   if (!reference_gps_point_.is_initialized()) {
@@ -148,8 +148,7 @@ void DataCollector<PointT>::AddSensorData(const PointCloudPtr& cloud) {
     first_time_in_accmulated_cloud_ = ToLocalTime(cloud->header.stamp);
   }
 
-  auto data_before_processing =
-      std::make_shared<sensors::InnerPointCloudData<PointT>>();
+  auto data_before_processing = std::make_shared<InnerPointCloudData<PointT>>();
   // data_before_processing->time = first_time_in_accmulated_cloud_;
 
   PointCloudPtr init_cloud(new PointCloudType(*accumulated_point_cloud_));
@@ -204,7 +203,7 @@ void DataCollector<PointT>::CloudPreProcessing() {
 }
 
 template <typename PointT>
-typename sensors::InnerPointCloudData<PointT>::Ptr
+typename DataCollector<PointT>::InnerCloudPtr
 DataCollector<PointT>::GetNewCloud() {
   Locker locker(mutex_[kPointCloudData]);
   if (cloud_data_.empty()) {
@@ -223,7 +222,7 @@ size_t DataCollector<PointT>::GetRemainingCloudSize() {
 }
 
 template <typename PointT>
-void DataCollector<PointT>::AddSensorData(const sensors::OdomMsg& odom_msg) {
+void DataCollector<PointT>::AddSensorData(const OdomMsg& odom_msg) {
   Locker locker(mutex_[kOdometryData]);
   OdometryData data;
   data.time = odom_msg.header.stamp;
@@ -413,4 +412,5 @@ void DataCollector<PointT>::TrimImuData(const SimpleTime& time) {
 
 template class DataCollector<pcl::PointXYZI>;
 
+}  // namespace data
 }  // namespace static_map

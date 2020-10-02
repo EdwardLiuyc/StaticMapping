@@ -48,9 +48,9 @@
 using static_map::MapBuilder;
 static MapBuilder::Ptr map_builder;
 
-using static_map::sensors::ImuMsg;
-using static_map::sensors::NavSatFixMsg;
-using static_map::sensors::OdomMsg;
+using static_map::data::ImuMsg;
+using static_map::data::NavSatFixMsg;
+using static_map::data::OdomMsg;
 
 void pointcloud_callback(const sensor_msgs::PointCloud2::ConstPtr& msg) {
   pcl::PCLPointCloud2 pcl_pc2;

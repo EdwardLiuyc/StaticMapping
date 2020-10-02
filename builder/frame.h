@@ -63,7 +63,7 @@ class Frame : public FrameBase<PointType> {
   using PointCloudType = pcl::PointCloud<PointType>;
   using PointCloudPtr = typename PointCloudType::Ptr;
   using PointCloudConstPtr = typename PointCloudType::ConstPtr;
-  using InnerCloudPtr = typename sensors::InnerPointCloudData<PointType>::Ptr;
+  using InnerCloudPtr = typename data::InnerPointCloudData<PointType>::Ptr;
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 

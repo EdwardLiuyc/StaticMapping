@@ -27,10 +27,16 @@
 #include "common/performance/simple_prof.h"
 #include "common/point_utils.h"
 #include "common/simple_time.h"
+#include "pcl/filters/approximate_voxel_grid.h"
+#include "pcl/filters/random_sample.h"
+#include "pcl/io/pcd_io.h"
+#include "pcl/io/vtk_io.h"
 #include "pre_processors/random_sample_with_plane_detect.h"
 #include "registrators/multiview_registrator_lum_pcl.h"
 
 namespace static_map {
+
+using data::InnerPointCloudData;
 
 bool SubmapId::operator==(const SubmapId& other) const {
   return std::forward_as_tuple(trajectory_index, submap_index) ==
@@ -63,8 +69,7 @@ Submap<PointType>::Submap(const SubmapOptions& options)
       is_cloud_in_memory_(false),
       got_matched_transform_to_next_(false),
       cloud_inactive_time_(0) {
-  this->inner_cloud_.reset(new
-                           typename sensors::InnerPointCloudData<PointType>);
+  this->inner_cloud_.reset(new InnerPointCloudData<PointType>());
 }
 
 template <typename PointType>

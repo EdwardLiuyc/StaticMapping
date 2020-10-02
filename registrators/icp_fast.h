@@ -26,7 +26,7 @@
 #include <memory>
 #include <vector>
 
-#include "builder/data_types.h"
+#include "builder/data/cloud_types.h"
 #include "nabo/nabo.h"
 #include "registrators/interface.h"
 
@@ -50,8 +50,8 @@ class IcpFast : public Interface<PointType> {
   bool Align(const Eigen::Matrix4d& guess, Eigen::Matrix4d& result) override;
 
  private:
-  std::shared_ptr<sensors::EigenPointCloud> source_cloud_;
-  std::shared_ptr<sensors::EigenPointCloud> target_cloud_;
+  data::EigenPointCloud::Ptr source_cloud_;
+  data::EigenPointCloud::Ptr target_cloud_;
   std::shared_ptr<NNS> nns_kdtree_;
 
   struct {

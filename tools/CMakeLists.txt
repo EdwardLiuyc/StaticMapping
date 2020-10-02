@@ -1,6 +1,7 @@
 add_executable(pcd_sampler pcd_sampler.cc)
 add_executable(path_statistic path_statistic.cc)
-add_executable(join_pieces join_pieces.cc ../common/pugixml.cc)
+add_executable(join_pieces join_pieces.cc)
+target_link_libraries(join_pieces pugixml)
 add_executable(pcl_viewer_normals pcl_viewer_normals.cc)
 
 # no need to compress the pointcloud

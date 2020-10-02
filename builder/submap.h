@@ -23,11 +23,6 @@
 #ifndef BUILDER_SUBMAP_H_
 #define BUILDER_SUBMAP_H_
 
-// third party
-#include <pcl/filters/approximate_voxel_grid.h>
-#include <pcl/filters/random_sample.h>
-#include <pcl/io/pcd_io.h>
-#include <pcl/io/vtk_io.h>
 // stl
 #include <atomic>
 #include <memory>
@@ -61,7 +56,7 @@ class Submap : public FrameBase<PointType> {
   using PointCloudType = pcl::PointCloud<PointType>;
   using PointCloudPtr = typename PointCloudType::Ptr;
   using PointCloudConstPtr = typename PointCloudType::ConstPtr;
-  using InnerCloudPtr = typename sensors::InnerPointCloudData<PointType>::Ptr;
+  using InnerCloudPtr = typename data::InnerPointCloudData<PointType>::Ptr;
 
   /// read write mutex
   /// when there is no writing in progress, several thread can access (read) the

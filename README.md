@@ -179,6 +179,7 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - **using docker to run**
 - another mode for the imu which provides attitude
 - do cross-check on loop detection results
+- may remove libpointmather
 - publish tf instead directly modify the submap cloud
 - Fix bug with loop-detector using gps
 - Kitti evaluation

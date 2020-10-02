@@ -32,13 +32,13 @@
 // local headers
 #include "back_end/isam_optimizer.h"
 #include "back_end/loop_detector.h"
-#include "builder/data_collector.h"
+#include "builder/data/data_collector.h"
 #include "builder/map_builder.h"
 #include "builder/memory_manager.h"
 #include "common/macro_defines.h"
 #include "common/performance/simple_prof.h"
-#include "common/pugixml.hpp"
 #include "descriptor/m2dp.h"
+#include "pugixml/pugixml.hpp"
 
 namespace static_map {
 
@@ -80,10 +80,10 @@ int MapBuilder::InitialiseInside() {
   isam_optimizer_->SetTransformOdomToLidar(transform_odom_lidar_);
   isam_optimizer_->SetTrackingToGps(tracking_to_gps_);
 
-  DataCollectorOptions data_collector_options;
+  data::DataCollectorOptions data_collector_options;
   data_collector_options.accumulate_cloud_num =
       options_.front_end_options.accumulate_cloud_num;
-  data_collector_ = std::make_unique<DataCollector<PointType>>(
+  data_collector_ = std::make_unique<data::DataCollector<PointType>>(
       data_collector_options, &filter_factory_);
 
 #ifdef _USE_OPENVDB_
@@ -167,7 +167,7 @@ void MapBuilder::InsertPointcloudMsg(const PointCloudPtr& point_cloud) {
   data_collector_->AddSensorData(point_cloud);
 }
 
-void MapBuilder::InsertImuMsg(const sensors::ImuMsg::Ptr& imu_msg) {
+void MapBuilder::InsertImuMsg(const data::ImuMsg::Ptr& imu_msg) {
   if (!use_imu_ || end_all_thread_.load()) {
     return;
   }
@@ -189,7 +189,7 @@ void MapBuilder::InsertImuMsg(const sensors::ImuMsg::Ptr& imu_msg) {
   }
 }
 
-void MapBuilder::InsertOdomMsg(const sensors::OdomMsg::Ptr& odom_msg) {
+void MapBuilder::InsertOdomMsg(const data::OdomMsg::Ptr& odom_msg) {
   if (!use_odom_ || end_all_thread_.load()) {
     return;
   }
@@ -215,7 +215,7 @@ void MapBuilder::InsertOdomMsg(const sensors::OdomMsg::Ptr& odom_msg) {
   data_collector_->AddSensorData(*odom_msg);
 }
 
-void MapBuilder::InsertGpsMsg(const sensors::NavSatFixMsg::Ptr& gps_msg) {
+void MapBuilder::InsertGpsMsg(const data::NavSatFixMsg::Ptr& gps_msg) {
   if (!use_gps_ || end_all_thread_.load()) {
     return;
   }

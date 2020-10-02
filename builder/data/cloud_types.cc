@@ -20,16 +20,18 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include "builder/data_types.h"
+#include "builder/data/cloud_types.h"
 
 #include <algorithm>
 #include <utility>
 
+#include "common/macro_defines.h"
 #include "common/math.h"
 #include "common/performance/simple_prof.h"
 
 namespace static_map {
-namespace sensors {
+namespace data {
+
 namespace {
 constexpr int kDim = 3;
 constexpr int kNormalEstimationKnn = 7;
@@ -141,19 +143,6 @@ void BuildNormals(EigenPointCloud* const data, const int first, const int last,
 
 }  // namespace
 
-Eigen::Matrix4d OdomMsg::PoseInMatrix() const {
-  Eigen::Matrix4d pose_in_matrix = Eigen::Matrix4d::Identity();
-  pose_in_matrix.block(0, 3, 3, 1) = pose.pose.position;
-  pose_in_matrix.block(0, 0, 3, 3) = pose.pose.orientation.toRotationMatrix();
-  return pose_in_matrix;
-}
-
-void OdomMsg::SetPose(const Eigen::Matrix4d& pose_mat) {
-  pose.pose.position = pose_mat.block(0, 3, 3, 1);
-  pose.pose.orientation =
-      Eigen::Quaterniond(Eigen::Matrix3d(pose_mat.block(0, 0, 3, 3)));
-}
-
 void EigenPointCloud::ApplyTransform(const Eigen::Matrix4d& transform) {
   const int points_count = points.cols();
   CHECK_GT(points_count, 0);
@@ -185,6 +174,8 @@ void EigenPointCloud::ApplyMotionCompensation(
         transform.block(0, 3, 3, 1);
     points.col(i).topRows(3) = new_point_start;
   }
+
+  // TODO(edward) Maybe the normals need transform too.
 }
 
 void EigenPointCloud::CalculateNormals() {
@@ -210,5 +201,72 @@ void EigenPointCloud::CalculateNormals() {
   normals.conservativeResize(Eigen::NoChange, points_count_remained);
 }
 
-}  // namespace sensors
+template <typename PointT>
+InnerPointCloudData<PointT>::InnerPointCloudData(const PclCloudPtr cloud) {
+  SetPclCloud(cloud);
+}
+
+template <typename PointT>
+bool InnerPointCloudData<PointT>::Empty() {
+  return pcl_cloud_ == nullptr || pcl_cloud_->points.empty();
+}
+
+template <typename PointT>
+void InnerPointCloudData<PointT>::Clear() {
+  pcl_cloud_.reset(new PclCloudType);
+  eigen_cloud_.reset(new EigenPointCloud);
+}
+
+template <typename PointT>
+void InnerPointCloudData<PointT>::TransformCloud(const Eigen::Matrix4d& T) {
+  if (!Empty()) {
+    typename pcl::PointCloud<PointT>::Ptr transformed_cloud(
+        new typename pcl::PointCloud<PointT>);
+    pcl::transformPointCloud(*pcl_cloud_, *transformed_cloud, T);
+    pcl_cloud_ = transformed_cloud;
+  }
+  if (eigen_cloud_) {
+    eigen_cloud_->ApplyTransform(T);
+  }
+}
+
+template <typename PointT>
+void InnerPointCloudData<PointT>::CalculateNormals() {
+  CHECK(eigen_cloud_);
+  eigen_cloud_->CalculateNormals();
+}
+
+template <typename PointT>
+void InnerPointCloudData<PointT>::SetPclCloud(const PclCloudPtr cloud) {
+  pcl_cloud_ = cloud;
+  if (!pcl_cloud_) {
+    return;
+  }
+  eigen_cloud_.reset(new EigenPointCloud);
+  eigen_cloud_->template FromPointCloud<PointT>(pcl_cloud_);
+
+  time_ = ToLocalTime(pcl_cloud_->header.stamp);
+}
+
+template <typename PointT>
+typename InnerPointCloudData<PointT>::PclCloudPtr
+InnerPointCloudData<PointT>::GetPclCloud() const {
+  return pcl_cloud_;
+}
+
+template <typename PointT>
+std::shared_ptr<EigenPointCloud> InnerPointCloudData<PointT>::GetEigenCloud()
+    const {
+  return eigen_cloud_;
+}
+
+template <typename PointT>
+SimpleTime InnerPointCloudData<PointT>::GetTime() const {
+  return time_;
+}
+
+template class InnerPointCloudData<pcl::PointXYZ>;
+template class InnerPointCloudData<pcl::PointXYZI>;
+
+}  // namespace data
 }  // namespace static_map

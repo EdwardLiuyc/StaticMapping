@@ -20,33 +20,29 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BUILDER_SENSOR_FUSIONS_INTERFACE_H_
-#define BUILDER_SENSOR_FUSIONS_INTERFACE_H_
+#include "builder/data/data_types.h"
 
-#include "glog/logging.h"
+#include <algorithm>
+#include <utility>
+
+#include "common/math.h"
+#include "common/performance/simple_prof.h"
 
 namespace static_map {
+namespace data {
 
-// forward declare to speed compiling
-namespace sensors {
-struct ImuMsg;
-struct GpsEnuMsg;
-struct OdomMsg;
-};  // namespace sensors
+Eigen::Matrix4d OdomMsg::PoseInMatrix() const {
+  Eigen::Matrix4d pose_in_matrix = Eigen::Matrix4d::Identity();
+  pose_in_matrix.block(0, 3, 3, 1) = pose.pose.position;
+  pose_in_matrix.block(0, 0, 3, 3) = pose.pose.orientation.toRotationMatrix();
+  return pose_in_matrix;
+}
 
-namespace sensor_fusions {
+void OdomMsg::SetPose(const Eigen::Matrix4d& pose_mat) {
+  pose.pose.position = pose_mat.block(0, 3, 3, 1);
+  pose.pose.orientation =
+      Eigen::Quaterniond(Eigen::Matrix3d(pose_mat.block(0, 0, 3, 3)));
+}
 
-class Interface {
- public:
-  Interface() {}
-  virtual ~Interface() {}
-
-  virtual void AddImuData(const data::ImuMsg&) = 0;
-  virtual void AddGpsData(const data::GpsEnuMsg&) = 0;
-  virtual void AddOdomData(const data::OdomMsg&) = 0;
-};
-
-}  // namespace sensor_fusions
+}  // namespace data
 }  // namespace static_map
-
-#endif  // BUILDER_SENSOR_FUSIONS_INTERFACE_H_

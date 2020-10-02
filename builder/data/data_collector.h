@@ -20,8 +20,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef BUILDER_DATA_COLLECTOR_H_
-#define BUILDER_DATA_COLLECTOR_H_
+#ifndef BUILDER_DATA_DATA_COLLECTOR_H_
+#define BUILDER_DATA_DATA_COLLECTOR_H_
 
 #include <atomic>
 #include <deque>
@@ -37,13 +37,14 @@
 #include "GeographicLib/LocalCartesian.hpp"
 #include "GeographicLib/MagneticModel.hpp"
 #include "boost/optional.hpp"
-#include "builder/data_types.h"
+#include "builder/data/data_types.h"
 #include "common/mutex.h"
 #include "pcl/point_cloud.h"
 #include "pcl/point_types.h"
 #include "pre_processors/filter_factory.h"
 
 namespace static_map {
+namespace data {
 
 struct DataCollectorOptions {
   int accumulate_cloud_num = 1;
@@ -63,7 +64,8 @@ class DataCollector {
   using PointCloudType = typename pcl::PointCloud<PointT>;
   using PointCloudPtr = typename PointCloudType::Ptr;
   using PointCloudConstPtr = typename PointCloudType::ConstPtr;
-  using InnerCloud = typename sensors::InnerPointCloudData<PointT>;
+
+  using InnerCloud = InnerPointCloudData<PointT>;
   using InnerCloudPtr = typename InnerCloud::Ptr;
   using Locker = std::lock_guard<std::mutex>;
 
@@ -97,13 +99,13 @@ class DataCollector {
   };
 
   /// @brief collect imu data
-  void AddSensorData(const sensors::ImuMsg& imu_msg);
+  void AddSensorData(const ImuMsg& imu_msg);
   /// @brief collect gps data
-  void AddSensorData(const sensors::NavSatFixMsg& navsat_msg);
+  void AddSensorData(const NavSatFixMsg& navsat_msg);
   /// @brief collect point cloud data
   void AddSensorData(const PointCloudPtr& cloud);
   /// @brief collect odom data
-  void AddSensorData(const sensors::OdomMsg& odom_msg);
+  void AddSensorData(const OdomMsg& odom_msg);
   /// @brief get gps(enu) at 'time' using linear interpolation
   std::unique_ptr<Eigen::Vector3d> InterpolateGps(const SimpleTime& time,
                                                   double time_threshold = 0.005,
@@ -160,6 +162,7 @@ class DataCollector {
   SimpleTime last_whole_frame_time_;
 };
 
+}  // namespace data
 }  // namespace static_map
 
-#endif  // BUILDER_DATA_COLLECTOR_H_
+#endif  // BUILDER_DATA_DATA_COLLECTOR_H_

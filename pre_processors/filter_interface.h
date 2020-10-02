@@ -28,7 +28,7 @@
 
 #include "pre_processors/processor_interface.h"
 
-#include "common/pugixml.hpp"
+#include "pugixml/pugixml.hpp"
 
 namespace static_map {
 namespace pre_processers {

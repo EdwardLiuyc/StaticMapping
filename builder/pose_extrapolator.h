@@ -27,7 +27,7 @@
 #include <memory>
 
 #include "Eigen/Eigen"
-#include "builder/data_types.h"
+#include "builder/data/data_types.h"
 #include "builder/imu_tracker.h"
 #include "common/math.h"
 #include "common/mutex.h"
@@ -51,7 +51,7 @@ class PoseExtrapolator {
 
   static std::unique_ptr<PoseExtrapolator> InitializeWithImu(
       SimpleTime pose_queue_duration, double imu_gravity_time_constant,
-      const sensors::ImuMsg& imu_data);
+      const data::ImuMsg& imu_data);
 
   static std::unique_ptr<PoseExtrapolator> InitialSimpleCTRV(
       const SimpleTime& pose_queue_duration);
@@ -62,8 +62,8 @@ class PoseExtrapolator {
   SimpleTime GetLastExtrapolatedTime();
 
   void AddPose(SimpleTime time, const RigidPose3d& pose);
-  void AddImuData(const sensors::ImuMsg& imu_data);
-  void AddOdometryData(const sensors::OdomMsg& odometry_data);
+  void AddImuData(const data::ImuMsg& imu_data);
+  void AddOdometryData(const data::OdomMsg& odometry_data);
   RigidPose3d ExtrapolatePose(SimpleTime time);
 
   // Returns the current gravity alignment estimate as a rotation from
@@ -95,18 +95,18 @@ class PoseExtrapolator {
   const Mode mode_;
   const SimpleTime pose_queue_duration_;
 
-  std::deque<sensors::TimedPose> timed_pose_queue_;
+  std::deque<data::TimedPose> timed_pose_queue_;
   Eigen::Vector3d linear_velocity_from_poses_ = Eigen::Vector3d::Zero();
   Eigen::Vector3d angular_velocity_from_poses_ = Eigen::Vector3d::Zero();
 
   const double gravity_time_constant_;
-  std::deque<sensors::ImuMsg> imu_data_;
+  std::deque<data::ImuMsg> imu_data_;
   std::unique_ptr<ImuTracker> imu_tracker_;
   std::unique_ptr<ImuTracker> odometry_imu_tracker_;
   std::unique_ptr<ImuTracker> extrapolation_imu_tracker_;
-  sensors::TimedPose cached_extrapolated_pose_;
+  data::TimedPose cached_extrapolated_pose_;
 
-  std::deque<sensors::OdomMsg> odometry_data_;
+  std::deque<data::OdomMsg> odometry_data_;
   Eigen::Vector3d linear_velocity_from_odometry_ = Eigen::Vector3d::Zero();
   Eigen::Vector3d angular_velocity_from_odometry_ = Eigen::Vector3d::Zero();
 };

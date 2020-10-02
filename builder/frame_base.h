@@ -29,7 +29,7 @@
 #include <string>
 // local
 #include "boost/optional.hpp"
-#include "builder/data_types.h"
+#include "builder/data/data_types.h"
 #include "common/math.h"
 #include "common/simple_time.h"
 #include "descriptor/m2dp.h"
@@ -53,7 +53,7 @@ class FrameBase {
   using PointCloudType = pcl::PointCloud<PointType>;
   using PointCloudPtr = typename PointCloudType::Ptr;
   using PointCloudConstPtr = typename PointCloudType::ConstPtr;
-  using InnerCloudPtr = typename sensors::InnerPointCloudData<PointType>::Ptr;
+  using InnerCloudPtr = typename data::InnerPointCloudData<PointType>::Ptr;
 
   FrameBase()
       : global_pose_(Eigen::Matrix4d::Identity()),

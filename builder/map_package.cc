@@ -28,7 +28,7 @@
 #include "builder/multi_resolution_voxel_map.h"
 #include "builder/submap.h"
 #include "builder/trajectory.h"
-#include "common/pugixml.hpp"
+#include "pugixml/pugixml.hpp"
 
 namespace static_map {
 

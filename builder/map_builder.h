@@ -55,8 +55,10 @@
 namespace static_map {
 
 // forward declarations
+namespace data {
 template <typename PointT>
 class DataCollector;
+}
 
 namespace back_end {
 template <typename PointT>
@@ -71,7 +73,7 @@ struct Options {
   // for imu
   struct {
     bool enabled = true;
-    sensors::ImuType type = sensors::ImuType::kNormalImu;
+    data::ImuType type = data::ImuType::kNormalImu;
     float frequency = 0.f;
     float gravity_constant = 9.8f;
   } imu_options;
@@ -125,7 +127,7 @@ class MapBuilder {
   using PointCloudType = pcl::PointCloud<PointType>;
   using PointCloudPtr = PointCloudType::Ptr;
   using PointCloudConstPtr = PointCloudType::ConstPtr;
-  using InnerCloud = sensors::InnerPointCloudData<PointType>;
+  using InnerCloud = data::InnerPointCloudData<PointType>;
 
   // call back function for ROS
   using ShowMapFunction = std::function<void(const PointCloudPtr&)>;
@@ -154,11 +156,11 @@ class MapBuilder {
   /// @brief get pointcloud and insert it into the inner container
   void InsertPointcloudMsg(const PointCloudPtr& point_cloud);
   /// @brief get imu msg from sensor and insert it into the inner container
-  void InsertImuMsg(const sensors::ImuMsg::Ptr& imu_msg);
+  void InsertImuMsg(const data::ImuMsg::Ptr& imu_msg);
   /// @brief get odom msg from sensor and insert it into the inner container
-  void InsertOdomMsg(const sensors::OdomMsg::Ptr& odom_msg);
+  void InsertOdomMsg(const data::OdomMsg::Ptr& odom_msg);
   /// @brief get gps msg from sensor and insert it into the inner container
-  void InsertGpsMsg(const sensors::NavSatFixMsg::Ptr& gps_msg);
+  void InsertGpsMsg(const data::NavSatFixMsg::Ptr& gps_msg);
   /// @brief if enable odom, will get the scan matching guess from odom
   void EnableUsingOdom(bool flag);
   /// @brief if enable gps, will calculate the transform from map to gps (enu)
@@ -216,15 +218,15 @@ class MapBuilder {
  private:
   common::Mutex mutex_;
   // ********************* data & options *********************
-  std::unique_ptr<DataCollector<PointType>> data_collector_;
+  std::unique_ptr<data::DataCollector<PointType>> data_collector_;
   MapBuilderOptions options_;
   /// @notice if you want to access some xml_node later in the process,
   /// the doc (xml tree) must be still in the memory
   /// so, make it a member
   pugi::xml_document options_xml_doc_;
   // odoms
-  std::vector<sensors::OdomMsg::Ptr> odom_msgs_;
-  sensors::OdomMsg init_odom_msg_;
+  std::vector<data::OdomMsg::Ptr> odom_msgs_;
+  data::OdomMsg init_odom_msg_;
   // we assume that there is only one lidar
   // even if we have several lidars, we still use the fused cloud only
   Eigen::Matrix4d transform_odom_lidar_;
