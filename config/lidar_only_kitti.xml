@@ -114,7 +114,7 @@
         loop_ignore_threshold="20"
         trying_detect_loop_count="1"
         max_close_loop_distance="18"
-        max_close_loop_z_distance="10"
+        max_close_loop_z_distance="20"
         m2dp_match_score="0.98"
         accept_scan_match_score="0.88"
         nearest_history_pos_num="5" />

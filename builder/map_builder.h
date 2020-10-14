@@ -131,7 +131,8 @@ class MapBuilder {
 
   // call back function for ROS
   using ShowMapFunction = std::function<void(const PointCloudPtr&)>;
-  using ShowSubmapFunction = ShowMapFunction;
+  using ShowSubmapFunction =
+      std::function<void(const PointCloudPtr&, const Eigen::Matrix4d&)>;
   using ShowPathFunction =
       std::function<void(const std::vector<Eigen::Matrix4d>&)>;
   using ShowEdgeFunction =
@@ -148,7 +149,7 @@ class MapBuilder {
   /// @brief set a callback function when the map updated
   void SetShowMapFunction(const ShowMapFunction& func);
   /// @brief set a callback function when the map updated
-  void SetShowSubmapFunction(const ShowMapFunction& func);
+  void SetShowSubmapFunction(const ShowSubmapFunction& func);
   /// @brief set a callback function whem the pose updated
   void SetShowPathFunction(const ShowPathFunction& func);
 
