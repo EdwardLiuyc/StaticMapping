@@ -501,6 +501,11 @@ void MapBuilder::ConnectAllSubmap() {
       isam_optimizer_->AddFrame(
           submaps_to_connect[i],
           submaps_to_connect[i]->match_score_to_previous_submap_);
+
+      if (show_submap_function_) {
+        show_submap_function_(submaps_to_connect[i]->Cloud()->GetPclCloud(),
+                              submaps_to_connect[i]->GlobalPose());
+      }
     }
 
     if (show_path_function_) {
@@ -521,10 +526,12 @@ void MapBuilder::ConnectAllSubmap() {
           break;
         }
 
-        if ((submap->GlobalTranslation() -
-             current_trajectory_->at(current_finished_index)
-                 ->GlobalTranslation())
-                .norm() >= kLocalMapRange) {
+        const Eigen::Vector3d delta_translation =
+            submap->GlobalTranslation() -
+            current_trajectory_->at(current_finished_index)
+                ->GlobalTranslation();
+        if (delta_translation.topRows(2).norm() >= kLocalMapRange ||
+            std::fabs(delta_translation.z()) >= 2.) {
           continue;
         }
 
@@ -721,9 +728,6 @@ void MapBuilder::SubmapProcessing() {
     }
 
     local_frames.clear();
-    if (show_submap_function_) {
-      show_submap_function_(submap->GetFrames()[0]->Cloud()->GetPclCloud());
-    }
     if (current_submap_index > 0) {
       submap_match_thread_pool.enqueue([=]() {
         SubmapPairMatch(current_submap_index, current_submap_index - 1);
@@ -798,7 +802,7 @@ void MapBuilder::SetShowPathFunction(const ShowPathFunction& func) {
   show_path_function_ = std::move(func);
 }
 
-void MapBuilder::SetShowSubmapFunction(const ShowMapFunction& func) {
+void MapBuilder::SetShowSubmapFunction(const ShowSubmapFunction& func) {
   show_submap_function_ = std::move(func);
 }
 

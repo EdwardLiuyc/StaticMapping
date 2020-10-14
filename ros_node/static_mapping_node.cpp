@@ -44,6 +44,7 @@
 #include "ros_node/msg_conversion.h"
 #include "ros_node/playable_bag.h"
 #include "ros_node/tf_bridge.h"
+#include "tf/transform_broadcaster.h"
 
 using static_map::MapBuilder;
 static MapBuilder::Ptr map_builder;
@@ -51,6 +52,10 @@ static MapBuilder::Ptr map_builder;
 using static_map::data::ImuMsg;
 using static_map::data::NavSatFixMsg;
 using static_map::data::OdomMsg;
+
+namespace {
+
+constexpr char kMapFrameId[] = "/map";
 
 void pointcloud_callback(const sensor_msgs::PointCloud2::ConstPtr& msg) {
   pcl::PCLPointCloud2 pcl_pc2;
@@ -80,6 +85,8 @@ void gps_callback(const sensor_msgs::NavSatFix& gps_msg) {
   *local_gps = static_map_ros::ToLocalNavSatMsg(gps_msg);
   map_builder->InsertGpsMsg(local_gps);
 }
+
+}  // namespace
 
 int main(int argc, char** argv) {
   ros::init(argc, argv, "static_mapping_node");
@@ -166,6 +173,8 @@ int main(int argc, char** argv) {
   // default: base_link
   std::string tracking_frame = "base_link";
   pcl::console::parse_argument(argc, argv, "-track", tracking_frame);
+  CHECK(!tracking_frame.empty())
+      << "tracking frame id should be set." << std::endl;
 
   // ros bag
   std::string bag_file = "";
@@ -201,33 +210,47 @@ int main(int argc, char** argv) {
       n.advertise<nav_msgs::Path>("/static_mapping_path", 1);
   ros::Publisher edge_markers_pub =
       n.advertise<visualization_msgs::Marker>("/loop_edges", 1);
+  tf::TransformBroadcaster tf_broadcaster;
 
   auto show_function =
       [&](const static_map::MapBuilder::PointCloudPtr& cloud) -> void {
     sensor_msgs::PointCloud2 map_pointcloud;
     pcl::toROSMsg(*cloud, map_pointcloud);
-    map_pointcloud.header.frame_id = "/map";
+    map_pointcloud.header.frame_id = kMapFrameId;
     map_pointcloud.header.stamp = ros::Time::now();
     map_publisher.publish(map_pointcloud);
   };
 
   auto show_submap_function =
-      [&](const static_map::MapBuilder::PointCloudPtr& cloud) -> void {
+      [&](const static_map::MapBuilder::PointCloudPtr& cloud,
+          const Eigen::Matrix4d& pose) -> void {
+    tf::Transform transform;
+    transform.setOrigin(tf::Vector3(pose(0, 3), pose(1, 3), pose(2, 3)));
+    Eigen::Quaterniond rotation(Eigen::Matrix3d(pose.block(0, 0, 3, 3)));
+    tf::Quaternion q;
+    q.setW(rotation.w());
+    q.setX(rotation.x());
+    q.setY(rotation.y());
+    q.setZ(rotation.z());
+    transform.setRotation(q);
+    tf_broadcaster.sendTransform(tf::StampedTransform(
+        transform, ros::Time::now(), kMapFrameId, tracking_frame));
+
     sensor_msgs::PointCloud2 submap_pointcloud;
     pcl::toROSMsg(*cloud, submap_pointcloud);
-    submap_pointcloud.header.frame_id = "/map";
+    submap_pointcloud.header.frame_id = tracking_frame;
     submap_pointcloud.header.stamp = ros::Time::now();
     submap_publisher.publish(submap_pointcloud);
   };
 
   const auto publish_path = [&](const std::vector<Eigen::Matrix4d>& poses) {
     nav_msgs::Path path;
-    path.header.frame_id = "/map";
+    path.header.frame_id = kMapFrameId;
 
     path.poses.reserve(poses.size());
     for (const Eigen::Matrix4d& pose : poses) {
       geometry_msgs::PoseStamped pose_ros;
-      pose_ros.header.frame_id = "/map";
+      pose_ros.header.frame_id = kMapFrameId;
       Eigen::Quaterniond q(Eigen::Matrix3d(pose.block(0, 0, 3, 3)));
       pose_ros.pose.orientation.w = q.w();
       pose_ros.pose.orientation.x = q.x();
@@ -246,7 +269,7 @@ int main(int argc, char** argv) {
       [&](const std::map<int64_t, static_map::back_end::ViewGraph::GraphItem>&
               graph) {
         visualization_msgs::Marker line_list;
-        line_list.header.frame_id = "/map";
+        line_list.header.frame_id = kMapFrameId;
         line_list.id = 0;
         line_list.type = visualization_msgs::Marker::LINE_LIST;
         // LINE_STRIP/LINE_LIST markers use only the x component of scale, for

@@ -177,6 +177,9 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 # TODO
 - **Loop Close factor should be rubust**
 - **using docker to run**
+- some examples for ground removal2
+- yaml configs
+- less memory usage
 - another mode for the imu which provides attitude
 - do cross-check on loop detection results
 - may remove libpointmather
