@@ -225,9 +225,7 @@ class MapBuilder {
   /// the doc (xml tree) must be still in the memory
   /// so, make it a member
   pugi::xml_document options_xml_doc_;
-  // odoms
-  std::vector<data::OdomMsg::Ptr> odom_msgs_;
-  data::OdomMsg init_odom_msg_;
+
   // we assume that there is only one lidar
   // even if we have several lidars, we still use the fused cloud only
   Eigen::Matrix4d transform_odom_lidar_;
@@ -249,7 +247,7 @@ class MapBuilder {
   std::unique_ptr<PoseExtrapolator> extrapolator_ = nullptr;
   std::shared_ptr<registrator::Interface<PointType>> scan_matcher_ = nullptr;
   std::unique_ptr<std::thread> scan_match_thread_;
-  std::vector<std::shared_ptr<Frame<PointType>>> frames_;
+  tbb::concurrent_vector<std::shared_ptr<Frame<PointType>>> frames_;
   std::atomic<bool> scan_match_thread_running_;
   bool got_first_point_cloud_ = false;
 

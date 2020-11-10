@@ -177,12 +177,15 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 # TODO
 - **Loop Close factor should be rubust**
 - **using docker to run**
+- compare IcpUsingPointMatcher & IcpFast -> what's the exact difference.
 - some examples for ground removal2
 - yaml configs
 - less memory usage
 - another mode for the imu which provides attitude
 - do cross-check on loop detection results
 - may remove libpointmather
+- Qt tool for viewing pcd files
+- Qt wrapper like rviz
 - publish tf instead directly modify the submap cloud
 - Fix bug with loop-detector using gps
 - Kitti evaluation

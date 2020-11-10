@@ -15,11 +15,11 @@
         0 : int
         1 : float  -->
       <filter name="Range" >
-        <param type="1" name="max_range"> 75. </param>
-        <param type="1" name="min_range"> 4.5 </param>
+        <param type="1" name="max_range"> 100. </param>
+        <param type="1" name="min_range"> 5. </param>
       </filter>
       <filter name="AxisRange" >
-        <param type="1" name="min"> -1.6 </param>
+        <param type="1" name="min"> -2. </param>
       </filter>
       <!-- <filter name="GroundRemoval2" >
         <param type="1" name="r_min"> 0.1 </param>
@@ -32,7 +32,7 @@
         <param type="0" name="thread_num"> 4 </param>
       </filter> -->
       <filter name="RandomSampler" >
-        <param type="1" name="sampling_rate"> 0.35 </param>
+        <param type="1" name="sampling_rate"> 0.4 </param>
       </filter>
     </filters>
     <front_end_options accumulate_cloud_num="1">
@@ -69,7 +69,7 @@
       <!-- translation unit: m
            angle unit: degree -->
       <motion_filter 
-        translation_range="1"
+        translation_range="1."
         angle_range="1.5"
         time_range="0.25" />
       <!-- imu type 
@@ -101,7 +101,7 @@
         enable_random_sampleing="true"
         enable_check="false"
         random_sampling_rate="0.5"
-        enable_disk_saving="false"
+        enable_disk_saving="true"
         disk_saving_delay="30"
         saving_name_prefix="s_" />
       <isam_optimizer_options 
@@ -114,9 +114,9 @@
         loop_ignore_threshold="20"
         trying_detect_loop_count="1"
         max_close_loop_distance="18"
-        max_close_loop_z_distance="20"
-        m2dp_match_score="0.98"
-        accept_scan_match_score="0.88"
+        max_close_loop_z_distance="15"
+        m2dp_match_score="0.985"
+        accept_scan_match_score="0.80"
         nearest_history_pos_num="5" />
     </back_end_options>
     <output_mrvm_settings
