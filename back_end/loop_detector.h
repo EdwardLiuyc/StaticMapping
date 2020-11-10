@@ -40,41 +40,46 @@ class Submap;
 
 namespace back_end {
 
+enum class LoopStatus : uint8_t {
+  kNoLoop,
+  kTryingToCloseLoop,
+  kEnteringLoop,
+  kContinousLoop,
+  kLeavingLoop
+};
+
+struct DetectResult {
+  int current_frame_index;
+  LoopStatus status = LoopStatus::kNoLoop;
+  // Is it or not a good loop detection result.
+  bool close_succeed = false;
+
+  struct LoopEdge {
+    // Pairs of indices of frame that matched.
+    std::pair<int, int> close_pair_index;
+    // Init guess
+    Eigen::Matrix4d init_guess = Eigen::Matrix4d::Identity();
+    // The transforms of pairs.
+    Eigen::Matrix4d transform = Eigen::Matrix4d::Identity();
+    // Matching scores.
+    double score = 0.;
+
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  };
+  tbb::concurrent_vector<LoopEdge> edges;
+
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+};
+
 template <typename PointT>
 class LoopDetector {
  public:
   explicit LoopDetector(const LoopDetectorSettings &l_d_settings)
       : settings_(l_d_settings), tf_odom_lidar_(Eigen::Matrix4d::Identity()) {}
-  ~LoopDetector() {}
+  ~LoopDetector() = default;
 
   LoopDetector(const LoopDetector &) = delete;
   LoopDetector &operator=(const LoopDetector &) = delete;
-
-  enum LoopStatus {
-    kNoLoop,
-    kTryingToCloseLoop,
-    kEnteringLoop,
-    kContinousLoop,
-    kLeavingLoop,
-    kLoopStatusCount
-  };
-
-  struct DetectResult {
-    int current_frame_index;
-    LoopStatus status;
-    // Is it or not a good loop detection result.
-    bool close_succeed = false;
-    // Pairs of indices of frame that matched.
-    tbb::concurrent_vector<std::pair<int, int>> close_pair;
-    // The transforms of pairs.
-    tbb::concurrent_vector<Eigen::Matrix4d,
-                           Eigen::aligned_allocator<Eigen::Matrix4d>>
-        transform;
-    // Matching scores.
-    tbb::concurrent_vector<double> constraint_score;
-
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-  };
 
   DetectResult AddFrame(const std::shared_ptr<Submap<PointT>> &submap,
                         bool do_loop_detect = true);
@@ -87,10 +92,9 @@ class LoopDetector {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
  protected:
-  bool CloseLoop(const int first_id, const int last_id,
-                 Eigen::Matrix4d *const result, double *score);
+  bool CloseLoop(DetectResult::LoopEdge *edge) const;
 
-  bool CheckResult(const DetectResult &result);
+  bool CheckResult(const DetectResult &result) const;
 
  private:
   std::vector<std::shared_ptr<Submap<PointT>>> all_frames_;
@@ -100,7 +104,7 @@ class LoopDetector {
   int accumulate_loop_detected_count_;
   float current_min_distance_;
 
-  LoopStatus current_status_ = kNoLoop;
+  LoopStatus current_status_ = LoopStatus::kNoLoop;
   LoopDetectorSettings settings_;
 
   Eigen::Matrix4d tf_odom_lidar_;

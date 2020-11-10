@@ -28,7 +28,8 @@ BAG_FILE=/mnt/Data/visual/map_test/20200507124024_1_NoPlace.bag
   -pc ${POINT_CLOUD_TOPIC} \
   -pc_frame_id ${POINT_CLOUD_FRAME_ID} \
   -urdf ${URDF_FILE} \
-  -bag ${BAG_FILE}
+  -bag ${BAG_FILE} \
+  -pubs [map][path][edge]
 
 exit 0 
 

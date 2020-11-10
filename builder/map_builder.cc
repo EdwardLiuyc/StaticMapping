@@ -43,7 +43,6 @@
 namespace static_map {
 
 namespace {
-constexpr int kOdomMsgMaxSize = 100;
 constexpr int kSubmapResSize = 100;
 constexpr double kExpolatorMinDuration = 0.001;  // second
 constexpr double kLocalMapRange = 30.;           // m
@@ -198,20 +197,6 @@ void MapBuilder::InsertOdomMsg(const data::OdomMsg::Ptr& odom_msg) {
                 "INS-RTK, and only the pose will be used. If you are in the "
                 "same situation, you can comment this line and use this "
                 "function, it will be really helpful.";
-
-  {
-    common::MutexLocker locker(&mutex_);
-    // odom_msgs_ are just for generating path file now
-    if (odom_msgs_.empty()) {
-      init_odom_msg_ = *odom_msg;
-    }
-    const Eigen::Matrix4d init_pose = init_odom_msg_.PoseInMatrix();
-    Eigen::Matrix4d relative_pose = init_pose.inverse() *
-                                    odom_msg->PoseInMatrix() *
-                                    tracking_to_odom_.inverse();
-    odom_msg->SetPose(relative_pose);
-    odom_msgs_.push_back(odom_msg);
-  }
   data_collector_->AddSensorData(*odom_msg);
 }
 
@@ -238,8 +223,6 @@ void MapBuilder::InsertFrameForSubmap(InnerCloud::Ptr cloud_ptr,
   frame->SetCloud(cloud_ptr);
   frame->SetTimeStamp(cloud_ptr->GetTime());
   frame->SetGlobalPose(global_pose);
-
-  common::MutexLocker locker(&mutex_);
   frames_.push_back(frame);
 }
 
@@ -322,10 +305,10 @@ void MapBuilder::ScanMatchProcessing() {
 
     Pose3d guess = pose_target.inverse() * pose_source;
     common::NormalizeRotation(guess);
+    // common::PrintTransform(guess);
 
     // motion compensation using guess
     // still in test
-    // scan_matcher_->EnableInnerCompensation();
     Eigen::Matrix4d align_result = Eigen::Matrix4d::Identity();
     auto pcl_cloud_without_compensation = source_cloud->GetPclCloud();
     {
@@ -432,6 +415,9 @@ void MapBuilder::SubmapPairMatch(const int source_index,
     matcher->SetInputTarget(target_submap->Cloud());
   }
   Eigen::Matrix4d result = Eigen::Matrix4d::Identity();
+  // `GetFrames()[0]->GlobalPose()` means the first frame's global pose, and it
+  // will never be changed after scan matching. So it's actually safe to
+  // calculate the init estimation like this.
   Eigen::Matrix4d guess =
       target_submap->GetFrames()[0]->GlobalPose().inverse() *
       source_submap->GetFrames()[0]->GlobalPose();
@@ -455,7 +441,7 @@ void MapBuilder::SubmapPairMatch(const int source_index,
 }
 
 void MapBuilder::ConnectAllSubmap() {
-  // finish mens that its global pose is ready
+  // Finish means that its global pose is ready
   int current_finished_index = 0;
   std::vector<std::shared_ptr<Submap<PointType>>> submaps_to_connect;
   submaps_to_connect.reserve(20);
@@ -491,20 +477,19 @@ void MapBuilder::ConnectAllSubmap() {
       continue;
     }
     for (size_t i = 1; i < submaps_to_connect.size(); ++i) {
-      submaps_to_connect[i]->SetGlobalPose(
-          submaps_to_connect[i - 1]->GlobalPose() *
-          submaps_to_connect[i - 1]->TransformToNext());
-      submaps_to_connect[i]->SetTransformFromLast(
-          submaps_to_connect[i - 1]->TransformToNext());
+      auto& previous_submap = submaps_to_connect[i - 1];
+      auto& current_submap = submaps_to_connect[i];
+      current_submap->SetGlobalPose(previous_submap->GlobalPose() *
+                                    previous_submap->TransformToNext());
+      current_submap->SetTransformFromLast(previous_submap->TransformToNext());
       current_finished_index++;
 
       isam_optimizer_->AddFrame(
-          submaps_to_connect[i],
-          submaps_to_connect[i]->match_score_to_previous_submap_);
+          current_submap, current_submap->match_score_to_previous_submap_);
 
       if (show_submap_function_) {
-        show_submap_function_(submaps_to_connect[i]->Cloud()->GetPclCloud(),
-                              submaps_to_connect[i]->GlobalPose());
+        show_submap_function_(current_submap->Cloud()->GetPclCloud(),
+                              current_submap->GlobalPose());
       }
     }
 
@@ -667,19 +652,14 @@ void MapBuilder::SubmapProcessing() {
   }
 
   size_t current_index = 0;
-  std::vector<std::shared_ptr<Frame<PointType>>> local_frames;
   common::ThreadPool submap_match_thread_pool(6);
   // there is a deamon thread in this thread pool
   // it is to connect all submap into a global map
   // others are for submap matching
   submap_match_thread_pool.enqueue([&]() { ConnectAllSubmap(); });
 
-  size_t frames_size = 0;
   while (true) {
-    {
-      common::MutexLocker locker(&mutex_);
-      frames_size = frames_.size();
-    }
+    const int frames_size = frames_.size();
     if (frames_size - current_index < submap_frame_count) {
       if (!scan_match_thread_running_.load()) {
         PRINT_INFO("no enough frames for new submap, quit");
@@ -689,12 +669,7 @@ void MapBuilder::SubmapProcessing() {
       continue;
     }
 
-    for (int i = 0; i < submap_frame_count; ++i) {
-      local_frames.push_back(frames_[current_index]);
-      current_index++;
-    }
-
-    // Adding new submap
+    // Adding new submap using some frames.
     std::shared_ptr<Submap<PointType>> submap(
         new Submap<PointType>(submap_options));
     SubmapId current_id;
@@ -703,12 +678,11 @@ void MapBuilder::SubmapProcessing() {
     current_submap_index = current_trajectory_->size();
     submap->SetId(current_id);
     submap->SetSavePath(options_.whole_options.map_package_path);
-    current_trajectory_->push_back(submap);
     // create a submap and init with the configs
     PRINT_DEBUG_FMT("Add a new submap : %d", current_submap_index);
-
-    for (const auto& frame : local_frames) {
-      submap->InsertFrame(frame);
+    for (int i = 0; i < submap_frame_count; ++i) {
+      submap->InsertFrame(frames_[current_index]);
+      current_index++;
     }
     CHECK(submap->Full());
     submap->CalculateDescriptor();
@@ -727,7 +701,8 @@ void MapBuilder::SubmapProcessing() {
       }
     }
 
-    local_frames.clear();
+    // Submap constructing finished, add to trajectory.
+    current_trajectory_->push_back(submap);
     if (current_submap_index > 0) {
       submap_match_thread_pool.enqueue([=]() {
         SubmapPairMatch(current_submap_index, current_submap_index - 1);
@@ -814,9 +789,7 @@ void MapBuilder::EnableUsingOdom(bool flag) {
   use_odom_ = flag;
   std::string str = flag ? "enable" : "disable";
   PRINT_INFO_FMT("%s odom.", str.c_str());
-  if (flag) {
-    odom_msgs_.reserve(kOdomMsgMaxSize);
-  } else {
+  if (!flag) {
     options_.back_end_options.isam_optimizer_options.use_odom = false;
   }
 }

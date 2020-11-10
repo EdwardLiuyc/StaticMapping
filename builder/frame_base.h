@@ -46,6 +46,7 @@ using OdomPose = Eigen::Matrix4d;
  * @brief base class for all frames, such as frame, submap,
  * a simple frame has its global pose(in map), local pose, cloud and
  * descriptor
+ * @todo(edward) Make this class thread-safe
  */
 template <typename PointType>
 class FrameBase {

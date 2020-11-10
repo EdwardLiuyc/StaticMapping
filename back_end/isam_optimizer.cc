@@ -231,10 +231,11 @@ void IsamOptimizer<PointT>::AddFrame(
 
   // try to close loop and add constraint
   if (result.close_succeed) {
-    const int edge_size = result.close_pair.size();
-    for (int i = 0; i < edge_size; ++i) {
-      AddLoopCloseEdge(result.close_pair[i].first, result.close_pair[i].second,
-                       result.transform[i], loop_closure_noise_model_);
+    const int edge_size = result.edges.size();
+    for (const auto &edge : result.edges) {
+      AddLoopCloseEdge(edge.close_pair_index.first,
+                       edge.close_pair_index.second, edge.transform,
+                       loop_closure_noise_model_);
       IsamUpdate();
     }
     PRINT_INFO_FMT(BOLD "Add %d loop closure edges." NONE_FORMAT, edge_size);

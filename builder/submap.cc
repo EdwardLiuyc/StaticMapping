@@ -79,6 +79,8 @@ void Submap<PointType>::InsertFrame(
   CHECK(!full_.load());
 
   if (frames_.empty()) {
+    // This is the first time that we set the global pose of the submap, we do
+    // not need a mutex the protect the pose.
     this->global_pose_ = frame->GlobalPose();
     frame->SetLocalPose(Eigen::Matrix4d::Identity());
     this->SetTimeStamp(frame->GetTimeStamp());

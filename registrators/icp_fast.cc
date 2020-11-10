@@ -405,6 +405,8 @@ bool CheckConvergence(const std::vector<Eigen::Quaterniond>& rotations,
 template <typename PointT>
 IcpFast<PointT>::IcpFast() : Interface<PointT>() {
   this->type_ = kFastIcp;
+  // TODO(edward) This `knn_normal_estimate` is currently of no use, make it
+  // useful later.
   REG_REGISTRATOR_INNER_OPTION("knn_normal_estimate",
                                OptionItemDataType::kInt32,
                                options_.knn_for_normal_estimate);
@@ -515,8 +517,9 @@ bool IcpFast<PointT>::Align(const Eigen::Matrix4d& guess,
     translations_iter.push_back(T_iter.block(0, 3, 3, 1));
     if (CheckConvergence(rotations_iter, translations_iter) ||
         iterator >= options_.max_iteration) {
-      const double average_dist = error_elements.matches.dists.sum() /
-                                  error_elements.matches.dists.cols();
+      const double average_dist =
+          error_elements.matches.dists.array().cwiseSqrt().sum() /
+          error_elements.matches.dists.cols();
       this->final_score_ = std::exp(-average_dist);
       break;
     }
