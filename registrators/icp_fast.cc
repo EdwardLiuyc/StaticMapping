@@ -76,6 +76,8 @@ struct Matches {
       }
     }
 
+    // BUG
+    // Sometimes this really happens, which should not.
     CHECK(!values.empty());
     // get quantile
     if (quantile == 1.0) {

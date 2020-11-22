@@ -100,10 +100,9 @@ class SimpleTime {
 
   std::string DebugString() const;
 
+ private:
   uint32_t secs;
   uint32_t nsecs;
-
- private:
   /*!
    * @brief it is a range when determining if two time are euqal
    * for now, it is set to 1000 (ns)
