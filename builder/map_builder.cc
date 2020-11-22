@@ -68,7 +68,7 @@ int MapBuilder::InitialiseInside() {
     CHECK_GT(options_.front_end_options.imu_options.frequency, 1.e-6);
   } else {
     extrapolator_ = PoseExtrapolator::InitialSimpleCTRV(
-        SimpleTime::from_sec(kExpolatorMinDuration));
+        SimpleTime::FromSec(kExpolatorMinDuration));
   }
 
   PRINT_INFO("Init isam optimizer.");
@@ -101,7 +101,7 @@ int MapBuilder::InitialiseInside() {
   scan_match_thread_ = std::make_unique<std::thread>(
       std::bind(&MapBuilder::ScanMatchProcessing, this));
   while (!scan_match_thread_running_.load()) {
-    SimpleTime::from_sec(0.01).sleep();
+    SimpleTime::FromSec(0.01).Sleep();
   }
   submap_thread_ = std::make_unique<std::thread>(
       std::bind(&MapBuilder::SubmapProcessing, this));
@@ -181,7 +181,7 @@ void MapBuilder::InsertImuMsg(const data::ImuMsg::Ptr& imu_msg) {
 
   if (!extrapolator_) {
     extrapolator_ = PoseExtrapolator::InitializeWithImu(
-        SimpleTime::from_sec(kExpolatorMinDuration),
+        SimpleTime::FromSec(kExpolatorMinDuration),
         options_.front_end_options.imu_options.gravity_constant, *imu_msg);
   } else {
     extrapolator_->AddImuData(*imu_msg);
@@ -274,7 +274,7 @@ void MapBuilder::ScanMatchProcessing() {
       if (end_all_thread_.load()) {
         break;
       }
-      SimpleTime::from_sec(0.005).sleep();
+      SimpleTime::FromSec(0.005).Sleep();
       continue;
     }
 
@@ -283,7 +283,10 @@ void MapBuilder::ScanMatchProcessing() {
     if (!got_first_point_cloud_) {
       got_first_point_cloud_ = true;
       target_cloud = source_cloud;
-      target_cloud->CalculateNormals();
+      // Only IcpFast need the pre-calculated normals of target cloud.
+      if (scan_matcher_->GetType() == registrator::Type::kFastIcp) {
+        target_cloud->CalculateNormals();
+      }
       InsertFrameForSubmap(source_cloud, Eigen::Matrix4d::Identity(), 1.);
       if (extrapolator_) {
         extrapolator_->AddPose(source_time, Eigen::Matrix4d::Identity());
@@ -382,7 +385,9 @@ void MapBuilder::ScanMatchProcessing() {
 
       accumulative_transform = Pose3d::Identity();
       target_cloud = source_cloud;
-      target_cloud->CalculateNormals();
+      if (scan_matcher_->GetType() == registrator::Type::kFastIcp) {
+        target_cloud->CalculateNormals();
+      }
       pose_target = pose_source;
     }
   }
@@ -452,7 +457,7 @@ void MapBuilder::ConnectAllSubmap() {
       if (submap_processing_done_.load()) {
         break;
       }
-      SimpleTime::from_sec(0.1).sleep();
+      SimpleTime::FromSec(0.1).Sleep();
       continue;
     }
 
@@ -473,7 +478,7 @@ void MapBuilder::ConnectAllSubmap() {
     }
 
     if (submaps_to_connect.size() <= 1) {
-      SimpleTime::from_sec(0.1).sleep();
+      SimpleTime::FromSec(0.1).Sleep();
       continue;
     }
     for (size_t i = 1; i < submaps_to_connect.size(); ++i) {
@@ -665,7 +670,7 @@ void MapBuilder::SubmapProcessing() {
         PRINT_INFO("no enough frames for new submap, quit");
         break;
       }
-      SimpleTime::from_sec(0.5).sleep();
+      SimpleTime::FromSec(0.5).Sleep();
       continue;
     }
 
@@ -719,10 +724,10 @@ void MapBuilder::FinishAllComputations() {
 
   size_t remaining_pointcloud_count = data_collector_->GetRemainingCloudSize();
   int delay = 0;
-  SimpleTime delay_time = SimpleTime::from_sec(0.1);
+  SimpleTime delay_time = SimpleTime::FromSec(0.1);
   if (scan_match_thread_) {
     do {
-      delay_time.sleep();
+      delay_time.Sleep();
       delay++;
       if (delay >= 20) {
         std::ostringstream progress_info;

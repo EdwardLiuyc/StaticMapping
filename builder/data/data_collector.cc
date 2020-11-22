@@ -168,7 +168,7 @@ void DataCollector<PointT>::CloudPreProcessing() {
     }
     // TODO(edward) Fix this, which will drop the last pointcloud
     if (cloud_data_before_preprocessing_.size() < 2) {
-      SimpleTime::from_sec(0.005).sleep();
+      SimpleTime::FromSec(0.005).Sleep();
       continue;
     }
 
@@ -180,7 +180,7 @@ void DataCollector<PointT>::CloudPreProcessing() {
       cloud_data_before_preprocessing_.pop_front();
       next_data_time = cloud_data_before_preprocessing_.front()->GetTime();
     }
-    data->delta_time_in_cloud = (next_data_time - data->GetTime()).toSec();
+    data->delta_time_in_cloud = (next_data_time - data->GetTime()).ToSec();
     // filtering cloud
     PointCloudPtr filtered_cloud(new PointCloudType);
     filter_factory_->SetInputCloud(data->GetPclCloud());
@@ -258,7 +258,7 @@ std::unique_ptr<Eigen::Vector3d> DataCollector<PointT>::InterpolateGps(
       return nullptr;
     } else if (gps_data_.size() == 1) {
       // size == 1
-      if (std::fabs(time.toSec() - gps_data_[0].time.toSec()) <=
+      if (std::fabs(time.ToSec() - gps_data_[0].time.ToSec()) <=
               time_threshold &&
           gps_data_[0].status_fixed) {
         return std::make_unique<Eigen::Vector3d>(gps_data_[0].enu_position);
@@ -282,14 +282,14 @@ std::unique_ptr<Eigen::Vector3d> DataCollector<PointT>::InterpolateGps(
   }
 
   CHECK(time >= former_data.time && time <= latter_data.time);
-  const double delta_time = (latter_data.time - former_data.time).toSec();
+  const double delta_time = (latter_data.time - former_data.time).ToSec();
   CHECK_GT(delta_time, 1.e-6);
   if (delta_time > 0.2 || !former_data.status_fixed ||
       !latter_data.status_fixed) {
     return nullptr;
   }
 
-  const double factor = (time - former_data.time).toSec() / delta_time;
+  const double factor = (time - former_data.time).ToSec() / delta_time;
   CHECK(factor >= 0. && factor <= 1.);
   const Eigen::Vector3d delta =
       factor * (latter_data.enu_position - former_data.enu_position);
@@ -310,7 +310,7 @@ std::unique_ptr<Eigen::Matrix4d> DataCollector<PointT>::InterpolateOdom(
       return nullptr;
     } else if (odom_data_.size() == 1) {
       // size == 1
-      if (std::fabs(time.toSec() - odom_data_[0].time.toSec()) <=
+      if (std::fabs(time.ToSec() - odom_data_[0].time.ToSec()) <=
           time_threshold) {
         return std::make_unique<Eigen::Matrix4d>(odom_data_[0].pose);
       } else {
@@ -333,14 +333,14 @@ std::unique_ptr<Eigen::Matrix4d> DataCollector<PointT>::InterpolateOdom(
     }
   }
 
-  const double delta_time = (latter_data.time - former_data.time).toSec();
+  const double delta_time = (latter_data.time - former_data.time).ToSec();
   CHECK_GT(delta_time, 1.e-6);
   if (delta_time > 1.) {
     PRINT_WARNING("some thing wrong with the search");
     return nullptr;
   }
   CHECK(time >= former_data.time && time <= latter_data.time);
-  const double factor = (time - former_data.time).toSec() / delta_time;
+  const double factor = (time - former_data.time).ToSec() / delta_time;
   CHECK(factor >= 0. && factor <= 1.);
   // interpolate the data for more accurate odom data
   const Eigen::Matrix4d pose =

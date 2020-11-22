@@ -438,7 +438,7 @@ int main(int argc, char** argv) {
         // LOG(ERROR) << point_cloud->size();
         point_cloud->header.frame_id = cloud_frame_id;
         point_cloud->header.stamp =
-            static_map::SimpleTime::get_current_time().toNSec() / 1000ull;
+            static_map::SimpleTime::GetCurrentTime().ToNanoSec() / 1000ull;
         map_builder->InsertPointcloudMsg(point_cloud);
 
         usleep(100000);

@@ -68,7 +68,7 @@ ImuGpsTracker::ImuGpsTracker(const double imu_gravity_time_constant,
 
 void ImuGpsTracker::AddImuData(const data::ImuMsg& imu_msg) {
   // common::MutexLocker locker(&mutex_);
-  double delta_time = (imu_msg.header.stamp - last_imu_time_).toSec();
+  double delta_time = (imu_msg.header.stamp - last_imu_time_).ToSec();
   if (last_imu_time_ != SimpleTime()) {
     CHECK_GT(imu_msg.header.stamp, last_imu_time_);
     if (std::fabs(imu_period_ - delta_time) >= imu_period_ * 0.1) {

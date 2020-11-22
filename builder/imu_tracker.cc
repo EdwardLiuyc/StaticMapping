@@ -39,7 +39,7 @@ ImuTracker::ImuTracker(const double imu_gravity_time_constant,
 
 void ImuTracker::Advance(const SimpleTime time) {
   CHECK_LE(time_, time);
-  const double delta_t = (time - time_).toSec();
+  const double delta_t = (time - time_).ToSec();
   const Eigen::Quaterniond rotation = common::EulerAnglesToQuaternion(
       Eigen::Vector3d(imu_angular_velocity_ * delta_t));
   orientation_ = (orientation_ * rotation).normalized();
@@ -52,7 +52,7 @@ void ImuTracker::AddImuLinearAccelerationObservation(
   // Update the 'gravity_vector_' with an exponential moving average using the
   // 'imu_gravity_time_constant'.
   const double delta_t = last_linear_acceleration_time_ > SimpleTime()
-                             ? (time_ - last_linear_acceleration_time_).toSec()
+                             ? (time_ - last_linear_acceleration_time_).ToSec()
                              : std::numeric_limits<double>::infinity();
   last_linear_acceleration_time_ = time_;
   const double alpha = 1. - std::exp(-delta_t / imu_gravity_time_constant_);
