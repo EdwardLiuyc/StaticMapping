@@ -38,11 +38,7 @@ static_map::data::Header ToLocalHeader(const std_msgs::Header& header) {
 }  // namespace
 
 static_map::SimpleTime ToLocalTime(const ros::Time& time) {
-  static_map::SimpleTime local_time;
-  local_time.secs = time.sec;
-  local_time.nsecs = time.nsec;
-
-  return local_time;
+  return static_map::SimpleTime(time.sec, time.nsec);
 }
 
 static_map::data::ImuMsg ToLocalImu(const sensor_msgs::Imu& msg) {

@@ -112,6 +112,8 @@ class Interface {
   virtual bool Align(const Eigen::Matrix4d& guess,
                      Eigen::Matrix4d& result) = 0;  // NOLINT
 
+  virtual Type GetType() const { return type_; }
+
  protected:
   double final_score_;
   Type type_ = kNoType;

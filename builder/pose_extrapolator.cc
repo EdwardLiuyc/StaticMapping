@@ -150,7 +150,7 @@ void PoseExtrapolator::AddOdometryData(const data::OdomMsg& odometry_data) {
   const data::OdomMsg& odometry_data_newest = odometry_data_.back();
   const double odometry_time_delta =
       (odometry_data_newest.header.stamp - odometry_data_oldest.header.stamp)
-          .toSec();
+          .ToSec();
   const RigidPose3d odometry_pose_delta =
       odometry_data_oldest.PoseInMatrix().inverse() *
       odometry_data_newest.PoseInMatrix();
@@ -222,8 +222,8 @@ void PoseExtrapolator::UpdateVelocitiesFromPoses() {
   const auto newest_time = newest_timed_pose.time;
   const data::TimedPose& oldest_timed_pose = timed_pose_queue_.front();
   const auto oldest_time = oldest_timed_pose.time;
-  const double queue_delta = (newest_time - oldest_time).toSec();
-  if (queue_delta < pose_queue_duration_.toSec()) {
+  const double queue_delta = (newest_time - oldest_time).ToSec();
+  if (queue_delta < pose_queue_duration_.ToSec()) {
     LOG(WARNING) << "Queue too short for velocity estimation. Queue duration: "
                  << queue_delta << " s";
     return;
@@ -296,7 +296,7 @@ Eigen::Quaterniond PoseExtrapolator::ExtrapolateRotation(
     case Mode::kSimpleCTRV: {
       const data::TimedPose& newest_timed_pose = timed_pose_queue_.back();
       const double extrapolation_delta =
-          (time - newest_timed_pose.time).toSec();
+          (time - newest_timed_pose.time).ToSec();
 
       const Eigen::Vector3d delta_anguler =
           angular_velocity_from_poses_ * extrapolation_delta;
@@ -311,7 +311,7 @@ Eigen::Quaterniond PoseExtrapolator::ExtrapolateRotation(
 
 Eigen::Vector3d PoseExtrapolator::ExtrapolateTranslation(SimpleTime time) {
   const data::TimedPose& newest_timed_pose = timed_pose_queue_.back();
-  const double extrapolation_delta = (time - newest_timed_pose.time).toSec();
+  const double extrapolation_delta = (time - newest_timed_pose.time).ToSec();
   if (mode_ == Mode::kSimpleCTRV || odometry_data_.size() < 2) {
     return extrapolation_delta * linear_velocity_from_poses_;
   }

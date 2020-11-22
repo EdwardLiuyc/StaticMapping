@@ -34,29 +34,27 @@ struct TestDataStruct {
 BOOST_AUTO_TEST_CASE(BinarySearch) {
   std::vector<TestDataStruct> test_vec;
   for (int i = 1; i <= 20; ++i) {
-    test_vec.push_back({SimpleTime::from_sec(0.1 * i), i});
+    test_vec.push_back({SimpleTime::FromSec(0.1 * i), i});
   }
   {
     const auto pair =
-        TimeStampBinarySearch(test_vec, SimpleTime::from_sec(0.25));
+        TimeStampBinarySearch(test_vec, SimpleTime::FromSec(0.25));
     BOOST_CHECK_EQUAL(pair.first, 1);
     BOOST_CHECK_EQUAL(pair.second, 2);
   }
   {
     const auto pair =
-        TimeStampBinarySearch(test_vec, SimpleTime::from_sec(0.35));
+        TimeStampBinarySearch(test_vec, SimpleTime::FromSec(0.35));
     BOOST_CHECK_EQUAL(pair.first, 2);
     BOOST_CHECK_EQUAL(pair.second, 3);
   }
   {
-    const auto pair =
-        TimeStampBinarySearch(test_vec, SimpleTime::from_sec(0.4));
+    const auto pair = TimeStampBinarySearch(test_vec, SimpleTime::FromSec(0.4));
     BOOST_CHECK_EQUAL(pair.first, 3);
     BOOST_CHECK_EQUAL(pair.second, 4);
   }
   {
-    const auto pair =
-        TimeStampBinarySearch(test_vec, SimpleTime::from_sec(0.5));
+    const auto pair = TimeStampBinarySearch(test_vec, SimpleTime::FromSec(0.5));
     BOOST_CHECK_EQUAL(pair.first, 4);
     BOOST_CHECK_EQUAL(pair.second, 5);
   }

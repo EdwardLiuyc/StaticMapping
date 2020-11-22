@@ -60,7 +60,7 @@ void MemoryManager<PointType>::Processing() {
         submap->UpdateInactiveTime(kTimeStepSec);
       }
     }
-    SimpleTime::from_sec(static_cast<double>(kTimeStepSec)).sleep();
+    SimpleTime::FromSec(static_cast<double>(kTimeStepSec)).Sleep();
   }
   PRINT_INFO("End managing memory.");
 }

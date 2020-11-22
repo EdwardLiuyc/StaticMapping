@@ -44,7 +44,7 @@ char* splited_file_name(const char* file) {
 
 std::stack<SimpleTime> debug_times;
 // @todo make it thread-safe
-void start_clock() { debug_times.push(SimpleTime::get_current_time()); }
+void start_clock() { debug_times.push(SimpleTime::GetCurrentTime()); }
 void end_clock(const char* filename, const char* func_name, const int line) {
   if (debug_times.empty()) {
     PRINT_ERROR_FMT("[ %s: %s: %d ] no clock.", splited_file_name(filename),
@@ -55,7 +55,7 @@ void end_clock(const char* filename, const char* func_name, const int line) {
   debug_times.pop();
   PRINT_COLOR_FMT(BOLD, "[ %s: %s: %d ] Cost : %lf s",
                   splited_file_name(filename), func_name, line,
-                  (SimpleTime::get_current_time() - current_time).toSec());
+                  (SimpleTime::GetCurrentTime() - current_time).ToSec());
 }
 
 // using c++ std

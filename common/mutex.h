@@ -25,8 +25,6 @@
 #include <condition_variable>
 #include <mutex>
 
-#include "common/time.h"
-
 namespace static_map {
 namespace common {
 
@@ -80,12 +78,6 @@ class CAPABILITY("mutex") Mutex {
     template <typename Predicate>
     void Await(Predicate predicate) REQUIRES(this) {
       mutex_->condition_.wait(lock_, predicate);
-    }
-
-    template <typename Predicate>
-    bool AwaitWithTimeout(Predicate predicate, common::Duration timeout)
-        REQUIRES(this) {
-      return mutex_->condition_.wait_for(lock_, timeout, predicate);
     }
 
    private:
