@@ -101,6 +101,13 @@ struct MapBuilderOptions {
     std::string export_file_path = "./";
     std::string map_package_path = "./";
     OdomCalibrationMode odom_calib_mode = kOnlineCalib;
+
+    // TODO(edward) Trajectory output to map options.
+    bool separate_output = false;
+    bool output_mrvm = true;
+    bool output_direct_combined_map = true;
+
+    int separate_step = 200;
   } whole_options;
 
   front_end::Options front_end_options;
@@ -215,6 +222,8 @@ class MapBuilder {
   void GenerateMapPackage(const std::string& filename);
   /// @brief save the map into pieces if enabled
   void SaveMapPackage();
+  /// @brief save mrvm maps & combined map
+  void SaveMaps();
 
  private:
   common::Mutex mutex_;

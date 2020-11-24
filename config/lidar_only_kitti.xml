@@ -98,7 +98,7 @@
       <submap_options 
         frame_count="2"
         enable_voxel_filter="false"
-        enable_random_sampleing="true"
+        enable_random_sampleing="false"
         enable_check="false"
         random_sampling_rate="0.5"
         enable_disk_saving="true"
