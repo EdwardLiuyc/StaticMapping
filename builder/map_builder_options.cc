@@ -116,6 +116,17 @@ MapBuilderOptions& MapBuilder::Initialise(const char* config_file_name) {
                     whole_options.map_package_path, string, string);
   GET_SINGLE_OPTION(static_map_node, "whole_options", "odom_calib_mode",
                     whole_options.odom_calib_mode, int, OdomCalibrationMode);
+
+  GET_SINGLE_OPTION(static_map_node, "whole_options", "separate_output",
+                    whole_options.separate_output, bool, bool);
+  GET_SINGLE_OPTION(static_map_node, "whole_options",
+                    "output_direct_combined_map",
+                    whole_options.output_direct_combined_map, bool, bool);
+  GET_SINGLE_OPTION(static_map_node, "whole_options", "output_mrvm",
+                    whole_options.output_mrvm, bool, bool);
+  GET_SINGLE_OPTION(static_map_node, "whole_options", "separate_step",
+                    whole_options.separate_step, int, int);
+
   std::cout << std::endl;
 
   auto& output_mrvm_settings = options_.output_mrvm_settings;

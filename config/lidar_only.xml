@@ -3,7 +3,9 @@
   <static_mapping>
     <whole_options 
       export_file_path="pcd/"
-      map_package_path="pkgs/test/" />
+      map_package_path="pkgs/test/"
+      output_mrvm="false"
+      output_direct_combined_map="true" />
     <map_package_options
       enable="false"
       border_offset="100"
@@ -88,7 +90,7 @@
       <submap_options 
         frame_count="2"
         enable_voxel_filter="false"
-        enable_random_sampleing="true"
+        enable_random_sampleing="false"
         enable_check="false"
         random_sampling_rate="0.5"
         enable_disk_saving="false"

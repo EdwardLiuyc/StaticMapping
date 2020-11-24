@@ -596,41 +596,8 @@ void MapBuilder::ConnectAllSubmap() {
   // @todo add a paramter for map filename
   GenerateMapPackage(options_.whole_options.map_package_path + "map.xml");
 
-  if (options_.map_package_options.enable) {
-    SaveMapPackage();
-  } else {
-    REGISTER_BLOCK("generating static map");
-    // output the whole map instead of seperated
-    MultiResolutionVoxelMap<PointType> map;
-    map.Initialise(options_.output_mrvm_settings);
-    // PointCloudPtr whole_map(new PointCloudType);
-    PointCloudPtr output_cloud(new PointCloudType);
-    const int submaps_size = current_trajectory_->size();
-    for (auto& submap : *current_trajectory_) {
-      std::cout << "submap index: " << submap->GetId().submap_index << " / "
-                << submaps_size - 1 << "\r" << std::flush;
-      {
-        // REGISTER_BLOCK("mrvp_insert_one_frame");
-        for (auto& frame : submap->GetFrames()) {
-          output_cloud->clear();
-          pcl::transformPointCloud(*(frame->Cloud()->GetPclCloud()),
-                                   *output_cloud, frame->GlobalPose());
-          map.InsertPointCloud(output_cloud,
-                               frame->GlobalTranslation().cast<float>());
-          // *whole_map += *output_cloud;
-        }
-      }
-      submap->ClearCloud();
-      submap->ClearCloudInFrames();
-    }
-    PRINT_INFO("creating the whole static map ...");
-    map.OutputToPointCloud(
-        options_.output_mrvm_settings.prob_threshold,
-        options_.whole_options.export_file_path + "static_map.pcd");
-    // pcl::io::savePCDFileBinaryCompressed(
-    //     options_.whole_options.export_file_path + "whole_map.pcd",
-    //     *whole_map);
-  }
+  SaveMapPackage();
+  SaveMaps();
   data_collector_->ClearAllCloud();
 }
 
@@ -827,9 +794,57 @@ void MapBuilder::GenerateMapPackage(const std::string& filename) {
 }
 
 void MapBuilder::SaveMapPackage() {
+  if (!options_.map_package_options.enable) {
+    return;
+  }
   SaveTrajectoriesAsMapPackage(trajectories_, options_.map_package_options,
                                options_.output_mrvm_settings,
                                options_.whole_options.export_file_path);
+}
+
+void MapBuilder::SaveMaps() {
+  if (!options_.whole_options.output_direct_combined_map &&
+      !options_.whole_options.output_mrvm) {
+    return;
+  }
+
+  MultiResolutionVoxelMap<PointType> map;
+  map.Initialise(options_.output_mrvm_settings);
+  PointCloudPtr whole_map(new PointCloudType);
+  PointCloudPtr output_cloud(new PointCloudType);
+  const int submaps_size = current_trajectory_->size();
+  for (auto& submap : *current_trajectory_) {
+    std::cout << "submap index: " << submap->GetId().submap_index << " / "
+              << submaps_size - 1 << "\r" << std::flush;
+    for (auto& frame : submap->GetFrames()) {
+      output_cloud->clear();
+      pcl::transformPointCloud(*(frame->Cloud()->GetPclCloud()), *output_cloud,
+                               frame->GlobalPose());
+      if (options_.whole_options.output_mrvm) {
+        // REGISTER_BLOCK("mrvp_insert_one_frame");
+        map.InsertPointCloud(output_cloud,
+                             frame->GlobalTranslation().cast<float>());
+      }
+      if (options_.whole_options.output_direct_combined_map) {
+        *whole_map += *output_cloud;
+      }
+    }
+
+    submap->ClearCloud();
+    submap->ClearCloudInFrames();
+  }
+  if (options_.whole_options.output_mrvm) {
+    PRINT_INFO("creating the static map ...");
+    map.OutputToPointCloud(
+        options_.output_mrvm_settings.prob_threshold,
+        options_.whole_options.export_file_path + "static_map.pcd");
+  }
+  if (options_.whole_options.output_direct_combined_map &&
+      !whole_map->empty()) {
+    PRINT_INFO("creating the whole map ...");
+    pcl::io::savePCDFileBinaryCompressed(
+        options_.whole_options.export_file_path + "whole_map.pcd", *whole_map);
+  }
 }
 
 }  // namespace static_map
