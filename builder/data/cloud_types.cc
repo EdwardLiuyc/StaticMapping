@@ -28,6 +28,7 @@
 #include "common/macro_defines.h"
 #include "common/math.h"
 #include "common/performance/simple_prof.h"
+#include "pcl/io/pcd_io.h"
 
 namespace static_map {
 namespace data {
@@ -208,17 +209,26 @@ InnerPointCloudData<PointT>::InnerPointCloudData(const PclCloudPtr cloud) {
 
 template <typename PointT>
 bool InnerPointCloudData<PointT>::Empty() {
+  common::ReadMutexLocker locker(mutex_);
   return pcl_cloud_ == nullptr || pcl_cloud_->points.empty();
 }
 
 template <typename PointT>
 void InnerPointCloudData<PointT>::Clear() {
+  if (!(is_cloud_in_memory_.load())) {
+    return;
+  }
+  boost::upgrade_lock<common::ReadWriteMutex> locker(mutex_);
+  common::WriteMutexLocker write_locker(locker);
   pcl_cloud_.reset(new PclCloudType);
   eigen_cloud_.reset(new EigenPointCloud);
+  is_cloud_in_memory_ = false;
 }
 
 template <typename PointT>
 void InnerPointCloudData<PointT>::TransformCloud(const Eigen::Matrix4d& T) {
+  boost::upgrade_lock<common::ReadWriteMutex> locker(mutex_);
+  common::WriteMutexLocker write_locker(locker);
   if (!Empty()) {
     typename pcl::PointCloud<PointT>::Ptr transformed_cloud(
         new typename pcl::PointCloud<PointT>);
@@ -232,20 +242,56 @@ void InnerPointCloudData<PointT>::TransformCloud(const Eigen::Matrix4d& T) {
 
 template <typename PointT>
 void InnerPointCloudData<PointT>::CalculateNormals() {
+  // Use this carefully, this function is not locked.
   CHECK(eigen_cloud_);
   eigen_cloud_->CalculateNormals();
 }
 
 template <typename PointT>
 void InnerPointCloudData<PointT>::SetPclCloud(const PclCloudPtr cloud) {
+  boost::upgrade_lock<common::ReadWriteMutex> locker(mutex_);
+  common::WriteMutexLocker write_locker(locker);
+  SetPclCloudImpl(cloud);
+}
+
+template <typename PointT>
+void InnerPointCloudData<PointT>::SetPclCloudImpl(const PclCloudPtr cloud) {
   pcl_cloud_ = cloud;
   if (!pcl_cloud_) {
+    is_cloud_in_memory_ = false;
     return;
   }
   eigen_cloud_.reset(new EigenPointCloud);
   eigen_cloud_->template FromPointCloud<PointT>(pcl_cloud_);
-
   time_ = ToLocalTime(pcl_cloud_->header.stamp);
+  is_cloud_in_memory_ = true;
+}
+
+template <typename PointT>
+bool InnerPointCloudData<PointT>::SaveToFile(const std::string& filename) {
+  common::ReadMutexLocker locker(mutex_);
+  CHECK(!filename.empty());
+  CHECK(pcl_cloud_ && !pcl_cloud_->empty());
+  filename_ = filename;
+  if (pcl::io::savePCDFileBinary(filename_, *pcl_cloud_) != 0) {
+    filename_ = "";
+    return false;
+  }
+  return true;
+}
+
+template <typename PointT>
+bool InnerPointCloudData<PointT>::CloudInMemory() {
+  boost::upgrade_lock<common::ReadWriteMutex> locker(mutex_);
+  if (!is_cloud_in_memory_.load()) {
+    common::WriteMutexLocker write_locker(locker);
+    PclCloudPtr loaded_cloud(new PclCloudType);
+    CHECK(pcl::io::loadPCDFile<PointT>(filename_, *loaded_cloud) == 0);
+    SetPclCloudImpl(loaded_cloud);
+    is_cloud_in_memory_ = true;
+    // PRINT_DEBUG("get submap data from disk.");
+  }
+  return is_cloud_in_memory_.load();
 }
 
 template <typename PointT>

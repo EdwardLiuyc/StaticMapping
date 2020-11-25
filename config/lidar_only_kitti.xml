@@ -3,7 +3,8 @@
   <static_mapping>
     <whole_options 
       export_file_path="pcd/"
-      map_package_path="pkgs/test/" />
+      map_package_path="pkgs/test/" 
+      output_mrvm="false" />
     <map_package_options
       enable="false"
       border_offset="100"
@@ -102,7 +103,7 @@
         enable_check="false"
         random_sampling_rate="0.5"
         enable_disk_saving="true"
-        disk_saving_delay="30"
+        disk_saving_delay="10"
         saving_name_prefix="s_" />
       <isam_optimizer_options 
         use_odom="false"
