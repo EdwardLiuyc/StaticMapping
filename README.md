@@ -181,6 +181,11 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - some examples for ground removal2
 - yaml configs
 - less memory usage
+- more feature as heartbeat
+- split output map
+- add odom to pose extrapolater
+- gps sfactor sampler
+- latter combime for frames (if read from file) / save raw cloud
 - another mode for the imu which provides attitude
 - do cross-check on loop detection results
 - may remove libpointmather

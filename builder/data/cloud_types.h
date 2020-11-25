@@ -23,12 +23,14 @@
 #ifndef BUILDER_DATA_CLOUD_TYPES_H_
 #define BUILDER_DATA_CLOUD_TYPES_H_
 
+#include <atomic>
 #include <cmath>
 #include <memory>
 #include <string>
 #include <vector>
 
 #include "Eigen/Eigen"
+#include "common/mutex.h"
 #include "common/simple_time.h"
 #include "glog/logging.h"
 #include "pcl/common/transforms.h"
@@ -113,7 +115,6 @@ class InnerPointCloudData {
   using PclCloudPtr = typename PclCloudType::Ptr;
   using Ptr = std::shared_ptr<InnerPointCloudData<PointT>>;
 
-  InnerPointCloudData() = default;
   explicit InnerPointCloudData(const PclCloudPtr cloud);
 
   /// @brief SetPclCloud: The function will take care of all members inside,
@@ -127,6 +128,10 @@ class InnerPointCloudData {
   void TransformCloud(const Eigen::Matrix4d &transform);
   /// @brief CalculateNormals: Calculate the normals in eigen_cloud.
   void CalculateNormals();
+  /// @brief Save to pcd file.
+  bool SaveToFile(const std::string &filename);
+  /// @brief return whether the cloud is in mem, if not, load from file.
+  bool CloudInMemory();
 
   /// Set Geters.
   PclCloudPtr GetPclCloud() const;
@@ -137,9 +142,16 @@ class InnerPointCloudData {
   float delta_time_in_cloud;
 
  private:
+  void SetPclCloudImpl(const PclCloudPtr cloud);
+
+ private:
+  common::ReadWriteMutex mutex_;
+
   PclCloudPtr pcl_cloud_;
   EigenPointCloud::Ptr eigen_cloud_;
   SimpleTime time_;
+  std::string filename_;
+  std::atomic<bool> is_cloud_in_memory_;
 
   PROHIBIT_COPY_AND_ASSIGN(InnerPointCloudData);
 };

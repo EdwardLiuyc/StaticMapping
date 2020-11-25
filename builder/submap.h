@@ -36,8 +36,6 @@
 #include "builder/submap_options.h"
 #include "common/mutex.h"
 
-#include <boost/thread/pthread/shared_mutex.hpp>
-
 namespace static_map {
 
 struct SubmapId {
@@ -57,13 +55,6 @@ class Submap : public FrameBase<PointType> {
   using PointCloudPtr = typename PointCloudType::Ptr;
   using PointCloudConstPtr = typename PointCloudType::ConstPtr;
   using InnerCloudPtr = typename data::InnerPointCloudData<PointType>::Ptr;
-
-  /// read write mutex
-  /// when there is no writing in progress, several thread can access (read) the
-  /// memory at the same time
-  using ReadWriteMutex = boost::shared_mutex;
-  using ReadMutexLocker = boost::shared_lock<ReadWriteMutex>;
-  using WriteMutexLocker = boost::upgrade_to_unique_lock<ReadWriteMutex>;
 
   explicit Submap(const SubmapOptions& options);
   ~Submap();
@@ -125,7 +116,7 @@ class Submap : public FrameBase<PointType> {
   double match_score_to_previous_submap_ = 0.;
 
  private:
-  ReadWriteMutex mutex_;
+  common::ReadWriteMutex mutex_;
   std::vector<std::shared_ptr<Frame<PointType>>> frames_;
 
   SubmapOptions options_;
@@ -133,7 +124,6 @@ class Submap : public FrameBase<PointType> {
   std::string save_filename_;
   std::string save_path_;
   std::atomic<bool> full_;
-  std::atomic<bool> is_cloud_in_memory_;
   std::atomic<bool> got_matched_transform_to_next_;
   std::atomic<int> cloud_inactive_time_;
 

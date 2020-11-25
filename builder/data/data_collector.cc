@@ -148,12 +148,10 @@ void DataCollector<PointT>::AddSensorData(const PointCloudPtr& cloud) {
     first_time_in_accmulated_cloud_ = ToLocalTime(cloud->header.stamp);
   }
 
-  auto data_before_processing = std::make_shared<InnerPointCloudData<PointT>>();
-  // data_before_processing->time = first_time_in_accmulated_cloud_;
-
   PointCloudPtr init_cloud(new PointCloudType(*accumulated_point_cloud_));
   init_cloud->header.stamp = ToPclTime(first_time_in_accmulated_cloud_);
-  data_before_processing->SetPclCloud(init_cloud);
+  auto data_before_processing =
+      std::make_shared<InnerPointCloudData<PointT>>(init_cloud);
 
   Locker locker(mutex_[kPointCloudData]);
   accumulated_cloud_count_ = 0;

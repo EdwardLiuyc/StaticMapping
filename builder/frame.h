@@ -51,7 +51,7 @@ struct FrameId {
 
   std::string DebugString() const {
     std::ostringstream out;
-    out << "frame" << trajectory_index << "_" << submap_index << "_"
+    out << "f_" << trajectory_index << "_" << submap_index << "_"
         << frame_index;
     return out.str();
   }
