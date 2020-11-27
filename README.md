@@ -68,7 +68,7 @@ docker pull registry.cn-hangzhou.aliyuncs.com/edward_slam/static_mapping:master_
 ```
 or you can build it on your own device 
 ```docker
-docker build --rm -t slam/static_mapping:latest . 
+docker build --rm -t slam/static_mapping:latest . --file Dockerfile.bionic
 ```
 
 #### For somewhere else
@@ -79,7 +79,7 @@ RUN sh -c '. /etc/lsb-release && echo "deb http://mirrors.tuna.tsinghua.edu.cn/r
 ```
 then, you can build it on your own using
 ```docker
-docker build --rm -t slam/static_mapping:latest . 
+docker build --rm -t slam/static_mapping:latest . --file Dockerfile.bionic
 ```
 
 ### Build in docker 
@@ -89,8 +89,7 @@ git clone https://github.com/EdwardLiuyc/StaticMapping.git
 cd StaticMapping
 
 ## start the docker container
-docker run -it --rm -v `pwd`:'/home/docker/src/StaticMapping' \
-  registry.cn-hangzhou.aliyuncs.com/edward_slam/static_mapping:master_bionic_latest /bin/bash
+docker run -it --rm -v /mnt:/mnt registry.cn-hangzhou.aliyuncs.com/edward_slam/static_mapping:master_bionic_latest /bin/bash
 
 ## in the container 
 mkdir -p build && cd build
