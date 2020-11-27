@@ -61,7 +61,9 @@ struct IsamOptimizerOptions {
   bool use_odom = false;
   bool use_gps = false;
   bool output_graph_pic = false;
-  int gps_skip_num = 25;
+  int gps_factor_init_num = 25;
+  int gps_factor_sample_step = 1;
+  double gps_factor_init_angle_rad = 1.6;
 };
 
 template <typename PointT>

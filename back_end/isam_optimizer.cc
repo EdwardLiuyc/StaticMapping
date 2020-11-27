@@ -38,8 +38,6 @@
 namespace static_map {
 namespace back_end {
 
-constexpr double kInitGpsOptimizeRotationThreshold = 1.6;  // rad
-
 using gtsam::between;
 using gtsam::compose;
 using gtsam::Point3;
@@ -261,9 +259,9 @@ void IsamOptimizer<PointT>::AddFrame(
 
   if (options_.use_gps && frame->HasGps()) {
     if (!calculated_first_gps_coord_) {
-      if (cached_enu_.size() < options_.gps_skip_num ||
+      if (cached_enu_.size() < options_.gps_factor_init_num ||
           AnalyseAllFramePoseForMaxRotation() <
-              kInitGpsOptimizeRotationThreshold) {
+              options_.gps_factor_init_angle_rad) {
         // cache enu data
         cached_enu_[result.current_frame_index] = frame->GetRelatedGpsInENU();
       } else {
@@ -276,8 +274,12 @@ void IsamOptimizer<PointT>::AddFrame(
         calculated_first_gps_coord_ = true;
       }
     } else {
-      add_enu_factor(result.current_frame_index, frame->GetRelatedGpsInENU());
-      IsamUpdate();
+      if (options_.gps_factor_sample_step <= 1 ||
+          frame_index % options_.gps_factor_sample_step == 0) {
+        // PRINT_INFO_FMT("Insert enu factor for submap %d", frame_index);
+        add_enu_factor(frame_index, frame->GetRelatedGpsInENU());
+        IsamUpdate();
+      }
     }
   }
 

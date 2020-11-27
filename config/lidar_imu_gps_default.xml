@@ -16,8 +16,8 @@
         0 : int
         1 : float  -->
       <filter name="Range" >
-        <param type="1" name="max_range"> 90. </param>
-        <param type="1" name="min_range"> 10. </param>
+        <param type="1" name="max_range"> 80. </param>
+        <param type="1" name="min_range"> 4.5 </param>
       </filter>
       <filter name="RandomSampler" >
         <param type="1" name="sampling_rate"> 0.45 </param>
@@ -60,7 +60,7 @@
       <!-- type just the same as front end -->
       <submap_matcher_options 
         type="6"
-        accepted_min_score="0.75">
+        accepted_min_score="0.7">
         <registrator_options type = "6">
           <param name="dist_outlier_ratio"> 0.7 </param>
           <param name="knn_normal_estimate"> 7 </param>
@@ -79,7 +79,10 @@
       <isam_optimizer_options 
         use_odom="false"
         use_gps="true" 
-        output_graph_pic="false" />
+        output_graph_pic="false"
+        gps_factor_init_num="25"
+        gps_factor_sample_step="2"
+        gps_factor_init_angle_rad="1.5" />
       <loop_detector_setting 
         use_gps="false"
         use_descriptor="true"
