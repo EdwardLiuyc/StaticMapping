@@ -50,3 +50,9 @@ RUN sudo mv /usr/include/flann/ext/lz4.h /usr/include/flann/ext/lz4.h.bak && \
   sudo mv /usr/include/flann/ext/lz4hc.h /usr/include/flann/ext/lz4.hc.bak && \
   sudo ln -s /usr/include/lz4.h /usr/include/flann/ext/lz4.h && \
   sudo ln -s /usr/include/lz4hc.h /usr/include/flann/ext/lz4hc.h
+
+COPY . $HOME/src/StaticMapping
+RUN . /opt/ros/melodic/setup.sh && \
+  cd $HOME/src/StaticMapping && \
+  mkdir build && cd build && cmake .. && make -j4
+RUN cd $HOME/src/StaticMapping && mkdir -p pcd && mkdir -p pkgs/test
