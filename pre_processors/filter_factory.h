@@ -30,6 +30,7 @@
 
 // filters
 #include "pre_processors/filter_axis_range.h"
+#include "pre_processors/filter_bounding_box.h"
 #include "pre_processors/filter_ground_removal.h"
 #include "pre_processors/filter_ground_removal2.h"
 #include "pre_processors/filter_random_sample.h"
@@ -139,6 +140,8 @@ void Factory<PointT>::RegisterSupportedFilters() {
                              std::make_shared<VoxelGrid<PointT>>());
   supported_filters_.emplace("AxisRange",
                              std::make_shared<AxisRange<PointT>>());
+  supported_filters_.emplace("BoundingBoxRemoval",
+                             std::make_shared<BoundingBoxRemoval<PointT>>());
 }
 
 }  // namespace filter

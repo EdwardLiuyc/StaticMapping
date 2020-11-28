@@ -30,22 +30,24 @@
 namespace static_map {
 namespace common {
 
-/// @class BoundingBox: axis aligned bouding box.
-class BoundingBox {
+/// @class CubeBoundingBox: axis aligned bouding box.
+/// Notice: this bounding box must be an exact cube.
+class CubeBoundingBox {
  public:
-  /// @brief BoundingBox: Init the bbox with its center and length of its edges.
-  BoundingBox(const Eigen::Vector3d& center, double length);
+  /// @brief CubeBoundingBox: Init the bbox with its center and length of its
+  /// edges.
+  CubeBoundingBox(const Eigen::Vector3d& center, double length);
 
-  /// @brief BoundingBox: Init the bbox with its left_bottom point and right_up
-  /// point.
-  BoundingBox(const Eigen::Vector3d& min, const Eigen::Vector3d& max);
+  /// @brief CubeBoundingBox: Init the bbox with its left_bottom point and
+  /// right_up point.
+  CubeBoundingBox(const Eigen::Vector3d& min, const Eigen::Vector3d& max);
 
   /// @brief GenerateSubBoxes: split the bounding box into 8 sub boxes. for
   /// detailed information of how we sort these boxes, refer to the .cc file.
-  std::vector<BoundingBox> GenerateSubBoxes() const;
+  std::vector<CubeBoundingBox> GenerateSubBoxes() const;
 
-  /// @brief GetSubBoxIndexForPoint: return the index of the sub BoundingBox for
-  /// the given point.
+  /// @brief GetSubBoxIndexForPoint: return the index of the sub CubeBoundingBox
+  /// for the given point.
   int GetSubBoxIndexForPoint(const Eigen::Vector3d& point) const;
 
   /// @brief ContainsPoint: return whether the given point is in the box.
@@ -60,6 +62,21 @@ class BoundingBox {
   Eigen::Vector3d max_;
   double size_;
   double half_size_;
+};
+
+class BoundingBox {
+ public:
+  BoundingBox();
+  /// @brief BoundingBox: Init the bbox with its left_bottom point and
+  /// right_up point.
+  BoundingBox(const Eigen::Vector3d& min, const Eigen::Vector3d& max);
+
+  /// @brief ContainsPoint: return whether the given point is in the box.
+  bool ContainsPoint(const Eigen::Vector3d& point) const;
+
+ private:
+  Eigen::Vector3d min_;
+  Eigen::Vector3d max_;
 };
 
 }  // namespace common

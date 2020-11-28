@@ -47,13 +47,13 @@ class OctreeNode {
   friend class Octree;
 
  public:
-  explicit OctreeNode(const BoundingBox& bbox);
+  explicit OctreeNode(const CubeBoundingBox& bbox);
 
   const std::vector<OctreePoint>& GetPoints() const { return points_; }
 
  private:
   int32_t depth_;
-  BoundingBox bbox_;
+  CubeBoundingBox bbox_;
   bool is_leaf_;
   std::vector<OctreePoint> points_;
   std::vector<std::shared_ptr<OctreeNode>> children_;
@@ -80,7 +80,7 @@ class Octree {
 
  private:
   std::shared_ptr<OctreeNode> BuildTree(const int32_t depth,
-                                        const BoundingBox& bbox,
+                                        const CubeBoundingBox& bbox,
                                         const std::vector<OctreePoint>& points);
 
  private:

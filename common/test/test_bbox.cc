@@ -28,15 +28,18 @@ namespace static_map {
 namespace common {
 
 BOOST_AUTO_TEST_CASE(Constructor) {
-  BOOST_CHECK_NO_THROW(BoundingBox bbox(Eigen::Vector3d(0, 0, 0), 2.));
+  BOOST_CHECK_NO_THROW(CubeBoundingBox bbox(Eigen::Vector3d(0, 0, 0), 2.));
+  BOOST_CHECK_NO_THROW(
+      CubeBoundingBox bbox(Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(2, 2, 2)));
+  // EXPECT_ANY_THROW(
+  //     CubeBoundingBox bbox(Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(2, 2,
+  //     1)));
   BOOST_CHECK_NO_THROW(
       BoundingBox bbox(Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(2, 2, 2)));
-  // EXPECT_ANY_THROW(
-  //     BoundingBox bbox(Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(2, 2, 1)));
 }
 
 BOOST_AUTO_TEST_CASE(GenerateSubBoxes) {
-  BoundingBox bbox(Eigen::Vector3d(0, 0, 0), 2.);
+  CubeBoundingBox bbox(Eigen::Vector3d(0, 0, 0), 2.);
   const auto sub_boxes = bbox.GenerateSubBoxes();
 
   BOOST_CHECK_EQUAL(8, sub_boxes.size());
@@ -51,8 +54,8 @@ BOOST_AUTO_TEST_CASE(GenerateSubBoxes) {
   BOOST_CHECK_EQUAL(Eigen::Vector3d(0.5, -0.5, -0.5), sub_boxes[7].GetCenter());
 }
 
-BOOST_AUTO_TEST_CASE(ContainsPoint) {
-  BoundingBox bbox(Eigen::Vector3d(0, 0, 0), 2.);
+BOOST_AUTO_TEST_CASE(ContainsPoint_1) {
+  CubeBoundingBox bbox(Eigen::Vector3d(0, 0, 0), 2.);
   BOOST_CHECK(bbox.ContainsPoint(Eigen::Vector3d(1, 1, 1)));
   BOOST_CHECK(bbox.ContainsPoint(Eigen::Vector3d(1, 1, 0)));
   BOOST_CHECK(bbox.ContainsPoint(Eigen::Vector3d(1, 1, -1)));
@@ -64,8 +67,20 @@ BOOST_AUTO_TEST_CASE(ContainsPoint) {
   BOOST_CHECK(!bbox.ContainsPoint(Eigen::Vector3d(0, 1.0003, 0)));
 }
 
+BOOST_AUTO_TEST_CASE(ContainsPoint_2) {
+  BoundingBox bbox(Eigen::Vector3d(0, 0, 0), Eigen::Vector3d(2, 1, 3));
+  BOOST_CHECK(bbox.ContainsPoint(Eigen::Vector3d(1, 1, 1)));
+  BOOST_CHECK(bbox.ContainsPoint(Eigen::Vector3d(1, 1, 0)));
+  BOOST_CHECK(!bbox.ContainsPoint(Eigen::Vector3d(1, 1, -1)));
+  BOOST_CHECK(!bbox.ContainsPoint(Eigen::Vector3d(-1, 1, 1)));
+  BOOST_CHECK(bbox.ContainsPoint(Eigen::Vector3d(0, 0, 0)));
+
+  BOOST_CHECK(!bbox.ContainsPoint(Eigen::Vector3d(2, 1, 3.001)));
+  BOOST_CHECK(!bbox.ContainsPoint(Eigen::Vector3d(0, 0, -0.001)));
+}
+
 BOOST_AUTO_TEST_CASE(GetSubBoxIndexForPoint_1) {
-  BoundingBox bbox(Eigen::Vector3d(0, 0, 0), 2.);
+  CubeBoundingBox bbox(Eigen::Vector3d(0, 0, 0), 2.);
   BOOST_CHECK_EQUAL(
       0, bbox.GetSubBoxIndexForPoint(Eigen::Vector3d(0.5, 0.5, 0.5)));
   BOOST_CHECK_EQUAL(
@@ -75,7 +90,7 @@ BOOST_AUTO_TEST_CASE(GetSubBoxIndexForPoint_1) {
 }
 
 BOOST_AUTO_TEST_CASE(GetSubBoxIndexForPoint_2) {
-  BoundingBox bbox(Eigen::Vector3d(-1, -1, -1), Eigen::Vector3d(1, 1, 1));
+  CubeBoundingBox bbox(Eigen::Vector3d(-1, -1, -1), Eigen::Vector3d(1, 1, 1));
   BOOST_CHECK_EQUAL(
       0, bbox.GetSubBoxIndexForPoint(Eigen::Vector3d(0.5, 0.5, 0.5)));
   BOOST_CHECK_EQUAL(0,
