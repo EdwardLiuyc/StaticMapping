@@ -179,15 +179,13 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - some examples for ground removal2
 - yaml configs
 - more feature as heartbeat
-- split output map
+- split output map (mrvm)
 - add odom to pose extrapolater
 - latter combime for frames (if read from file) / save raw cloud
 - another mode for the imu which provides attitude
-- do cross-check on loop detection results
 - may remove libpointmather
 - Qt tool for viewing pcd files
 - Qt wrapper like rviz
-- publish tf instead directly modify the submap cloud
 - Fix bug with loop-detector using gps
 - Kitti evaluation
 - seperate map_builder class into several smaller classes : map_option_loader / front_end / back_end

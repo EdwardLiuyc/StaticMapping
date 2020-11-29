@@ -204,8 +204,8 @@ void IsamOptimizer<PointT>::AddFrame(
   const auto &frames = loop_detector_->GetFrames();
   int frame_index = static_cast<int>(frames.size()) - 1;
   CHECK_EQ(frame_index, result.current_frame_index);
-  PRINT_DEBUG_FMT("optimizer inserting a new frame, match score: %lf",
-                  match_score);
+  PRINT_DEBUG_FMT("optimizer inserting frame: %d, match score: %lf",
+                  frame_index, match_score);
 
   AddVertex(result.current_frame_index, frame->GlobalPose(),
             frame->TransformFromLast(), frame_match_noise_model_);
@@ -241,9 +241,10 @@ void IsamOptimizer<PointT>::AddFrame(
 
   auto add_enu_factor = [&](const int index, const EnuPosition &enu) {
     // expression :
-    // map_origin_in_gps * map_pose * tracking_to_gps = gps pose
-    // but gps has no rotation since it only provides longtitude, latitude
-    // so we use only translation in the tracking_to_gps
+    //   map_origin_in_gps * map_pose * (tracking_to_gps + tf_error) =
+    //   gps_position.
+    // notice that gps has no rotation since it only provides longtitude,
+    // latitude so we use only translation in the tracking_to_gps
     auto map_origin_in_gps = Pose3_(GPS_COORD_KEY);
     auto tf_error = gtsam::Point3_(GPS_CALIB_KEY);
     auto pose = Pose3_(POSE_KEY(index));
@@ -315,6 +316,8 @@ void IsamOptimizer<PointT>::SolveGpsCorrdAlone() {
     initials.insert(pose_key, pose);
     graph.emplace_shared<gtsam::PriorFactor<gtsam::Pose3>>(pose_key, pose,
                                                            pose_noise);
+    // At this time, we ignore the tf error. TODO(edward), Maybe add tf error
+    // later.
     graph.addExpressionFactor(
         gps_noise_model_, gtsam::Point3(index_enu.second),
         gtsam::transform_from(gtsam::compose(Pose3_(gps_key), Pose3_(pose_key)),
@@ -334,7 +337,7 @@ void IsamOptimizer<PointT>::SolveGpsCorrdAlone() {
   initial_estimate_.insert(GPS_COORD_KEY, gps_coord_transform_);
   isam_factor_graph_->addExpressionFactor(
       NM::Diagonal::Sigmas(
-          (gtsam::Vector(6) << 1., 1., 0.2, 1., 1., 1.).finished()),
+          (gtsam::Vector(6) << 0.1, 0.1, 0.2, 1., 1., 1.).finished()),
       gps_coord_transform_, Pose3_(GPS_COORD_KEY));
 
   initial_estimate_.insert(GPS_CALIB_KEY, gtsam::Point3(0, 0, 0));

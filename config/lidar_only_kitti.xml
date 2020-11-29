@@ -4,7 +4,10 @@
     <whole_options 
       export_file_path="pcd/"
       map_package_path="pkgs/test/" 
-      output_mrvm="false" />
+      separate_output="false"
+      output_mrvm="false"
+      output_direct_combined_map="true"
+      separate_step="200" />
     <map_package_options
       enable="false"
       border_offset="100"
