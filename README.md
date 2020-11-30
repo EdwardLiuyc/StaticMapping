@@ -179,9 +179,8 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - some examples for ground removal2
 - yaml configs
 - more feature as heartbeat
-- split output map (mrvm)
 - add odom to pose extrapolater
-- latter combime for frames (if read from file) / save raw cloud
+- latter combine for frames (if read from file) / save raw cloud
 - another mode for the imu which provides attitude
 - may remove libpointmather
 - Qt tool for viewing pcd files
@@ -198,7 +197,6 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - **supporting multi-lidars**
 - perhaps need a brand-new data type for pointcloud 
 - save submap binary data into a special format file not just pointcloud into .pcd
-- save the frame clouds instead of submap clouds
 - filtering the cars directly at the input of the pointclouds
 - **add imu integrating factor in backend**
 - culling data structures like ImuMsg, NavSatMsg, etc.

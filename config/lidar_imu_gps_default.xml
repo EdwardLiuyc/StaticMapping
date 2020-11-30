@@ -80,6 +80,7 @@
         use_odom="false"
         use_gps="true" 
         output_graph_pic="false"
+        enable_extrinsic_calib="true"
         gps_factor_init_num="25"
         gps_factor_sample_step="2"
         gps_factor_init_angle_rad="1.5" />

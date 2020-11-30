@@ -82,8 +82,12 @@ IsamOptimizer<PointT>::IsamOptimizer(const IsamOptimizerOptions &options,
       (gtsam::Vector(6) << 0.1, 0.1, 0.1, 0.15, 0.15, 0.15).finished());
   loop_closure_noise_model_ = NM::Diagonal::Sigmas(
       (gtsam::Vector(6) << 0.1, 0.1, 0.1, 0.15, 0.15, 0.15).finished());
-  odom_tf_noise_model_ = NM::Diagonal::Sigmas(
-      (gtsam::Vector(6) << 0.5, 0.5, 1.5, 0.1, 0.1, 0.1).finished());
+  if (options_.enable_extrinsic_calib) {
+    odom_tf_noise_model_ = NM::Diagonal::Sigmas(
+        (gtsam::Vector(6) << 0.5, 0.5, 1.5, 0.1, 0.1, 0.1).finished());
+  } else {
+    odom_tf_noise_model_ = NM::Isotropic::Sigma(6, 1.e-6);
+  }
   odom_noise_model_ = NM::Robust::Create(
       NM::mEstimator::Huber::Create(1),
       NM::Diagonal::Sigmas(
@@ -250,12 +254,19 @@ void IsamOptimizer<PointT>::AddFrame(
     auto pose = Pose3_(POSE_KEY(index));
     const gtsam::Point3 tracking_gps_translation(
         tf_tracking_gps_.block(0, 3, 3, 1));
-    isam_factor_graph_->addExpressionFactor(
-        gps_noise_model_, gtsam::Point3(enu),
-        gtsam::transform_from(
-            gtsam::compose(map_origin_in_gps, pose),
-            gtsam::compose(gtsam::Point3_(tracking_gps_translation),
-                           tf_error)));
+    if (options_.enable_extrinsic_calib) {
+      isam_factor_graph_->addExpressionFactor(
+          gps_noise_model_, gtsam::Point3(enu),
+          gtsam::transform_from(
+              gtsam::compose(map_origin_in_gps, pose),
+              gtsam::compose(gtsam::Point3_(tracking_gps_translation),
+                             tf_error)));
+    } else {
+      isam_factor_graph_->addExpressionFactor(
+          gps_noise_model_, gtsam::Point3(enu),
+          gtsam::transform_from(gtsam::compose(map_origin_in_gps, pose),
+                                gtsam::Point3_(tracking_gps_translation)));
+    }
   };
 
   if (options_.use_gps && frame->HasGps()) {
