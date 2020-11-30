@@ -38,8 +38,6 @@
 namespace static_map {
 namespace back_end {
 
-constexpr double kInitGpsOptimizeRotationThreshold = 1.6;  // rad
-
 using gtsam::between;
 using gtsam::compose;
 using gtsam::Point3;
@@ -84,8 +82,12 @@ IsamOptimizer<PointT>::IsamOptimizer(const IsamOptimizerOptions &options,
       (gtsam::Vector(6) << 0.1, 0.1, 0.1, 0.15, 0.15, 0.15).finished());
   loop_closure_noise_model_ = NM::Diagonal::Sigmas(
       (gtsam::Vector(6) << 0.1, 0.1, 0.1, 0.15, 0.15, 0.15).finished());
-  odom_tf_noise_model_ = NM::Diagonal::Sigmas(
-      (gtsam::Vector(6) << 0.5, 0.5, 1.5, 0.1, 0.1, 0.1).finished());
+  if (options_.enable_extrinsic_calib) {
+    odom_tf_noise_model_ = NM::Diagonal::Sigmas(
+        (gtsam::Vector(6) << 0.5, 0.5, 1.5, 0.1, 0.1, 0.1).finished());
+  } else {
+    odom_tf_noise_model_ = NM::Isotropic::Sigma(6, 1.e-6);
+  }
   odom_noise_model_ = NM::Robust::Create(
       NM::mEstimator::Huber::Create(1),
       NM::Diagonal::Sigmas(
@@ -206,8 +208,8 @@ void IsamOptimizer<PointT>::AddFrame(
   const auto &frames = loop_detector_->GetFrames();
   int frame_index = static_cast<int>(frames.size()) - 1;
   CHECK_EQ(frame_index, result.current_frame_index);
-  PRINT_DEBUG_FMT("optimizer inserting a new frame, match score: %lf",
-                  match_score);
+  PRINT_DEBUG_FMT("optimizer inserting frame: %d, match score: %lf",
+                  frame_index, match_score);
 
   AddVertex(result.current_frame_index, frame->GlobalPose(),
             frame->TransformFromLast(), frame_match_noise_model_);
@@ -243,27 +245,35 @@ void IsamOptimizer<PointT>::AddFrame(
 
   auto add_enu_factor = [&](const int index, const EnuPosition &enu) {
     // expression :
-    // map_origin_in_gps * map_pose * tracking_to_gps = gps pose
-    // but gps has no rotation since it only provides longtitude, latitude
-    // so we use only translation in the tracking_to_gps
+    //   map_origin_in_gps * map_pose * (tracking_to_gps + tf_error) =
+    //   gps_position.
+    // notice that gps has no rotation since it only provides longtitude,
+    // latitude so we use only translation in the tracking_to_gps
     auto map_origin_in_gps = Pose3_(GPS_COORD_KEY);
     auto tf_error = gtsam::Point3_(GPS_CALIB_KEY);
     auto pose = Pose3_(POSE_KEY(index));
     const gtsam::Point3 tracking_gps_translation(
         tf_tracking_gps_.block(0, 3, 3, 1));
-    isam_factor_graph_->addExpressionFactor(
-        gps_noise_model_, gtsam::Point3(enu),
-        gtsam::transform_from(
-            gtsam::compose(map_origin_in_gps, pose),
-            gtsam::compose(gtsam::Point3_(tracking_gps_translation),
-                           tf_error)));
+    if (options_.enable_extrinsic_calib) {
+      isam_factor_graph_->addExpressionFactor(
+          gps_noise_model_, gtsam::Point3(enu),
+          gtsam::transform_from(
+              gtsam::compose(map_origin_in_gps, pose),
+              gtsam::compose(gtsam::Point3_(tracking_gps_translation),
+                             tf_error)));
+    } else {
+      isam_factor_graph_->addExpressionFactor(
+          gps_noise_model_, gtsam::Point3(enu),
+          gtsam::transform_from(gtsam::compose(map_origin_in_gps, pose),
+                                gtsam::Point3_(tracking_gps_translation)));
+    }
   };
 
   if (options_.use_gps && frame->HasGps()) {
     if (!calculated_first_gps_coord_) {
-      if (cached_enu_.size() < options_.gps_skip_num ||
+      if (cached_enu_.size() < options_.gps_factor_init_num ||
           AnalyseAllFramePoseForMaxRotation() <
-              kInitGpsOptimizeRotationThreshold) {
+              options_.gps_factor_init_angle_rad) {
         // cache enu data
         cached_enu_[result.current_frame_index] = frame->GetRelatedGpsInENU();
       } else {
@@ -276,8 +286,12 @@ void IsamOptimizer<PointT>::AddFrame(
         calculated_first_gps_coord_ = true;
       }
     } else {
-      add_enu_factor(result.current_frame_index, frame->GetRelatedGpsInENU());
-      IsamUpdate();
+      if (options_.gps_factor_sample_step <= 1 ||
+          frame_index % options_.gps_factor_sample_step == 0) {
+        // PRINT_INFO_FMT("Insert enu factor for submap %d", frame_index);
+        add_enu_factor(frame_index, frame->GetRelatedGpsInENU());
+        IsamUpdate();
+      }
     }
   }
 
@@ -313,6 +327,8 @@ void IsamOptimizer<PointT>::SolveGpsCorrdAlone() {
     initials.insert(pose_key, pose);
     graph.emplace_shared<gtsam::PriorFactor<gtsam::Pose3>>(pose_key, pose,
                                                            pose_noise);
+    // At this time, we ignore the tf error. TODO(edward), Maybe add tf error
+    // later.
     graph.addExpressionFactor(
         gps_noise_model_, gtsam::Point3(index_enu.second),
         gtsam::transform_from(gtsam::compose(Pose3_(gps_key), Pose3_(pose_key)),
@@ -332,7 +348,7 @@ void IsamOptimizer<PointT>::SolveGpsCorrdAlone() {
   initial_estimate_.insert(GPS_COORD_KEY, gps_coord_transform_);
   isam_factor_graph_->addExpressionFactor(
       NM::Diagonal::Sigmas(
-          (gtsam::Vector(6) << 1., 1., 0.2, 1., 1., 1.).finished()),
+          (gtsam::Vector(6) << 0.1, 0.1, 0.2, 1., 1., 1.).finished()),
       gps_coord_transform_, Pose3_(GPS_COORD_KEY));
 
   initial_estimate_.insert(GPS_CALIB_KEY, gtsam::Point3(0, 0, 0));

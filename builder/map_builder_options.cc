@@ -242,6 +242,18 @@ MapBuilderOptions& MapBuilder::Initialise(const char* config_file_name) {
     GET_SINGLE_OPTION(back_end_node, "isam_optimizer_options",
                       "output_graph_pic",
                       isam_optimizer_options.output_graph_pic, bool, bool);
+    GET_SINGLE_OPTION(
+        back_end_node, "isam_optimizer_options", "enable_extrinsic_calib",
+        isam_optimizer_options.enable_extrinsic_calib, bool, bool);
+    GET_SINGLE_OPTION(back_end_node, "isam_optimizer_options",
+                      "gps_factor_init_num",
+                      isam_optimizer_options.gps_factor_init_num, int, int);
+    GET_SINGLE_OPTION(back_end_node, "isam_optimizer_options",
+                      "gps_factor_sample_step",
+                      isam_optimizer_options.gps_factor_sample_step, int, int);
+    GET_SINGLE_OPTION(
+        back_end_node, "isam_optimizer_options", "gps_factor_init_angle_rad",
+        isam_optimizer_options.gps_factor_init_angle_rad, double, double);
 
     auto& loop_detector_setting =
         options_.back_end_options.loop_detector_setting;

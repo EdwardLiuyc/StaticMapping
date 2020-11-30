@@ -61,7 +61,10 @@ struct IsamOptimizerOptions {
   bool use_odom = false;
   bool use_gps = false;
   bool output_graph_pic = false;
-  int gps_skip_num = 25;
+  bool enable_extrinsic_calib = true;
+  int gps_factor_init_num = 25;
+  int gps_factor_sample_step = 1;
+  double gps_factor_init_angle_rad = 1.6;
 };
 
 template <typename PointT>
@@ -114,7 +117,8 @@ class IsamOptimizer {
   std::unique_ptr<gtsam::ISAM2> isam_;
   std::shared_ptr<gtsam::NonlinearFactorGraph> isam_factor_graph_;
   gtsam::Values initial_estimate_;
-  gtsam::Pose3 gps_coord_transform_;  // map origin in GPS coord
+  // map origin in GPS coord
+  gtsam::Pose3 gps_coord_transform_;
   gtsam::noiseModel::Base::shared_ptr prior_noise_model_;
   gtsam::noiseModel::Base::shared_ptr gps_noise_model_;
   gtsam::noiseModel::Base::shared_ptr frame_match_noise_model_;

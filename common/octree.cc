@@ -31,13 +31,13 @@
 namespace static_map {
 namespace common {
 
-OctreeNode::OctreeNode(const BoundingBox& bbox)
+OctreeNode::OctreeNode(const CubeBoundingBox& bbox)
     : bbox_(bbox), is_leaf_(false) {}
 
 Octree::Octree(const OctreeConfig& config) : config_(config), root_(nullptr) {}
 
 std::shared_ptr<OctreeNode> Octree::BuildTree(
-    const int32_t depth, const BoundingBox& bbox,
+    const int32_t depth, const CubeBoundingBox& bbox,
     const std::vector<OctreePoint>& points) {
   auto current_node = std::make_shared<OctreeNode>(bbox);
   current_node->depth_ = depth;
@@ -79,8 +79,8 @@ void Octree::InitWithPointCloud(const Eigen::MatrixXd& points) {
   for (int i = 0; i < size; ++i) {
     points_vec[i] = points.col(i).topRows(3);
   }
-  root_ =
-      BuildTree(0, BoundingBox(config_.center, config_.max_size), points_vec);
+  root_ = BuildTree(0, CubeBoundingBox(config_.center, config_.max_size),
+                    points_vec);
 }
 
 void Octree::RecursiveOutput() {

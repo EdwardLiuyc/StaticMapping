@@ -175,22 +175,16 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 
 # TODO
 - **Loop Close factor should be rubust**
-- **using docker to run**
 - compare IcpUsingPointMatcher & IcpFast -> what's the exact difference.
 - some examples for ground removal2
 - yaml configs
-- less memory usage
 - more feature as heartbeat
-- split output map
 - add odom to pose extrapolater
-- gps sfactor sampler
-- latter combime for frames (if read from file) / save raw cloud
+- latter combine for frames (if read from file) / save raw cloud
 - another mode for the imu which provides attitude
-- do cross-check on loop detection results
 - may remove libpointmather
 - Qt tool for viewing pcd files
 - Qt wrapper like rviz
-- publish tf instead directly modify the submap cloud
 - Fix bug with loop-detector using gps
 - Kitti evaluation
 - seperate map_builder class into several smaller classes : map_option_loader / front_end / back_end
@@ -203,7 +197,6 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - **supporting multi-lidars**
 - perhaps need a brand-new data type for pointcloud 
 - save submap binary data into a special format file not just pointcloud into .pcd
-- save the frame clouds instead of submap clouds
 - filtering the cars directly at the input of the pointclouds
 - **add imu integrating factor in backend**
 - culling data structures like ImuMsg, NavSatMsg, etc.

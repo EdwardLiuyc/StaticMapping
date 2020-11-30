@@ -27,14 +27,15 @@
 namespace static_map {
 namespace common {
 
-BoundingBox::BoundingBox(const Eigen::Vector3d& center, double size)
+CubeBoundingBox::CubeBoundingBox(const Eigen::Vector3d& center, double size)
     : center_(center),
       min_(center - Eigen::Vector3d::Constant(size * 0.5)),
       max_(center + Eigen::Vector3d::Constant(size * 0.5)),
       size_(size),
       half_size_(0.5 * size_) {}
 
-BoundingBox::BoundingBox(const Eigen::Vector3d& min, const Eigen::Vector3d& max)
+CubeBoundingBox::CubeBoundingBox(const Eigen::Vector3d& min,
+                                 const Eigen::Vector3d& max)
     : center_(0.5 * (min + max)),
       min_(min),
       max_(max),
@@ -44,7 +45,7 @@ BoundingBox::BoundingBox(const Eigen::Vector3d& min, const Eigen::Vector3d& max)
   CHECK_DOUBLE_EQ(max[2] - min[2], size_);
 }
 
-std::vector<BoundingBox> BoundingBox::GenerateSubBoxes() const {
+std::vector<CubeBoundingBox> CubeBoundingBox::GenerateSubBoxes() const {
   /// How do we separate the space(voxel):
   ///  x > 0, y > 0, z > 0: 0
   ///  x < 0, y > 0, z > 0: 1
@@ -52,25 +53,26 @@ std::vector<BoundingBox> BoundingBox::GenerateSubBoxes() const {
   ///  x > 0, y < 0, z > 0: 3
   ///  ... for z < 0 : [4, 7]
   /// "0" means the center of the voxel which we want to split into 8 parts.
-  return {
-      BoundingBox(center_, max_),
-      BoundingBox(center_ - Eigen::Vector3d(half_size_, 0, 0),
-                  max_ - Eigen::Vector3d(half_size_, 0, 0)),
-      BoundingBox(center_ - Eigen::Vector3d(half_size_, half_size_, 0),
-                  max_ - Eigen::Vector3d(half_size_, half_size_, 0)),
-      BoundingBox(center_ - Eigen::Vector3d(0, half_size_, 0),
-                  max_ - Eigen::Vector3d(0, half_size_, 0)),
-      BoundingBox(center_ - Eigen::Vector3d(0, 0, half_size_),
-                  max_ - Eigen::Vector3d(0, 0, half_size_)),
-      BoundingBox(center_ - Eigen::Vector3d(half_size_, 0, half_size_),
-                  max_ - Eigen::Vector3d(half_size_, 0, half_size_)),
-      BoundingBox(center_ - Eigen::Vector3d(half_size_, half_size_, half_size_),
-                  max_ - Eigen::Vector3d(half_size_, half_size_, half_size_)),
-      BoundingBox(center_ - Eigen::Vector3d(0, half_size_, half_size_),
-                  max_ - Eigen::Vector3d(0, half_size_, half_size_))};
+  return {CubeBoundingBox(center_, max_),
+          CubeBoundingBox(center_ - Eigen::Vector3d(half_size_, 0, 0),
+                          max_ - Eigen::Vector3d(half_size_, 0, 0)),
+          CubeBoundingBox(center_ - Eigen::Vector3d(half_size_, half_size_, 0),
+                          max_ - Eigen::Vector3d(half_size_, half_size_, 0)),
+          CubeBoundingBox(center_ - Eigen::Vector3d(0, half_size_, 0),
+                          max_ - Eigen::Vector3d(0, half_size_, 0)),
+          CubeBoundingBox(center_ - Eigen::Vector3d(0, 0, half_size_),
+                          max_ - Eigen::Vector3d(0, 0, half_size_)),
+          CubeBoundingBox(center_ - Eigen::Vector3d(half_size_, 0, half_size_),
+                          max_ - Eigen::Vector3d(half_size_, 0, half_size_)),
+          CubeBoundingBox(
+              center_ - Eigen::Vector3d(half_size_, half_size_, half_size_),
+              max_ - Eigen::Vector3d(half_size_, half_size_, half_size_)),
+          CubeBoundingBox(center_ - Eigen::Vector3d(0, half_size_, half_size_),
+                          max_ - Eigen::Vector3d(0, half_size_, half_size_))};
 }
 
-int BoundingBox::GetSubBoxIndexForPoint(const Eigen::Vector3d& point) const {
+int CubeBoundingBox::GetSubBoxIndexForPoint(
+    const Eigen::Vector3d& point) const {
   if (!ContainsPoint(point)) {
     return -1;
   }
@@ -98,10 +100,24 @@ int BoundingBox::GetSubBoxIndexForPoint(const Eigen::Vector3d& point) const {
   return index;
 }
 
-bool BoundingBox::ContainsPoint(const Eigen::Vector3d& point) const {
+bool CubeBoundingBox::ContainsPoint(const Eigen::Vector3d& point) const {
   const Eigen::Vector3d offseted_point = (point - center_).cwiseAbs();
   return offseted_point[0] <= half_size_ && offseted_point[1] <= half_size_ &&
          offseted_point[2] <= half_size_;
+}
+
+BoundingBox::BoundingBox()
+    : min_(Eigen::Vector3d::Zero()), max_(Eigen::Vector3d::Zero()) {}
+
+BoundingBox::BoundingBox(const Eigen::Vector3d& min, const Eigen::Vector3d& max)
+    : min_(min), max_(max) {
+  CHECK(min_[0] < max_[0] && min_[1] < max_[1] && min_[2] < max_[2]);
+}
+
+bool BoundingBox::ContainsPoint(const Eigen::Vector3d& point) const {
+  return ((point[0] >= min_[0] && point[0] <= max_[0]) &&
+          (point[1] >= min_[1] && point[1] <= max_[1]) &&
+          (point[2] >= min_[2] && point[2] <= max_[2]));
 }
 
 }  // namespace common
