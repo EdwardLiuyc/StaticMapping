@@ -24,6 +24,7 @@
 
 #include "builder/multi_resolution_voxel_map.h"
 #include "builder/submap.h"
+#include "common/file_utils.h"
 #include "common/performance/simple_prof.h"
 #include "common/point_utils.h"
 #include "common/simple_time.h"
@@ -171,6 +172,7 @@ void Submap<PointType>::SetId(const SubmapId& id) {
 template <typename PointType>
 void Submap<PointType>::SetSavePath(const std::string& path) {
   save_path_ = path;
+  CHECK(common::FileExist(save_path_));
 }
 
 template <typename PointType>

@@ -21,6 +21,8 @@
 // SOFTWARE.
 
 #include "builder/map_builder.h"
+
+#include "common/file_utils.h"
 #include "pugixml/pugixml.hpp"
 
 namespace static_map {
@@ -112,8 +114,12 @@ MapBuilderOptions& MapBuilder::Initialise(const char* config_file_name) {
   using std::string;
   GET_SINGLE_OPTION(static_map_node, "whole_options", "export_file_path",
                     whole_options.export_file_path, string, string);
+  CHECK(common::CreateDir(whole_options.export_file_path)) << strerror(errno);
+
   GET_SINGLE_OPTION(static_map_node, "whole_options", "map_package_path",
                     whole_options.map_package_path, string, string);
+  CHECK(common::CreateDir(whole_options.map_package_path)) << strerror(errno);
+
   GET_SINGLE_OPTION(static_map_node, "whole_options", "odom_calib_mode",
                     whole_options.odom_calib_mode, int, OdomCalibrationMode);
 

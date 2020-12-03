@@ -35,6 +35,10 @@ bool FileExist(const std::string& name);
 /// @brief Extract the folder where the file is in
 std::string FilePath(const std::string& file);
 
+/// @brief Create a new path recursively. return true if succeed of already
+/// existed.
+bool CreateDir(const std::string& path);
+
 }  // namespace common
 }  // namespace static_map
 
