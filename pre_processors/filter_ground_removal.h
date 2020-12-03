@@ -35,13 +35,10 @@ namespace static_map {
 namespace pre_processers {
 namespace filter {
 
-template <typename PointT>
-class GroundRemoval : public Interface<PointT> {
+class GroundRemoval : public Interface {
  public:
-  USE_POINTCLOUD;
-
   GroundRemoval()
-      : Interface<PointT>(),
+      : Interface(),
         min_point_num_in_voxel_(10),
         leaf_size_(0.8),
         height_threshold_(0.15) {
@@ -56,14 +53,14 @@ class GroundRemoval : public Interface<PointT> {
   GroundRemoval(const GroundRemoval&) = delete;
   GroundRemoval& operator=(const GroundRemoval&) = delete;
 
-  std::shared_ptr<Interface<PointT>> CreateNewInstance() override {
-    return std::make_shared<GroundRemoval<PointT>>();
+  std::shared_ptr<Interface> CreateNewInstance() override {
+    return std::make_shared<GroundRemoval>();
   }
 
-  void SetInputCloud(const PointCloudPtr& cloud) override {
+  void SetInputCloud(const data::InnerCloudType::Ptr& cloud) override {
     this->inliers_.clear();
     this->outliers_.clear();
-    if (cloud == nullptr || cloud->empty()) {
+    if (cloud == nullptr || cloud->points.empty()) {
       LOG(WARNING) << "cloud empty, do nothing!" << std::endl;
       this->inner_cloud_ = nullptr;
       return;
@@ -71,7 +68,7 @@ class GroundRemoval : public Interface<PointT> {
     this->inner_cloud_ = cloud;
 
     voxels_.clear();
-    for (int i = 0; i < this->inner_cloud_->size(); ++i) {
+    for (int i = 0; i < this->inner_cloud_->points.size(); ++i) {
       auto& point = this->inner_cloud_->points[i];
       Eigen::Vector3i index(static_cast<int>(point.x / leaf_size_),
                             static_cast<int>(point.y / leaf_size_),
@@ -80,8 +77,8 @@ class GroundRemoval : public Interface<PointT> {
     }
   }
 
-  void Filter(const PointCloudPtr& cloud) override {
-    if (!cloud || !Interface<PointT>::inner_cloud_) {
+  void Filter(const data::InnerCloudType::Ptr& cloud) override {
+    if (!cloud || !Interface::inner_cloud_) {
       LOG(WARNING) << "nullptr cloud, do nothing!" << std::endl;
       return;
     }
@@ -118,7 +115,7 @@ class GroundRemoval : public Interface<PointT> {
       if (!is_ground) {
         for (auto& i : vector) {
           this->inliers_.push_back(i);
-          cloud->push_back(this->inner_cloud_->points[i]);
+          cloud->points.push_back(this->inner_cloud_->points[i]);
         }
       }
     }

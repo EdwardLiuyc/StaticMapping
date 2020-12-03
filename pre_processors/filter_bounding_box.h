@@ -34,12 +34,11 @@ namespace static_map {
 namespace pre_processers {
 namespace filter {
 
-template <typename PointT>
-class BoundingBoxRemoval : public Interface<PointT> {
+class BoundingBoxRemoval : public Interface {
  public:
-  USE_POINTCLOUD;
+  // USE_POINTCLOUD;
 
-  BoundingBoxRemoval() : Interface<PointT>() {
+  BoundingBoxRemoval() : Interface() {
     INIT_FLOAT_PARAM("min_x", min_x_);
     INIT_FLOAT_PARAM("min_y", min_y_);
     INIT_FLOAT_PARAM("min_z", min_z_);
@@ -51,12 +50,12 @@ class BoundingBoxRemoval : public Interface<PointT> {
   BoundingBoxRemoval(const BoundingBoxRemoval&) = delete;
   BoundingBoxRemoval& operator=(const BoundingBoxRemoval&) = delete;
 
-  std::shared_ptr<Interface<PointT>> CreateNewInstance() override {
-    return std::make_shared<BoundingBoxRemoval<PointT>>();
+  std::shared_ptr<Interface> CreateNewInstance() override {
+    return std::make_shared<BoundingBoxRemoval>();
   }
 
-  void Filter(const PointCloudPtr& cloud) override {
-    if (!cloud || !Interface<PointT>::inner_cloud_) {
+  void Filter(const data::InnerCloudType::Ptr& cloud) override {
+    if (!cloud || !Interface::inner_cloud_) {
       LOG(WARNING) << "nullptr cloud, do nothing!" << std::endl;
       return;
     }
@@ -67,7 +66,7 @@ class BoundingBoxRemoval : public Interface<PointT> {
                             Eigen::Vector3d(max_x_, max_y_, max_z_));
 
     auto& input = this->inner_cloud_;
-    const int size = input->size();
+    const int size = input->points.size();
     this->inliers_.reserve(size);
     this->outliers_.reserve(size);
     cloud->points.reserve(size);
@@ -76,7 +75,7 @@ class BoundingBoxRemoval : public Interface<PointT> {
       const Eigen::Vector3d point_eigen(point.x, point.y, point.z);
       bool is_outlier = bbox.ContainsPoint(point_eigen);
       if (!is_outlier) {
-        cloud->push_back(input->points[i]);
+        cloud->points.push_back(input->points[i]);
         this->inliers_.push_back(i);
       } else {
         this->outliers_.push_back(i);

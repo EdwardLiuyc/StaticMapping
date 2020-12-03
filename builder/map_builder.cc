@@ -82,7 +82,7 @@ int MapBuilder::InitialiseInside() {
   data::DataCollectorOptions data_collector_options;
   data_collector_options.accumulate_cloud_num =
       options_.front_end_options.accumulate_cloud_num;
-  data_collector_ = std::make_unique<data::DataCollector<PointType>>(
+  data_collector_ = std::make_unique<data::DataCollector>(
       data_collector_options, &filter_factory_);
 
 #ifdef _USE_OPENVDB_
@@ -163,7 +163,7 @@ void MapBuilder::InsertPointcloudMsg(const PointCloudPtr& point_cloud) {
   // LOG(INFO) << point_cloud->header.stamp;
   // transform to tracking frame
   pcl::transformPointCloud(*point_cloud, *point_cloud, tracking_to_lidar_);
-  data_collector_->AddSensorData(point_cloud);
+  data_collector_->AddSensorData<PointType>(point_cloud);
 }
 
 void MapBuilder::InsertImuMsg(const data::ImuMsg::Ptr& imu_msg) {
@@ -278,7 +278,7 @@ void MapBuilder::ScanMatchProcessing() {
       continue;
     }
 
-    source_cloud = new_inner_cloud;
+    source_cloud.reset(new InnerCloud(new_inner_cloud));
     const auto source_time = source_cloud->GetTime();
     if (!got_first_point_cloud_) {
       got_first_point_cloud_ = true;
@@ -532,13 +532,19 @@ void MapBuilder::ConnectAllSubmap() {
         *local_map += *transformed_cloud;
       }
 
+      // TODO(edward) show_map_function_ use inner point type instread of pcl
+      // cloud.
+      data::InnerCloudType::Ptr inner_filtered_final_cloud(
+          new data::InnerCloudType);
       PointCloudPtr filtered_final_cloud(new PointCloudType);
-      pre_processers::filter::RandomSampler<PointType> random_sample;
-      random_sample.SetInputCloud(local_map);
+      pre_processers::filter::RandomSampler random_sample;
+      auto inner_local_map = data::ToInnerPoints(*local_map);
+      random_sample.SetInputCloud(inner_local_map);
       random_sample.SetValue("sampling_rate", 0.05);
-      random_sample.Filter(filtered_final_cloud);
+      random_sample.Filter(inner_filtered_final_cloud);
+      data::ToPclPointCloud(*inner_filtered_final_cloud,
+                            filtered_final_cloud.get());
       show_map_function_(filtered_final_cloud);
-      filtered_final_cloud.reset();
     }
 
     if (show_edge_function_) {

@@ -32,15 +32,14 @@ namespace static_map {
 namespace pre_processers {
 namespace filter {
 
-template <typename PointT>
-class AxisRange : public Interface<PointT> {
+class AxisRange : public Interface {
  private:
   enum class Axis : int32_t { kX = 0, kY = 1, kZ = 2 };
 
  public:
-  USE_POINTCLOUD;
+  // USE_POINTCLOUD;
 
-  AxisRange() : Interface<PointT>(), axis_index_(2) {
+  AxisRange() : Interface(), axis_index_(2) {
     INIT_FLOAT_PARAM("min", min_);
     INIT_FLOAT_PARAM("max", min_);
     INIT_INT32_PARAM("axis_index", axis_index_);
@@ -49,19 +48,19 @@ class AxisRange : public Interface<PointT> {
   AxisRange(const AxisRange&) = delete;
   AxisRange& operator=(const AxisRange&) = delete;
 
-  std::shared_ptr<Interface<PointT>> CreateNewInstance() override {
-    return std::make_shared<AxisRange<PointT>>();
+  std::shared_ptr<Interface> CreateNewInstance() override {
+    return std::make_shared<AxisRange>();
   }
 
-  void Filter(const PointCloudPtr& cloud) override {
-    if (!cloud || !Interface<PointT>::inner_cloud_) {
+  void Filter(const data::InnerCloudType::Ptr& cloud) override {
+    if (!cloud || !Interface::inner_cloud_) {
       LOG(WARNING) << "nullptr cloud, do nothing!" << std::endl;
       return;
     }
     if (min_ == std::numeric_limits<float>::min() &&
         max_ == std::numeric_limits<float>::max()) {
       *cloud = *this->inner_cloud_;
-      for (int i = 0; i < this->inner_cloud_->size(); ++i) {
+      for (int i = 0; i < this->inner_cloud_->points.size(); ++i) {
         this->inliers_.push_back(i);
       }
       this->outliers_.clear();
@@ -71,7 +70,7 @@ class AxisRange : public Interface<PointT> {
     this->FilterPrepare(cloud);
 
     auto& input = this->inner_cloud_;
-    const int size = input->size();
+    const int size = input->points.size();
     this->inliers_.reserve(size);
     this->outliers_.reserve(size);
     cloud->points.reserve(size);
@@ -101,7 +100,7 @@ class AxisRange : public Interface<PointT> {
       }
 
       if (!is_outlier) {
-        cloud->push_back(input->points[i]);
+        cloud->points.push_back(input->points[i]);
         this->inliers_.push_back(i);
       } else {
         this->outliers_.push_back(i);

@@ -34,28 +34,26 @@ namespace static_map {
 namespace pre_processers {
 namespace filter {
 
-template <typename PointT>
-class VoxelGrid : public Interface<PointT> {
+class VoxelGrid : public Interface {
  public:
-  USE_POINTCLOUD;
-
-  VoxelGrid() : Interface<PointT>() {}
+  VoxelGrid() : Interface() {}
   ~VoxelGrid() = default;
 
   PROHIBIT_COPY_AND_ASSIGN(VoxelGrid);
 
-  std::shared_ptr<Interface<PointT>> CreateNewInstance() override {
-    return std::make_shared<VoxelGrid<PointT>>();
+  std::shared_ptr<Interface> CreateNewInstance() override {
+    return std::make_shared<VoxelGrid>();
   }
 
-  void Filter(const PointCloudPtr& cloud) override {
-    if (!cloud || !Interface<PointT>::inner_cloud_) {
+  void Filter(const data::InnerCloudType::Ptr& cloud) override {
+    if (!cloud || !Interface::inner_cloud_) {
       LOG(WARNING) << "nullptr cloud, do nothing!" << std::endl;
       return;
     }
 
     this->FilterPrepare(cloud);
-    std::unordered_map<Eigen::Vector3i, std::vector<PointT>> voxel_grid;
+    std::unordered_map<Eigen::Vector3i, std::vector<data::InnerPointType>>
+        voxel_grid;
     for (const auto& point : this->inner_cloud_->points) {
       Eigen::Vector3i index(std::lround(point.x / voxel_size_),
                             std::lround(point.y / voxel_size_),
@@ -64,7 +62,8 @@ class VoxelGrid : public Interface<PointT> {
     }
 
     const auto get_average_point =
-        [](const std::vector<PointT>& points) -> PointT {
+        [](const std::vector<data::InnerPointType>& points)
+        -> data::InnerPointType {
       CHECK(!points.empty());
 
       double sum[4] = {0, 0, 0, 0};
@@ -76,7 +75,7 @@ class VoxelGrid : public Interface<PointT> {
       }
 
       const int size = points.size();
-      PointT result;
+      data::InnerPointType result;
       result.x = sum[0] / size;
       result.y = sum[1] / size;
       result.z = sum[2] / size;

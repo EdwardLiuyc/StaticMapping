@@ -177,6 +177,9 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - **Loop Close factor should be rubust**
 - compare IcpUsingPointMatcher & IcpFast -> what's the exact difference.
 - some examples for ground removal2
+- ground removal recovery mode
+- add factor to inner cloud (for motion compensation) and fix bug
+- isolate input pointcloud type with inner pointcloud type
 - yaml configs
 - more feature as heartbeat
 - add odom to pose extrapolater

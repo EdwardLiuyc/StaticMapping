@@ -32,30 +32,29 @@ namespace static_map {
 namespace pre_processers {
 namespace filter {
 
-template <typename PointT>
-class RandomSampler : public Interface<PointT> {
+class RandomSampler : public Interface {
  public:
-  USE_POINTCLOUD;
+  // USE_POINTCLOUD;
 
-  RandomSampler() : Interface<PointT>(), sampling_rate_(1.) {
+  RandomSampler() : Interface(), sampling_rate_(1.) {
     INIT_FLOAT_PARAM("sampling_rate", sampling_rate_);
   }
   ~RandomSampler() = default;
   RandomSampler(const RandomSampler&) = delete;
   RandomSampler& operator=(const RandomSampler&) = delete;
 
-  std::shared_ptr<Interface<PointT>> CreateNewInstance() override {
-    return std::make_shared<RandomSampler<PointT>>();
+  std::shared_ptr<Interface> CreateNewInstance() override {
+    return std::make_shared<RandomSampler>();
   }
 
-  void Filter(const PointCloudPtr& cloud) override {
-    if (!cloud || !Interface<PointT>::inner_cloud_) {
+  void Filter(const data::InnerCloudType::Ptr& cloud) override {
+    if (!cloud || !Interface::inner_cloud_) {
       LOG(WARNING) << "nullptr cloud, do nothing!" << std::endl;
       return;
     }
     if (sampling_rate_ > 0.999) {
       *cloud = *this->inner_cloud_;
-      for (int i = 0; i < this->inner_cloud_->size(); ++i) {
+      for (int i = 0; i < this->inner_cloud_->points.size(); ++i) {
         this->inliers_.push_back(i);
       }
       this->outliers_.clear();
@@ -71,7 +70,7 @@ class RandomSampler : public Interface<PointT> {
     std::uniform_int_distribution<> distr(0, 1000);  // define the range
 
     auto& input = this->inner_cloud_;
-    const int size = input->size();
+    const int size = input->points.size();
     this->inliers_.reserve(size);
     this->outliers_.reserve(size);
     cloud->points.reserve(size);
@@ -79,7 +78,7 @@ class RandomSampler : public Interface<PointT> {
     // do the rand() only 1/4 times
     for (int i = 0; i < size; ++i) {
       if (distr(eng) <= int_sample_rate) {
-        cloud->push_back(input->points[i]);
+        cloud->points.push_back(input->points[i]);
         this->inliers_.push_back(i);
       } else {
         this->outliers_.push_back(i);

@@ -141,8 +141,38 @@ void BuildNormals(EigenPointCloud* const data, const int first, const int last,
   BuildNormals(data, first + leftCount, last, std::move(rightMinValues),
                std::forward<Eigen::Vector3d>(maxValues));
 }
-
 }  // namespace
+
+template <typename PointT>
+InnerCloudType::Ptr ToInnerPoints(const pcl::PointCloud<PointT>& cloud) {
+  // Set time stamp
+  auto inner_cloud = std::make_shared<InnerCloudType>();
+  inner_cloud->stamp = ToLocalTime(cloud.header.stamp);
+  // Set points.
+  if (!cloud.empty()) {
+    inner_cloud->points.reserve(cloud.size());
+    for (const auto& point : cloud) {
+      inner_cloud->points.push_back(ToInnerPoint(point));
+    }
+  }
+  return inner_cloud;
+}
+
+template <typename PointT>
+void ToPclPointCloud(const InnerCloudType& cloud,
+                     pcl::PointCloud<PointT>* pcl_cloud) {
+  CHECK(pcl_cloud);
+  pcl_cloud->header.stamp = ToPclTime(cloud.stamp);
+
+  if (!cloud.points.empty()) {
+    pcl_cloud->points.reserve(cloud.points.size());
+    for (const auto& point : cloud.points) {
+      PointT pcl_point;
+      ToPclPoint(point, &pcl_point);
+      pcl_cloud->points.push_back(pcl_point);
+    }
+  }
+}
 
 void EigenPointCloud::ApplyTransform(const Eigen::Matrix4d& transform) {
   const int points_count = points.cols();
@@ -179,6 +209,30 @@ void EigenPointCloud::ApplyMotionCompensation(
   // TODO(edward) Maybe the normals need transform too.
 }
 
+EigenPointCloud::EigenPointCloud(
+    const std::vector<InnerPointType>& inner_points) {
+  FromPointCloud(inner_points);
+}
+
+void EigenPointCloud::FromPointCloud(
+    const std::vector<InnerPointType>& inner_points) {
+  CHECK(!inner_points.empty());
+
+  const int size = inner_points.size();
+  indices.resize(size);
+  factors.resize(size);
+  // We assume points are in 3d by default.
+  points.resize(3, size);
+  // We leave normals not inited, because we will need the normals only if we
+  // use the cloud as a target, so initialize them later.
+
+  for (int i = 0; i < size; ++i) {
+    indices[i] = i;
+    factors[i] = static_cast<double>(i) / size;
+    points.col(i) << inner_points[i].x, inner_points[i].y, inner_points[i].z;
+  }
+}
+
 void EigenPointCloud::CalculateNormals() {
   const int points_num = points.cols();
   normals.resize(kDim, points_num);
@@ -205,6 +259,12 @@ void EigenPointCloud::CalculateNormals() {
 template <typename PointT>
 InnerPointCloudData<PointT>::InnerPointCloudData(const PclCloudPtr cloud) {
   SetPclCloud(cloud);
+}
+
+template <typename PointT>
+InnerPointCloudData<PointT>::InnerPointCloudData(
+    const InnerCloudType::Ptr cloud) {
+  SetInnerCloud(cloud);
 }
 
 template <typename PointT>
@@ -255,15 +315,44 @@ void InnerPointCloudData<PointT>::SetPclCloud(const PclCloudPtr cloud) {
 }
 
 template <typename PointT>
+void InnerPointCloudData<PointT>::SetInnerCloud(
+    const InnerCloudType::Ptr cloud) {
+  boost::upgrade_lock<common::ReadWriteMutex> locker(mutex_);
+  common::WriteMutexLocker write_locker(locker);
+  SetInnerCloudImpl(cloud);
+}
+
+template <typename PointT>
 void InnerPointCloudData<PointT>::SetPclCloudImpl(const PclCloudPtr cloud) {
   pcl_cloud_ = cloud;
   if (!pcl_cloud_) {
     is_cloud_in_memory_ = false;
     return;
   }
-  eigen_cloud_.reset(new EigenPointCloud);
-  eigen_cloud_->template FromPointCloud<PointT>(pcl_cloud_);
+  // Reset inner cloud
+  inner_cloud_.reset();
+  inner_cloud_ = ToInnerPoints(*cloud);
+  // Reset eigen cloud
+  eigen_cloud_.reset(new EigenPointCloud(inner_cloud_->points));
+  // Reset time stamp
   time_ = ToLocalTime(pcl_cloud_->header.stamp);
+  is_cloud_in_memory_ = true;
+}
+
+template <typename PointT>
+void InnerPointCloudData<PointT>::SetInnerCloudImpl(
+    const InnerCloudType::Ptr cloud) {
+  inner_cloud_ = cloud;
+  if (!inner_cloud_) {
+    is_cloud_in_memory_ = false;
+    return;
+  }
+  pcl_cloud_.reset(new PclCloudType);
+  ToPclPointCloud(*inner_cloud_, pcl_cloud_.get());
+  // Reset eigen cloud
+  eigen_cloud_.reset(new EigenPointCloud(inner_cloud_->points));
+  // Reset time stamp
+  time_ = inner_cloud_->stamp;
   is_cloud_in_memory_ = true;
 }
 
@@ -313,6 +402,16 @@ SimpleTime InnerPointCloudData<PointT>::GetTime() const {
 
 template class InnerPointCloudData<pcl::PointXYZ>;
 template class InnerPointCloudData<pcl::PointXYZI>;
+
+template InnerCloudType::Ptr ToInnerPoints(
+    const pcl::PointCloud<pcl::PointXYZ>& cloud);
+template InnerCloudType::Ptr ToInnerPoints(
+    const pcl::PointCloud<pcl::PointXYZI>& cloud);
+
+template void ToPclPointCloud(const InnerCloudType& cloud,
+                              pcl::PointCloud<pcl::PointXYZ>* pcl_cloud);
+template void ToPclPointCloud(const InnerCloudType& cloud,
+                              pcl::PointCloud<pcl::PointXYZI>* pcl_cloud);
 
 }  // namespace data
 }  // namespace static_map

@@ -39,11 +39,8 @@ namespace static_map {
 namespace pre_processers {
 namespace filter {
 
-template <typename PointT>
-class GroundRemoval2 : public Interface<PointT> {
+class GroundRemoval2 : public Interface {
  public:
-  USE_POINTCLOUD;
-
   using Point = Eigen::Vector2f;  // d, z
   struct Grid {
     Point min_z_point;
@@ -91,7 +88,7 @@ class GroundRemoval2 : public Interface<PointT> {
 
  public:
   GroundRemoval2()
-      : Interface<PointT>(),
+      : Interface(),
         r_max_(100.),
         r_min_(1.),
         bin_num_(200),
@@ -129,14 +126,14 @@ class GroundRemoval2 : public Interface<PointT> {
   GroundRemoval2(const GroundRemoval2&) = delete;
   GroundRemoval2& operator=(const GroundRemoval2&) = delete;
 
-  std::shared_ptr<Interface<PointT>> CreateNewInstance() override {
-    return std::make_shared<GroundRemoval2<PointT>>();
+  std::shared_ptr<Interface> CreateNewInstance() override {
+    return std::make_shared<GroundRemoval2>();
   }
 
-  void SetInputCloud(const PointCloudPtr& cloud) override {
+  void SetInputCloud(const data::InnerCloudType::Ptr& cloud) override {
     this->inliers_.clear();
     this->outliers_.clear();
-    if (cloud == nullptr || cloud->empty()) {
+    if (cloud == nullptr || cloud->points.empty()) {
       LOG(WARNING) << "cloud empty, do nothing!" << std::endl;
       this->inner_cloud_ = nullptr;
       return;
@@ -154,7 +151,7 @@ class GroundRemoval2 : public Interface<PointT> {
     const float delta_alpha = double_pi / segment_num_;
     const float delta_bin = (r_max_ - r_min_) / bin_num_;
 
-    const int size = this->inner_cloud_->size();
+    const int size = this->inner_cloud_->points.size();
     struct InnerPoint {
       int s_index;
       int b_index;
@@ -219,8 +216,8 @@ class GroundRemoval2 : public Interface<PointT> {
     }
   }
 
-  void Filter(const PointCloudPtr& cloud) override {
-    if (!cloud || !Interface<PointT>::inner_cloud_) {
+  void Filter(const data::InnerCloudType::Ptr& cloud) override {
+    if (!cloud || !Interface::inner_cloud_) {
       LOG(WARNING) << "nullptr cloud, do nothing!" << std::endl;
       return;
     }
@@ -231,7 +228,7 @@ class GroundRemoval2 : public Interface<PointT> {
     FitSegments(&segments);
 
     // step2 cluster ( ground )
-    auto cloud_size = this->inner_cloud_->size();
+    auto cloud_size = this->inner_cloud_->points.size();
     std::vector<uint8_t> is_outlier(cloud_size, 0);
     ClusterGround(segments, &is_outlier);
 
@@ -241,7 +238,7 @@ class GroundRemoval2 : public Interface<PointT> {
         this->outliers_.push_back(i);
       } else {
         this->inliers_.push_back(i);
-        cloud->push_back(this->inner_cloud_->points[i]);
+        cloud->points.push_back(this->inner_cloud_->points[i]);
       }
     }
     // no need to sort inliers and outliers( already in-order )

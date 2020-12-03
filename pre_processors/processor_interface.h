@@ -29,28 +29,24 @@
 
 #include <vector>
 
+#include "builder/data/cloud_types.h"
 #include "pre_processors/xml_interface.h"
 
 namespace static_map {
 namespace pre_processers {
 
-template <typename PointT>
 class ProcesserInterface : public XmlInterface {
  public:
-  using PointCloudType = pcl::PointCloud<PointT>;
-  using PointCloudPtr = typename PointCloudType::Ptr;
-  using PointCloudConstPtr = typename PointCloudType::ConstPtr;
-
   ProcesserInterface() : XmlInterface(), inner_cloud_(nullptr) {}
   virtual ~ProcesserInterface() {}
 
   ProcesserInterface(const ProcesserInterface&) = delete;
   ProcesserInterface& operator=(const ProcesserInterface&) = delete;
 
-  virtual void SetInputCloud(const PointCloudPtr& cloud) {
+  virtual void SetInputCloud(const data::InnerCloudType::Ptr& cloud) {
     inliers_.clear();
     outliers_.clear();
-    if (cloud == nullptr || cloud->empty()) {
+    if (cloud == nullptr || cloud->points.empty()) {
       LOG(WARNING) << "cloud empty, do nothing!" << std::endl;
       inner_cloud_ = nullptr;
       return;
@@ -63,7 +59,7 @@ class ProcesserInterface : public XmlInterface {
 
  protected:
   /// @brief it is just a pointer, no memory allocated
-  PointCloudPtr inner_cloud_;
+  data::InnerCloudType::Ptr inner_cloud_;
   /// @brief should be sorted from small to large
   std::vector<int> inliers_;
   /// @brief should be sorted from small to large
