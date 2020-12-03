@@ -55,4 +55,3 @@ COPY . $HOME/src/StaticMapping
 RUN . /opt/ros/melodic/setup.sh && \
   cd $HOME/src/StaticMapping && \
   mkdir build && cd build && cmake .. && make -j4
-RUN cd $HOME/src/StaticMapping && mkdir -p pcd && mkdir -p pkgs/test

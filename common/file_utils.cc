@@ -23,11 +23,14 @@
 
 #include "common/file_utils.h"
 
+#include <sys/stat.h>
+#include <boost/filesystem.hpp>
+
 namespace static_map {
 namespace common {
 
 bool FileExist(const std::string& name) {
-  return (access(name.c_str(), F_OK) != -1);
+  return boost::filesystem::exists(name);
 }
 
 std::string FilePath(const std::string& file) {
@@ -38,6 +41,18 @@ std::string FilePath(const std::string& file) {
     file_path += "/";
   }
   return file_path;
+}
+
+bool CreateDir(const std::string& path) {
+  std::string path_without_slash = path;
+  while (!path_without_slash.empty() && path_without_slash.back() == '/') {
+    path_without_slash.resize(path_without_slash.size() - 1);
+  }
+  if (path_without_slash.empty() ||
+      boost::filesystem::exists(path_without_slash)) {
+    return true;
+  }
+  return boost::filesystem::create_directories(path_without_slash);
 }
 
 }  // namespace common
