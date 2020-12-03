@@ -56,7 +56,6 @@ namespace static_map {
 
 // forward declarations
 namespace data {
-template <typename PointT>
 class DataCollector;
 }
 
@@ -228,7 +227,7 @@ class MapBuilder {
  private:
   common::Mutex mutex_;
   // ********************* data & options *********************
-  std::unique_ptr<data::DataCollector<PointType>> data_collector_;
+  std::unique_ptr<data::DataCollector> data_collector_;
   MapBuilderOptions options_;
   /// @notice if you want to access some xml_node later in the process,
   /// the doc (xml tree) must be still in the memory
@@ -251,7 +250,7 @@ class MapBuilder {
   std::atomic<bool> submap_processing_done_;
 
   // ********************* pre processors *********************
-  pre_processers::filter::Factory<PointType> filter_factory_;
+  pre_processers::filter::Factory filter_factory_;
   // frond end
   std::unique_ptr<PoseExtrapolator> extrapolator_ = nullptr;
   std::shared_ptr<registrator::Interface<PointType>> scan_matcher_ = nullptr;

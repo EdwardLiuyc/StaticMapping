@@ -39,10 +39,9 @@ namespace static_map {
 namespace pre_processers {
 namespace filter {
 
-template <typename PointT>
-class RangeImage : public Interface<PointT> {
+class RangeImage : public Interface {
  public:
-  USE_POINTCLOUD;
+  // USE_POINTCLOUD;
 
   struct Pixel {
     float range = 0.;
@@ -62,7 +61,7 @@ class RangeImage : public Interface<PointT> {
   using LabeledPointCloudPtr = pcl::PointCloud<LabeledPointType>::Ptr;
 
   RangeImage()
-      : Interface<PointT>(),
+      : Interface(),
         top_angle_(30.),
         btm_angle_(-15.),
         offset_x_(0.f),
@@ -91,12 +90,12 @@ class RangeImage : public Interface<PointT> {
   RangeImage(const RangeImage &) = delete;
   RangeImage &operator=(const RangeImage &) = delete;
 
-  std::shared_ptr<Interface<PointT>> CreateNewInstance() override {
-    return std::make_shared<RangeImage<PointT>>();
+  std::shared_ptr<Interface> CreateNewInstance() override {
+    return std::make_shared<RangeImage>();
   }
 
-  void SetInputCloud(const PointCloudPtr &cloud) override {
-    if (cloud == nullptr || cloud->empty()) {
+  void SetInputCloud(const data::InnerCloudType::Ptr &cloud) override {
+    if (cloud == nullptr || cloud->points.empty()) {
       LOG(WARNING) << "cloud empty, do nothing!" << std::endl;
       this->inner_cloud_ = nullptr;
       return;
@@ -111,8 +110,8 @@ class RangeImage : public Interface<PointT> {
     matrix_image_.setZero();
   }
 
-  void Filter(const PointCloudPtr &cloud) override {
-    if (!cloud || !Interface<PointT>::inner_cloud_) {
+  void Filter(const data::InnerCloudType::Ptr &cloud) override {
+    if (!cloud || !Interface::inner_cloud_) {
       LOG(WARNING) << "nullptr cloud, do nothing!" << std::endl;
       return;
     }
@@ -130,7 +129,7 @@ class RangeImage : public Interface<PointT> {
     float horizontal_rad = 0.;
     float range = 0.;
     const auto &input_cloud = this->inner_cloud_;
-    for (int i = 0; i < input_cloud->size(); ++i) {
+    for (int i = 0; i < input_cloud->points.size(); ++i) {
       auto point = input_cloud->points[i];
       point.x += offset_x_;
       point.y += offset_y_;
@@ -169,7 +168,7 @@ class RangeImage : public Interface<PointT> {
       }
     }
     for (auto &i : this->inliers_) {
-      cloud->push_back(input_cloud->points[i]);
+      cloud->points.push_back(input_cloud->points[i]);
     }
   }
 

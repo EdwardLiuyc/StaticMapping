@@ -34,13 +34,11 @@ namespace static_map {
 namespace pre_processers {
 namespace filter {
 
-template <typename PointT>
-class Interface : public ProcesserInterface<PointT> {
+class Interface : public ProcesserInterface {
  public:
-  using PointCloudPtr = typename ProcesserInterface<PointT>::PointCloudPtr;
+  Interface() : ProcesserInterface() {}
+  virtual ~Interface() {}
 
-  Interface() : ProcesserInterface<PointT>() {}
-  ~Interface() {}
   Interface(const Interface&) = delete;
   Interface& operator=(const Interface&) = delete;
 
@@ -79,13 +77,13 @@ class Interface : public ProcesserInterface<PointT> {
     }
   }
 
-  virtual std::shared_ptr<Interface<PointT>> CreateNewInstance() = 0;
-  virtual void Filter(const PointCloudPtr& cloud) = 0;
+  virtual std::shared_ptr<Interface> CreateNewInstance() = 0;
+  virtual void Filter(const data::InnerCloudType::Ptr& cloud) = 0;
 
-  virtual void FilterPrepare(const PointCloudPtr& cloud) {
-    auto& input = Interface<PointT>::inner_cloud_;
-    cloud->clear();
-    cloud->header = input->header;
+  virtual void FilterPrepare(const data::InnerCloudType::Ptr& cloud) {
+    auto& input = this->inner_cloud_;
+    cloud->points.clear();
+    cloud->stamp = input->stamp;
     this->inliers_.clear();
     this->outliers_.clear();
   }
@@ -94,10 +92,5 @@ class Interface : public ProcesserInterface<PointT> {
 }  // namespace filter
 }  // namespace pre_processers
 }  // namespace static_map
-
-#define USE_POINTCLOUD                                             \
-  using PointCloudType = pcl::PointCloud<PointT>;                  \
-  using PointCloudPtr = typename Interface<PointT>::PointCloudPtr; \
-  using PointCloudConstPtr = typename PointCloudType::ConstPtr;
 
 #endif  // PRE_PROCESSORS_FILTER_INTERFACE_H_

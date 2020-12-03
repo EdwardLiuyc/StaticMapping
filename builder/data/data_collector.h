@@ -58,19 +58,12 @@ enum SensorDataType {
   kDataTypeCount
 };
 
-template <typename PointT>
 class DataCollector {
  public:
-  using PointCloudType = typename pcl::PointCloud<PointT>;
-  using PointCloudPtr = typename PointCloudType::Ptr;
-  using PointCloudConstPtr = typename PointCloudType::ConstPtr;
-
-  using InnerCloud = InnerPointCloudData<PointT>;
-  using InnerCloudPtr = typename InnerCloud::Ptr;
   using Locker = std::lock_guard<std::mutex>;
 
   DataCollector(const DataCollectorOptions& options,
-                pre_processers::filter::Factory<PointT>* const filter);
+                pre_processers::filter::Factory* const filter);
   ~DataCollector();
 
   DataCollector(const DataCollector&) = delete;
@@ -103,7 +96,8 @@ class DataCollector {
   /// @brief collect gps data
   void AddSensorData(const NavSatFixMsg& navsat_msg);
   /// @brief collect point cloud data
-  void AddSensorData(const PointCloudPtr& cloud);
+  template <typename PointT>
+  void AddSensorData(const typename pcl::PointCloud<PointT>::Ptr& cloud);
   /// @brief collect odom data
   void AddSensorData(const OdomMsg& odom_msg);
   /// @brief get gps(enu) at 'time' using linear interpolation
@@ -119,7 +113,7 @@ class DataCollector {
   /// it is a boost::optional object so it can be empty
   boost::optional<GeographicLib::LocalCartesian> GetGpsReference() const;
   /// @brief get
-  InnerCloudPtr GetNewCloud();
+  InnerCloudType::Ptr GetNewCloud();
   /// @brief output gps(enu) path to .pcd file for review
   void RawGpsDataToFile(const std::string& filename) const;
   /// @brief output odom path to .pcd file for review
@@ -140,11 +134,12 @@ class DataCollector {
   std::mutex mutex_[kDataTypeCount];
   const DataCollectorOptions options_;
 
-  std::deque<InnerCloudPtr> cloud_data_;
-  std::deque<InnerCloudPtr> cloud_data_before_preprocessing_;
+  std::deque<InnerCloudType::Ptr> cloud_data_;
+  std::deque<InnerCloudType::Ptr> cloud_data_before_preprocessing_;
+
   bool kill_cloud_preprocessing_thread_ = false;
   std::thread cloud_processing_thread_;
-  pre_processers::filter::Factory<PointT>* filter_factory_;
+  pre_processers::filter::Factory* filter_factory_;
   std::vector<ImuData> imu_data_;
   std::vector<GpsData> gps_data_;
   std::vector<OdometryData> odom_data_;
@@ -155,12 +150,58 @@ class DataCollector {
   pcl::PointCloud<pcl::PointXYZI> enu_path_cloud_;
   pcl::PointCloud<pcl::PointXYZI> odom_path_cloud_;
 
-  PointCloudPtr accumulated_point_cloud_ = nullptr;
+  InnerCloudType::Ptr accumulated_point_cloud_ = nullptr;
   std::atomic_uint accumulated_cloud_count_;
   uint32_t got_clouds_count_ = 0;
   SimpleTime first_time_in_accmulated_cloud_;
   SimpleTime last_whole_frame_time_;
 };
+
+template <typename PointT>
+void DataCollector::AddSensorData(
+    const typename pcl::PointCloud<PointT>::Ptr& cloud) {
+  // This should be the final use of the pcl cloud. After inserted into data
+  // collector, the whole process should be using InnerCloudType or
+  // InnerPointCloudData. Then the inner system will be isolated from the pcl
+  // point type and will not be template classes.
+
+  // accumulating clouds into one
+  if (options_.accumulate_cloud_num > 1) {
+    // "+=" will update the time stamp of accumulated_point_cloud_
+    // so, no need to manually copy the time stamp from pointcloud to
+    // accumulated_point_cloud_
+    if (accumulated_cloud_count_ == 0) {
+      accumulated_point_cloud_.reset(new InnerCloudType);
+      first_time_in_accmulated_cloud_ = ToLocalTime(cloud->header.stamp);
+    }
+    // TODO(edward) use operator+
+    for (const auto& point : cloud->points) {
+      accumulated_point_cloud_->points.push_back(data::ToInnerPoint(point));
+    }
+    accumulated_cloud_count_++;
+    if (accumulated_cloud_count_ < options_.accumulate_cloud_num) {
+      return;
+    }
+  } else {
+    accumulated_point_cloud_.reset();
+    accumulated_point_cloud_ = data::ToInnerPoints(*cloud);
+    first_time_in_accmulated_cloud_ = ToLocalTime(cloud->header.stamp);
+  }
+
+  InnerCloudType::Ptr data_before_processing(
+      new InnerCloudType(*accumulated_point_cloud_));
+  data_before_processing->stamp = first_time_in_accmulated_cloud_;
+  const int size = data_before_processing->points.size();
+  for (int i = 0; i < size; ++i) {
+    data_before_processing->points[i].factor = static_cast<double>(i) / size;
+  }
+
+  // This function should be called in one single thread, so the only memory we
+  // want to lock is cloud_data_before_preprocessing_.
+  Locker locker(mutex_[kPointCloudData]);
+  accumulated_cloud_count_ = 0;
+  cloud_data_before_preprocessing_.push_back(data_before_processing);
+}
 
 }  // namespace data
 }  // namespace static_map

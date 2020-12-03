@@ -31,12 +31,11 @@ namespace static_map {
 namespace pre_processers {
 namespace filter {
 
-template <typename PointT>
-class Range : public Interface<PointT> {
+class Range : public Interface {
  public:
-  USE_POINTCLOUD;
+  // USE_POINTCLOUD;
 
-  Range() : Interface<PointT>(), min_range_(0.), max_range_(100.) {
+  Range() : Interface(), min_range_(0.), max_range_(100.) {
     // float params
     INIT_FLOAT_PARAM("min_range", min_range_);
     INIT_FLOAT_PARAM("max_range", max_range_);
@@ -45,19 +44,19 @@ class Range : public Interface<PointT> {
   Range(const Range &) = delete;
   Range &operator=(const Range &) = delete;
 
-  std::shared_ptr<Interface<PointT>> CreateNewInstance() override {
-    return std::make_shared<Range<PointT>>();
+  std::shared_ptr<Interface> CreateNewInstance() override {
+    return std::make_shared<Range>();
   }
 
-  void Filter(const PointCloudPtr &cloud) override {
-    if (!cloud || !Interface<PointT>::inner_cloud_) {
+  void Filter(const data::InnerCloudType::Ptr &cloud) override {
+    if (!cloud || !Interface::inner_cloud_) {
       LOG(WARNING) << "nullptr cloud, do nothing!" << std::endl;
       return;
     }
 
     this->FilterPrepare(cloud);
-    const int size = this->inner_cloud_->size();
-    bool is_inlier[size];
+    const int size = this->inner_cloud_->points.size();
+    bool is_inlier[size];  // NOLINT
 #ifdef _OPENMP
 #pragma omp parallel for num_threads(LOCAL_OMP_THREADS_NUM)
 #endif
@@ -82,7 +81,7 @@ class Range : public Interface<PointT> {
     for (int i = 0; i < size; ++i) {
       if (is_inlier[i]) {
         this->inliers_.push_back(i);
-        cloud->push_back(this->inner_cloud_->points[i]);
+        cloud->points.push_back(this->inner_cloud_->points[i]);
       } else {
         this->outliers_.push_back(i);
       }

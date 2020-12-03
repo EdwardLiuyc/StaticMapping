@@ -31,12 +31,11 @@ namespace static_map {
 namespace pre_processers {
 namespace filter {
 
-template <typename PointT>
-class StatisticRemoval : public Interface<PointT> {
+class StatisticRemoval : public Interface {
  public:
-  USE_POINTCLOUD;
+  // USE_POINTCLOUD;
 
-  StatisticRemoval() : Interface<PointT>(), point_num_meank_(30), std_mul_(1.) {
+  StatisticRemoval() : Interface(), point_num_meank_(30), std_mul_(1.) {
     // float params
     INIT_FLOAT_PARAM("std_mul", std_mul_);
     // int32_t params
@@ -46,22 +45,23 @@ class StatisticRemoval : public Interface<PointT> {
   StatisticRemoval(const StatisticRemoval &) = delete;
   StatisticRemoval &operator=(const StatisticRemoval &) = delete;
 
-  std::shared_ptr<Interface<PointT>> CreateNewInstance() override {
-    return std::make_shared<StatisticRemoval<PointT>>();
+  std::shared_ptr<Interface> CreateNewInstance() override {
+    return std::make_shared<StatisticRemoval>();
   }
 
-  void Filter(const PointCloudPtr &cloud) override {
-    if (!cloud || !Interface<PointT>::inner_cloud_) {
+  void Filter(const data::InnerCloudType::Ptr &cloud) override {
+    if (!cloud || !Interface::inner_cloud_) {
       LOG(WARNING) << "nullptr cloud, do nothing!" << std::endl;
       return;
     }
 
-    this->FilterPrepare(cloud);
-    pcl::StatisticalOutlierRemoval<PointT> sor;
-    sor.setInputCloud(this->inner_cloud_);
-    sor.setMeanK(point_num_meank_);
-    sor.setStddevMulThresh(std_mul_);
-    sor.filter(*cloud);
+    // this->FilterPrepare(cloud);
+    // pcl::StatisticalOutlierRemoval sor;
+    // sor.setInputCloud(this->inner_cloud_);
+    // sor.setMeanK(point_num_meank_);
+    // sor.setStddevMulThresh(std_mul_);
+    // sor.filter(*cloud);
+    // TODO(edward) implement statistic removal upon inner cloud type
 
     // @todo inliers and outliers
   }

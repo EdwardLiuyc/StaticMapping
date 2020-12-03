@@ -40,6 +40,65 @@
 namespace static_map {
 namespace data {
 
+/// @struct InnerPointType
+/// We use this class to isolate inner class from pcl point type.
+struct InnerPointType {
+  double x = 0.;
+  double y = 0.;
+  double z = 0.;
+  double intensity = 0.;
+  double factor = 0.;
+};
+
+struct InnerCloudType {
+  SimpleTime stamp;
+  std::vector<InnerPointType> points;
+
+  using Ptr = std::shared_ptr<InnerCloudType>;
+  using UniquePtr = std::unique_ptr<InnerCloudType>;
+  using ConstPtr = std::shared_ptr<const InnerCloudType>;
+
+  // TODO(edward) add operator+
+  // TODO(edward) add append
+};
+
+static inline InnerPointType ToInnerPoint(const pcl::PointXYZ &point) {
+  return InnerPointType{
+      .x = point.x, .y = point.y, .z = point.z, .intensity = 0., .factor = 0.};
+}
+
+static inline InnerPointType ToInnerPoint(const pcl::PointXYZI &point) {
+  return InnerPointType{.x = point.x,
+                        .y = point.y,
+                        .z = point.z,
+                        .intensity = point.intensity,
+                        .factor = 0.};
+}
+
+static inline void ToPclPoint(const InnerPointType &point,
+                              pcl::PointXYZ *pcl_point) {
+  CHECK(pcl_point);
+  pcl_point->x = point.x;
+  pcl_point->y = point.y;
+  pcl_point->z = point.z;
+}
+
+static inline void ToPclPoint(const InnerPointType &point,
+                              pcl::PointXYZI *pcl_point) {
+  CHECK(pcl_point);
+  pcl_point->x = point.x;
+  pcl_point->y = point.y;
+  pcl_point->z = point.z;
+  pcl_point->intensity = point.intensity;
+}
+
+template <typename PointT>
+InnerCloudType::Ptr ToInnerPoints(const pcl::PointCloud<PointT> &cloud);
+
+template <typename PointT>
+void ToPclPointCloud(const InnerCloudType &cloud,
+                     pcl::PointCloud<PointT> *pcl_cloud);
+
 ///
 /// @class EigenPointCloud
 /// @brief Use eigen matrixes to store the points and normals. for the
@@ -48,17 +107,13 @@ namespace data {
 class EigenPointCloud {
  public:
   using Ptr = std::shared_ptr<EigenPointCloud>;
-  using ConstPtr = std::shared_ptr<EigenPointCloud const>;
+  using ConstPtr = std::shared_ptr<const EigenPointCloud>;
 
   EigenPointCloud() = default;
-
-  template <typename PointType>
-  explicit EigenPointCloud(
-      const typename pcl::PointCloud<PointType>::Ptr &cloud);
+  explicit EigenPointCloud(const std::vector<InnerPointType> &cloud);
 
   /// @brief FromPointCloud: Initialise from a pcl cloud.
-  template <typename PointType>
-  void FromPointCloud(const typename pcl::PointCloud<PointType>::Ptr &cloud);
+  void FromPointCloud(const std::vector<InnerPointType> &cloud);
   /// @brief CalculateNormals: Normal estimation.
   void CalculateNormals();
   /// @brief HasNormals: Check if normals calculated.
@@ -77,32 +132,6 @@ class EigenPointCloud {
   Eigen::MatrixXd normals;
 };
 
-template <typename PointType>
-EigenPointCloud::EigenPointCloud(
-    const typename pcl::PointCloud<PointType>::Ptr &cloud) {
-  FromPointCloud(cloud);
-}
-
-template <typename PointType>
-void EigenPointCloud::FromPointCloud(
-    const typename pcl::PointCloud<PointType>::Ptr &cloud) {
-  CHECK(cloud && !cloud->empty());
-
-  const int size = cloud->size();
-  indices.resize(size);
-  factors.resize(size);
-  // We assume points are in 3d by default.
-  points.resize(3, size);
-  // We leave normals not inited, because we will need the normals only if we
-  // use the cloud as a target, so initialize them later.
-
-  for (int i = 0; i < size; ++i) {
-    indices[i] = i;
-    factors[i] = static_cast<double>(i) / size;
-    points.col(i) << cloud->points[i].x, cloud->points[i].y, cloud->points[i].z;
-  }
-}
-
 ///
 /// @class InnerPointCloudData
 /// @brief This template class is used for all registrators. It contains pcl
@@ -116,10 +145,13 @@ class InnerPointCloudData {
   using Ptr = std::shared_ptr<InnerPointCloudData<PointT>>;
 
   explicit InnerPointCloudData(const PclCloudPtr cloud);
+  explicit InnerPointCloudData(const InnerCloudType::Ptr cloud);
 
   /// @brief SetPclCloud: The function will take care of all members inside,
   /// including time, pcl_cloud, eigen_cloud.
   void SetPclCloud(const PclCloudPtr cloud);
+
+  void SetInnerCloud(const InnerCloudType::Ptr cloud);
   /// @brief Empty: return if the inner pcl_cloud is nullptr or empty.
   bool Empty();
   /// @brief Clear: remove all data.
@@ -138,16 +170,15 @@ class InnerPointCloudData {
   EigenPointCloud::Ptr GetEigenCloud() const;
   SimpleTime GetTime() const;
 
- public:
-  float delta_time_in_cloud;
-
  private:
   void SetPclCloudImpl(const PclCloudPtr cloud);
+  void SetInnerCloudImpl(const InnerCloudType::Ptr cloud);
 
  private:
   common::ReadWriteMutex mutex_;
 
   PclCloudPtr pcl_cloud_;
+  InnerCloudType::Ptr inner_cloud_;
   EigenPointCloud::Ptr eigen_cloud_;
   SimpleTime time_;
   std::string filename_;
