@@ -270,7 +270,13 @@ InnerPointCloudData<PointT>::InnerPointCloudData(
 template <typename PointT>
 bool InnerPointCloudData<PointT>::Empty() {
   common::ReadMutexLocker locker(mutex_);
-  return pcl_cloud_ == nullptr || pcl_cloud_->points.empty();
+  return EmptyImpl();
+}
+
+template <typename PointT>
+bool InnerPointCloudData<PointT>::EmptyImpl() const {
+  return pcl_cloud_ == nullptr || pcl_cloud_->points.empty() ||
+         inner_cloud_ == nullptr || inner_cloud_->points.empty();
 }
 
 template <typename PointT>
@@ -280,8 +286,10 @@ void InnerPointCloudData<PointT>::Clear() {
   }
   boost::upgrade_lock<common::ReadWriteMutex> locker(mutex_);
   common::WriteMutexLocker write_locker(locker);
+  // TODO(edward) reset or just clear the inner points.
   pcl_cloud_.reset(new PclCloudType);
   eigen_cloud_.reset(new EigenPointCloud);
+  inner_cloud_.reset(new InnerCloudType);
   is_cloud_in_memory_ = false;
 }
 
@@ -289,11 +297,17 @@ template <typename PointT>
 void InnerPointCloudData<PointT>::TransformCloud(const Eigen::Matrix4d& T) {
   boost::upgrade_lock<common::ReadWriteMutex> locker(mutex_);
   common::WriteMutexLocker write_locker(locker);
-  if (!Empty()) {
+  if (!EmptyImpl()) {
     typename pcl::PointCloud<PointT>::Ptr transformed_cloud(
         new typename pcl::PointCloud<PointT>);
     pcl::transformPointCloud(*pcl_cloud_, *transformed_cloud, T);
     pcl_cloud_ = transformed_cloud;
+
+    // TODO(edward) Temporarily, we use update the inner cloud using transformed
+    // pcl cloud, later after remove the pcl cloud, we will direct transform the
+    // inner cloud itself.
+    inner_cloud_.reset();
+    inner_cloud_ = ToInnerPoints(*pcl_cloud_);
   }
   if (eigen_cloud_) {
     eigen_cloud_->ApplyTransform(T);
@@ -324,11 +338,8 @@ void InnerPointCloudData<PointT>::SetInnerCloud(
 
 template <typename PointT>
 void InnerPointCloudData<PointT>::SetPclCloudImpl(const PclCloudPtr cloud) {
+  CHECK(cloud);
   pcl_cloud_ = cloud;
-  if (!pcl_cloud_) {
-    is_cloud_in_memory_ = false;
-    return;
-  }
   // Reset inner cloud
   inner_cloud_.reset();
   inner_cloud_ = ToInnerPoints(*cloud);
@@ -342,11 +353,8 @@ void InnerPointCloudData<PointT>::SetPclCloudImpl(const PclCloudPtr cloud) {
 template <typename PointT>
 void InnerPointCloudData<PointT>::SetInnerCloudImpl(
     const InnerCloudType::Ptr cloud) {
+  CHECK(cloud);
   inner_cloud_ = cloud;
-  if (!inner_cloud_) {
-    is_cloud_in_memory_ = false;
-    return;
-  }
   pcl_cloud_.reset(new PclCloudType);
   ToPclPointCloud(*inner_cloud_, pcl_cloud_.get());
   // Reset eigen cloud
@@ -398,6 +406,10 @@ std::shared_ptr<EigenPointCloud> InnerPointCloudData<PointT>::GetEigenCloud()
 template <typename PointT>
 SimpleTime InnerPointCloudData<PointT>::GetTime() const {
   return time_;
+}
+template <typename PointT>
+InnerCloudType::Ptr InnerPointCloudData<PointT>::GetInnerCloud() const {
+  return inner_cloud_;
 }
 
 template class InnerPointCloudData<pcl::PointXYZ>;

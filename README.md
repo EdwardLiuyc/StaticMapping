@@ -106,11 +106,10 @@ perhaps you would meet some error like ` conflicting declaration ‘typedef stru
 
 ## step1 run the mapping process
 ```bash
-mkdir pcd
-mkdir -p pkgs/test
 ./mapping.sh
 ```
-before that, you should kown what is in the script:
+
+before that, you should know what is in the script:
 ```bash
 ## usally, you can leave this config file just like this, it will work fine
 CONFIG_PATH=./config/static_mapping_default.xml
@@ -178,6 +177,7 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - compare IcpUsingPointMatcher & IcpFast -> what's the exact difference.
 - some examples for ground removal2
 - ground removal recovery mode
+- sort out the mutex in inner cloud data types
 - add factor to inner cloud (for motion compensation) and fix bug
 - isolate input pointcloud type with inner pointcloud type
 - yaml configs
