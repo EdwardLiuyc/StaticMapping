@@ -148,9 +148,10 @@ class InnerPointCloudData {
   explicit InnerPointCloudData(const InnerCloudType::Ptr cloud);
 
   /// @brief SetPclCloud: The function will take care of all members inside,
-  /// including time, pcl_cloud, eigen_cloud.
+  /// including time, pcl_cloud, eigen_cloud, inner_cloud.
   void SetPclCloud(const PclCloudPtr cloud);
-
+  /// @brief SetInnerCloud: The function will take care of all members inside,
+  /// including time, pcl_cloud, eigen_cloud, inner_cloud.
   void SetInnerCloud(const InnerCloudType::Ptr cloud);
   /// @brief Empty: return if the inner pcl_cloud is nullptr or empty.
   bool Empty();
@@ -169,10 +170,12 @@ class InnerPointCloudData {
   PclCloudPtr GetPclCloud() const;
   EigenPointCloud::Ptr GetEigenCloud() const;
   SimpleTime GetTime() const;
+  InnerCloudType::Ptr GetInnerCloud() const;
 
  private:
   void SetPclCloudImpl(const PclCloudPtr cloud);
   void SetInnerCloudImpl(const InnerCloudType::Ptr cloud);
+  bool EmptyImpl() const;
 
  private:
   common::ReadWriteMutex mutex_;
