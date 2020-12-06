@@ -29,8 +29,7 @@
 
 namespace static_map {
 
-template <typename PointT>
-void Trajectory<PointT>::ToXmlNode(pugi::xml_node* map_node) {
+void Trajectory::ToXmlNode(pugi::xml_node* map_node) {
   pugi::xml_node t_node = map_node->append_child("Trajectory");
   t_node.append_attribute("id") = id_;
   t_node.append_attribute("enu_x") = enu_offset_x_;
@@ -58,21 +57,18 @@ void Trajectory<PointT>::ToXmlNode(pugi::xml_node* map_node) {
   }
 }
 
-template <typename PointT>
-void Trajectory<PointT>::SetEnuOffset(const double x, const double y) {
+void Trajectory::SetEnuOffset(const double x, const double y) {
   enu_offset_x_ = x;
   enu_offset_y_ = y;
 }
 
-template <typename PointT>
-void Trajectory<PointT>::SetSavePath(const std::string& path) {
+void Trajectory::SetSavePath(const std::string& path) {
   for (auto& submap : submaps_) {
     submap->SetSavePath(path);
   }
 }
 
-template <typename PointT>
-void Trajectory<PointT>::OutputPathToPointcloud(const std::string& path) {
+void Trajectory::OutputPathToPointcloud(const std::string& path) {
   if (!common::FileExist(path)) {
     LOG(WARNING) << "Path does not exist. do not output any thing.";
     return;
@@ -147,7 +143,5 @@ void Trajectory<PointT>::OutputPathToPointcloud(const std::string& path) {
     path_text_file.close();
   }
 }
-
-template class Trajectory<pcl::PointXYZI>;
 
 }  // namespace static_map

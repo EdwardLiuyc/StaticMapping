@@ -48,13 +48,9 @@ using OdomPose = Eigen::Matrix4d;
  * descriptor
  * @todo(edward) Make this class thread-safe
  */
-template <typename PointType>
 class FrameBase {
  public:
-  using PointCloudType = pcl::PointCloud<PointType>;
-  using PointCloudPtr = typename PointCloudType::Ptr;
-  using PointCloudConstPtr = typename PointCloudType::ConstPtr;
-  using InnerCloudPtr = typename data::InnerPointCloudData<PointType>::Ptr;
+  using InnerCloudPtr = data::InnerPointCloudData::Ptr;
 
   FrameBase()
       : global_pose_(Eigen::Matrix4d::Identity()),
@@ -83,8 +79,8 @@ class FrameBase {
   void ClearCloud();
 
   // descriptor (m2dp)
-  typename descriptor::M2dp<PointType>::Descriptor GetDescriptor() const;
-  void SetDescriptor(const typename descriptor::M2dp<PointType>::Descriptor& d);
+  descriptor::M2dp::Descriptor GetDescriptor() const;
+  void SetDescriptor(const descriptor::M2dp::Descriptor& d);
   void CalculateDescriptor();
 
   // transform between last&next
@@ -115,14 +111,12 @@ class FrameBase {
   Eigen::Matrix4d transform_to_next_frame_;
   InnerCloudPtr inner_cloud_;
   SimpleTime stamp_;
-  typename descriptor::M2dp<PointType>::Descriptor descriptor_;
+  descriptor::M2dp::Descriptor descriptor_;
 
   boost::optional<EnuPosition> related_enu_;
   boost::optional<OdomPose> related_odom_;
 };
 
 }  // namespace static_map
-
-#include "builder/frame_base_impl.h"
 
 #endif  // BUILDER_FRAME_BASE_H_

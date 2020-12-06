@@ -34,8 +34,7 @@ namespace registrator {
 
 struct IcpUsingPointMatcherMem;
 
-template <typename PointType>
-class IcpUsingPointMatcher : public Interface<PointType> {
+class IcpUsingPointMatcher : public Interface {
  public:
   USE_REGISTRATOR_CLOUDS;
 

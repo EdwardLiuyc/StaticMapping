@@ -71,22 +71,18 @@ PM::DataPoints InnerCloudToPmPoints(
   return std::move(d);
 }
 
-template <typename PointType>
-IcpUsingPointMatcher<PointType>::IcpUsingPointMatcher(
-    const std::string& ymal_file)
-    : Interface<PointType>(), inner_(new IcpUsingPointMatcherMem) {
-  Interface<PointType>::type_ = kIcpPM;
+IcpUsingPointMatcher::IcpUsingPointMatcher(const std::string& ymal_file)
+    : Interface(), inner_(new IcpUsingPointMatcherMem) {
+  Interface::type_ = kIcpPM;
   loadConfig(ymal_file);
 }
 
-template <typename PointType>
-IcpUsingPointMatcher<PointType>::~IcpUsingPointMatcher() {
+IcpUsingPointMatcher::~IcpUsingPointMatcher() {
   inner_->reference_cloud_.reset();
   inner_->reading_cloud_.reset();
 }
 
-template <typename PointType>
-void IcpUsingPointMatcher<PointType>::SetInputSource(InnerCloudPtr cloud) {
+void IcpUsingPointMatcher::SetInputSource(InnerCloudPtr cloud) {
   if (!cloud || cloud->Empty()) {
     PRINT_ERROR("Empty cloud.");
     return;
@@ -96,8 +92,7 @@ void IcpUsingPointMatcher<PointType>::SetInputSource(InnerCloudPtr cloud) {
   CHECK(inner_->reading_cloud_->getNbPoints() == inner_cloud->points.size());
 }
 
-template <typename PointType>
-void IcpUsingPointMatcher<PointType>::SetInputTarget(InnerCloudPtr cloud) {
+void IcpUsingPointMatcher::SetInputTarget(InnerCloudPtr cloud) {
   if (!cloud || cloud->Empty()) {
     PRINT_ERROR("Empty cloud.");
     return;
@@ -107,10 +102,8 @@ void IcpUsingPointMatcher<PointType>::SetInputTarget(InnerCloudPtr cloud) {
   CHECK(inner_->reference_cloud_->getNbPoints() == inner_cloud->points.size());
 }
 
-template <typename PointType>
-bool IcpUsingPointMatcher<PointType>::Align(
-    const Eigen::Matrix4d& guess,
-    Eigen::Matrix4d& result) {  // NOLINT
+bool IcpUsingPointMatcher::Align(const Eigen::Matrix4d& guess,
+                                 Eigen::Matrix4d& result) {  // NOLINT
   // **** compute the transform ****
   result = inner_->pm_icp_
                .compute(*(inner_->reading_cloud_), *(inner_->reference_cloud_),
@@ -148,17 +141,15 @@ bool IcpUsingPointMatcher<PointType>::Align(
   // replace that by squaredNorm() to save computation time
   const float mean_dist = dist.sum() / static_cast<float>(matcher_points_num);
   // cout << "Robust mean distance: " << mean_dist << " m" << endl;
-  Interface<PointType>::final_score_ = std::exp(-mean_dist);
+  Interface::final_score_ = std::exp(-mean_dist);
 
-  if (Interface<PointType>::final_score_ < 0.6) {
+  if (Interface::final_score_ < 0.6) {
     return false;
   }
   return true;
 }
 
-template <typename PointType>
-void IcpUsingPointMatcher<PointType>::loadConfig(
-    const std::string& yaml_filename) {
+void IcpUsingPointMatcher::loadConfig(const std::string& yaml_filename) {
   if (yaml_filename.empty()) {
     loadDefaultConfig();
     return;
@@ -173,8 +164,7 @@ void IcpUsingPointMatcher<PointType>::loadConfig(
   inner_->pm_icp_.loadFromYaml(ifs);
 }
 
-template <typename PointType>
-void IcpUsingPointMatcher<PointType>::loadDefaultConfig() {
+void IcpUsingPointMatcher::loadDefaultConfig() {
   // config
   PointMatcherSupport::Parametrizable::Parameters params;
   std::string name;
@@ -256,9 +246,6 @@ void IcpUsingPointMatcher<PointType>::loadDefaultConfig() {
   // result transform
   inner_->pm_icp_.transformations.push_back(rigidTrans);
 }
-
-template class IcpUsingPointMatcher<pcl::PointXYZI>;
-template class IcpUsingPointMatcher<pcl::PointXYZ>;
 
 }  // namespace registrator
 }  // namespace static_map

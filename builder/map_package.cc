@@ -42,19 +42,19 @@ struct SeperatedPart {
   Eigen::Vector2d center;
   Eigen::Vector2d bb_min;
   Eigen::Vector2d bb_max;
-  std::vector<std::shared_ptr<Submap<PointT>>> inside_submaps;
+  std::vector<std::shared_ptr<Submap>> inside_submaps;
   typename pcl::PointCloud<PointT>::Ptr cloud;
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-template <typename PointT>
 bool SaveTrajectoriesAsMapPackage(
-    const std::vector<std::shared_ptr<Trajectory<PointT>>> trajectores,
+    const std::vector<std::shared_ptr<Trajectory>> trajectores,
     const MapPackageOptions& map_package_options,
     const MrvmSettings& mrvm_options, const std::string& export_path) {
+  using PointT = pcl::PointXYZI;
   using PointCloudType = pcl::PointCloud<PointT>;
-  using PointCloudPtr = typename pcl::PointCloud<PointT>::Ptr;
+  using PointCloudPtr = pcl::PointCloud<PointT>::Ptr;
 
   // step1. calculate the bbox
   double min_x = 1.e50;
@@ -146,14 +146,17 @@ bool SaveTrajectoriesAsMapPackage(
       auto& part = parts[x][y];
       const int submaps_size = part.inside_submaps.size();
       int i = 0;
-      MultiResolutionVoxelMap<PointT> voxel_map;
+      MultiResolutionVoxelMap voxel_map;
       voxel_map.Initialise(mrvm_options);
       for (auto& submap : part.inside_submaps) {
-        PointCloudPtr transformed_cloud(new PointCloudType);
+        // PointCloudPtr transformed_cloud(new PointCloudType);
         const Eigen::Matrix4d pose = submap->GlobalPose();
         const Eigen::Vector3d translation = submap->GlobalTranslation();
-        pcl::transformPointCloud(*(submap->Cloud()->GetPclCloud()),
-                                 *transformed_cloud, pose);
+
+        data::InnerCloudType::Ptr transformed_cloud(new data::InnerCloudType);
+        submap->Cloud()->GetInnerCloud()->ApplyTransformToOutput(
+            pose, transformed_cloud.get());
+
         PRINT_DEBUG_FMT("submap in piece[%d][%d] : %d / %d", x, y, i,
                         submaps_size - 1);
         if (inside_bbox(translation, part.bb_min, part.bb_max)) {
@@ -163,14 +166,15 @@ bool SaveTrajectoriesAsMapPackage(
           end_clock(__FILE__, __FUNCTION__, __LINE__);
         } else {
           start_clock();
-          PointCloudPtr transformed_cloud_in_bbox(new PointCloudType);
+          data::InnerCloudType::Ptr transformed_cloud_in_bbox(
+              new data::InnerCloudType);
           for (auto& point : transformed_cloud->points) {
             if (inside_bbox(Eigen::Vector3d(point.x, point.y, point.z),
                             part.bb_min, part.bb_max)) {
               transformed_cloud_in_bbox->points.push_back(point);
             }
           }
-          if (!transformed_cloud_in_bbox->empty()) {
+          if (!transformed_cloud_in_bbox->points.empty()) {
             voxel_map.InsertPointCloud(transformed_cloud_in_bbox,
                                        translation.cast<float>());
           }
@@ -225,8 +229,8 @@ bool SaveTrajectoriesAsMapPackage(
   return true;
 }
 
-template bool SaveTrajectoriesAsMapPackage(
-    const std::vector<std::shared_ptr<Trajectory<pcl::PointXYZI>>> trajectores,
+bool SaveTrajectoriesAsMapPackage(
+    const std::vector<std::shared_ptr<Trajectory>> trajectores,
     const MapPackageOptions& map_package_options,
     const MrvmSettings& mrvm_options, const std::string& export_path);
 

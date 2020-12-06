@@ -43,13 +43,9 @@ struct FrameId {
   std::string DebugString() const;
 };
 
-template <typename PointType>
-class Frame : public FrameBase<PointType> {
+class Frame : public FrameBase {
  public:
-  using PointCloudType = pcl::PointCloud<PointType>;
-  using PointCloudPtr = typename PointCloudType::Ptr;
-  using PointCloudConstPtr = typename PointCloudType::ConstPtr;
-  using InnerCloudPtr = typename data::InnerPointCloudData<PointType>::Ptr;
+  using InnerCloudPtr = typename data::InnerPointCloudData::Ptr;
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 

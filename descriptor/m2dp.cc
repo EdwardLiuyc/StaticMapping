@@ -34,28 +34,31 @@ double getLength(const PointType& a) {
   return std::sqrt(a.x * a.x + a.y * a.y + a.z * a.z);
 }
 
-template <typename PointType>
-M2dp<PointType>::M2dp(double r, double max_distance, int32_t t, int32_t p,
-                      int32_t q)
-    : inner_cloud_(new M2dp<PointType>::PointCloudSource),
+M2dp::M2dp(double r, double max_distance, int32_t t, int32_t p, int32_t q)
+    : inner_cloud_(new data::InnerCloudType),
       t_(t),
       p_(p),
       q_(q),
       r_(r),
       max_distance_(max_distance) {}
 
-template <typename PointType>
-void M2dp<PointType>::preProcess(
-    const M2dp<PointType>::PointCloudSourcePtr& source) {
+void M2dp::preProcess(const data::InnerCloudType::Ptr& source) {
+  pcl::PointCloud<pcl::PointXYZ>::Ptr pcl_cloud(
+      new pcl::PointCloud<pcl::PointXYZ>);
+  data::ToPclPointCloud(*source, pcl_cloud.get());
+
   // remove the shift and rotation
-  pcl::PCA<PointType> pca;
-  pca.setInputCloud(source);
-  PointCloudSourcePtr tmp_inner_cloud(new PointCloudSource);
-  pca.project(*source, *tmp_inner_cloud);
+  pcl::PCA<pcl::PointXYZ> pca;
+  pca.setInputCloud(pcl_cloud);
+  pcl::PointCloud<pcl::PointXYZ>::Ptr tmp_inner_cloud(
+      new pcl::PointCloud<pcl::PointXYZ>);
+  pca.project(*pcl_cloud, *tmp_inner_cloud);
 
   for (auto& point : tmp_inner_cloud->points) {
-    double d = getLength<PointType>(point);
-    if (d <= max_distance_) inner_cloud_->push_back(point);
+    double d = getLength<pcl::PointXYZ>(point);
+    if (d <= max_distance_) {
+      inner_cloud_->points.push_back(data::ToInnerPoint(point));
+    }
   }
 
   if (r_ < 1.e-6) {
@@ -66,8 +69,7 @@ void M2dp<PointType>::preProcess(
   A_.resize(p_ * q_, l_ * t_);
 }
 
-template <typename PointType>
-Eigen::VectorXi M2dp<PointType>::singleViewProcess(double theta, double phi) {
+Eigen::VectorXi M2dp::singleViewProcess(double theta, double phi) {
   // normal
   Eigen::Vector3f m;
   m << std::cos(theta) * std::cos(phi), std::cos(theta) * std::sin(phi),
@@ -117,9 +119,8 @@ Eigen::VectorXi M2dp<PointType>::singleViewProcess(double theta, double phi) {
   return row;
 }
 
-template <typename PointType>
-bool M2dp<PointType>::setInputCloud(const PointCloudSourcePtr& source) {
-  if (source->empty()) {
+bool M2dp::setInputCloud(const data::InnerCloudType::Ptr& source) {
+  if (source->points.empty()) {
     PCL_ERROR("source is empty.\n");
     return false;
   }
@@ -147,9 +148,8 @@ bool M2dp<PointType>::setInputCloud(const PointCloudSourcePtr& source) {
   return true;
 }
 
-template <typename PointType>
-double matchTwoM2dpDescriptors(const typename M2dp<PointType>::Descriptor& P,
-                               const typename M2dp<PointType>::Descriptor& Q) {
+double matchTwoM2dpDescriptors(const M2dp::Descriptor& P,
+                               const M2dp::Descriptor& Q) {
   if (P.rows() != Q.rows() || P.rows() < 10) {
     PCL_ERROR("The Descriptors do not match.\n");
     return -1.;
@@ -167,12 +167,6 @@ double matchTwoM2dpDescriptors(const typename M2dp<PointType>::Descriptor& P,
   //   score = std::pow( std::atanh(score), 2 ) - lamda / ( N - 3 );
   return std::fabs(score);
 }
-
-template class M2dp<pcl::PointXYZI>;
-
-template double matchTwoM2dpDescriptors<pcl::PointXYZI>(
-    const typename M2dp<pcl::PointXYZI>::Descriptor& P,
-    const typename M2dp<pcl::PointXYZI>::Descriptor& Q);
 
 }  // namespace descriptor
 }  // namespace static_map

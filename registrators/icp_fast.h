@@ -35,8 +35,7 @@ namespace registrator {
 
 using NNS = Nabo::NearestNeighbourSearch<double>;
 
-template <typename PointType>
-class IcpFast : public Interface<PointType> {
+class IcpFast : public Interface {
  public:
   USE_REGISTRATOR_CLOUDS;
 

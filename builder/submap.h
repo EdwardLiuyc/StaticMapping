@@ -48,16 +48,12 @@ struct SubmapId {
   std::string DebugString() const;
 };
 
-template <typename PointType>
-class Submap : public FrameBase<PointType> {
+class Submap : public FrameBase {
  public:
-  using PointCloudType = pcl::PointCloud<PointType>;
-  using PointCloudPtr = typename PointCloudType::Ptr;
-  using PointCloudConstPtr = typename PointCloudType::ConstPtr;
-  using InnerCloudPtr = typename data::InnerPointCloudData<PointType>::Ptr;
+  using InnerCloudPtr = typename data::InnerPointCloudData::Ptr;
 
   explicit Submap(const SubmapOptions& options);
-  ~Submap();
+  ~Submap() = default;
 
   PROHIBIT_COPY_AND_ASSIGN(Submap);
 
@@ -67,12 +63,10 @@ class Submap : public FrameBase<PointType> {
   SubmapId GetId() { return id_; }
   /// @brief save the inner cloud into a pcd file
   void ToPcdFile(const std::string& filename) override;
-  /// @brief save the inner cloud into a vtk file
-  void ToVtkFile(const std::string& filename);
   /// @brief save all information including cloud data into a give file
   void ToInfoFile(const std::string& filename);
   /// @brief insert single cloud frame into the submap
-  void InsertFrame(const std::shared_ptr<Frame<PointType>>& frame);
+  void InsertFrame(const std::shared_ptr<Frame>& frame);
   /// @brief clean the cloud data in frames (for saving RAM) only if the
   /// submap cloud data is stable
   void ClearCloudInFrames();
@@ -88,9 +82,9 @@ class Submap : public FrameBase<PointType> {
     return got_matched_transform_to_next_.load();
   }
   /// @brief get all frames inserted into the submap
-  std::vector<std::shared_ptr<Frame<PointType>>>& GetFrames();
+  std::vector<std::shared_ptr<Frame>>& GetFrames();
   /// @brief get single frame in submap according to its id
-  std::shared_ptr<Frame<PointType>> GetFrame(const FrameId& frame_id);
+  std::shared_ptr<Frame> GetFrame(const FrameId& frame_id);
   /// @brief we do not just return the cloud
   /// @notice we update the active status and inactive time in this function
   InnerCloudPtr Cloud() override;
@@ -117,7 +111,7 @@ class Submap : public FrameBase<PointType> {
 
  private:
   common::ReadWriteMutex mutex_;
-  std::vector<std::shared_ptr<Frame<PointType>>> frames_;
+  std::vector<std::shared_ptr<Frame>> frames_;
 
   SubmapOptions options_;
   SubmapId id_;

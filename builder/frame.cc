@@ -46,23 +46,18 @@ std::string FrameId::DebugString() const {
   return out.str();
 }
 
-template <typename PointType>
-Frame<PointType>::Frame() : FrameBase<PointType>() {}
+Frame::Frame() : FrameBase() {}
 
-template <typename PointType>
-void Frame<PointType>::ToPcdFile(const std::string& filename) {
+void Frame::ToPcdFile(const std::string& filename) {
   CHECK(this->inner_cloud_ && !this->inner_cloud_->Empty());
   const std::string actual_filename =
       filename.empty() ? id_.DebugString() + ".bin" : filename;
   this->inner_cloud_->SaveToFile(actual_filename);
 }
 
-template <typename PointType>
-typename Frame<PointType>::InnerCloudPtr Frame<PointType>::Cloud() {
+typename Frame::InnerCloudPtr Frame::Cloud() {
   CHECK(this->inner_cloud_ && this->inner_cloud_->CloudInMemory());
   return this->inner_cloud_;
 }
-
-template class Frame<pcl::PointXYZI>;
 
 }  // namespace static_map

@@ -54,6 +54,9 @@ struct InnerPointType {
   int Serialize(std::fstream *stream) const;
   int Deserialize(std::fstream *stream);
 };
+
+InnerPointType TransformPoint(const Eigen::Matrix4d &transform,
+                              const InnerPointType &point);
 struct InnerCloudType {
   SimpleTime stamp;
   std::vector<InnerPointType> points;
@@ -67,6 +70,12 @@ struct InnerCloudType {
 
   int Serialize(std::fstream *stream) const;
   int Deserialize(std::fstream *stream);
+
+  void ApplyTransformInplace(const Eigen::Matrix4d &transform);
+  void ApplyTransformToOutput(const Eigen::Matrix4d &transform,
+                              InnerCloudType *const output);
+
+  InnerCloudType &operator+=(const InnerCloudType &b);
 };
 
 static inline InnerPointType ToInnerPoint(const pcl::PointXYZ &point) {
@@ -144,19 +153,12 @@ class EigenPointCloud {
 /// @brief This template class is used for all registrators. It contains pcl
 /// cloud and eigen cloud.
 ///
-template <typename PointT>
 class InnerPointCloudData {
  public:
-  using PclCloudType = pcl::PointCloud<PointT>;
-  using PclCloudPtr = typename PclCloudType::Ptr;
-  using Ptr = std::shared_ptr<InnerPointCloudData<PointT>>;
+  using Ptr = std::shared_ptr<InnerPointCloudData>;
 
-  explicit InnerPointCloudData(const PclCloudPtr cloud);
   explicit InnerPointCloudData(const InnerCloudType::Ptr cloud);
 
-  /// @brief SetPclCloud: The function will take care of all members inside,
-  /// including time, pcl_cloud, eigen_cloud, inner_cloud.
-  void SetPclCloud(const PclCloudPtr cloud);
   /// @brief SetInnerCloud: The function will take care of all members inside,
   /// including time, pcl_cloud, eigen_cloud, inner_cloud.
   void SetInnerCloud(const InnerCloudType::Ptr cloud);
@@ -174,20 +176,17 @@ class InnerPointCloudData {
   bool CloudInMemory();
 
   /// Set Geters.
-  PclCloudPtr GetPclCloud() const;
   EigenPointCloud::Ptr GetEigenCloud() const;
   SimpleTime GetTime() const;
   InnerCloudType::Ptr GetInnerCloud() const;
 
  private:
-  void SetPclCloudImpl(const PclCloudPtr cloud);
   void SetInnerCloudImpl(const InnerCloudType::Ptr cloud);
   bool EmptyImpl() const;
 
  private:
   common::ReadWriteMutex mutex_;
 
-  PclCloudPtr pcl_cloud_;
   InnerCloudType::Ptr inner_cloud_;
   EigenPointCloud::Ptr eigen_cloud_;
   SimpleTime time_;

@@ -31,22 +31,126 @@
 namespace static_map {
 namespace registrator {
 
-template <typename PointType>
-std::shared_ptr<Interface<PointType>> CreateMatcher(
-    const MatcherOptions& options, bool verbose) {
-  std::shared_ptr<Interface<PointType>> matcher;
+void Interface::EnableInnerCompensation() { inner_compensation_ = true; }
+
+void Interface::DisableInnerCompensation() { inner_compensation_ = false; }
+
+void Interface::SetInputSource(Interface::InnerCloudPtr source_cloud) {
+  if (!source_cloud) {
+    source_cloud_ = nullptr;
+    return;
+  }
+  if (source_cloud->Empty()) {
+    PRINT_WARNING("cloud is empty.");
+    return;
+  }
+  source_cloud_ = source_cloud;
+}
+
+void Interface::SetInputTarget(Interface::InnerCloudPtr target_cloud) {
+  if (!target_cloud) {
+    target_cloud_ = nullptr;
+    return;
+  }
+  if (target_cloud->Empty()) {
+    PRINT_WARNING("cloud is empty.");
+    return;
+  }
+  target_cloud_ = target_cloud;
+}
+
+void Interface::InitWithXml(const pugi::xml_node& node) {
+  for (auto param_node = node.child("param"); param_node;
+       param_node = param_node.next_sibling("param")) {
+    const std::string param_name = param_node.attribute("name").as_string();
+    CHECK_GT(inner_options_.count(param_name), 0)
+        << "Init an unknown option of this matcher!";
+    // CHECK(inner_options_.at(param_name).data_ptr);
+
+    switch (inner_options_.at(param_name).data_type) {
+      case OptionItemDataType::kInt32:
+        *reinterpret_cast<int32_t*>(inner_options_.at(param_name).data_ptr) =
+            param_node.text().as_int();
+        break;
+
+      case OptionItemDataType::kFloat32:
+        *reinterpret_cast<float*>(inner_options_.at(param_name).data_ptr) =
+            param_node.text().as_float();
+        break;
+
+      case OptionItemDataType::kBool:
+        *reinterpret_cast<bool*>(inner_options_.at(param_name).data_ptr) =
+            param_node.text().as_bool();
+        break;
+
+      default:
+        break;
+    }
+  }
+}
+
+void Interface::InitInnerFiltersWithXml(const pugi::xml_node& node) {
+  // TODO(edward) inner filters
+  if (node.empty()) {
+    PRINT_INFO("Init filters with default parameters.");
+    return;
+  }
+  // CHECK_EQ(std::string(node.name()), "inner_filters");
+  // for (auto filter_node = node.child("filter"); filter_node;
+  //      filter_node = filter_node.next_sibling("filter")) {
+  //   std::string filter_name = filter_node.attribute("name").as_string();
+  //   if (filter_name == "GroundRemoval2") {
+  //     ground_removal_filter_.InitFromXmlNode(filter_node);
+  //   } else if (filter_name == "RangeImage") {
+  //     range_image_filter_.InitFromXmlNode(filter_node);
+  //   }
+  // }
+
+  // ground_removal_filter_.DisplayAllParams();
+  // range_image_filter_.DisplayAllParams();
+}
+
+void Interface::PrintOptions() {
+  for (const auto& name_to_inner_option_item : inner_options_) {
+    std::cout << std::setw(25) << name_to_inner_option_item.first << " -> ";
+    const auto& option_item = name_to_inner_option_item.second;
+    switch (option_item.data_type) {
+      case OptionItemDataType::kInt32:
+        std::cout << *reinterpret_cast<int32_t*>(option_item.data_ptr);
+        break;
+
+      case OptionItemDataType::kFloat32:
+        std::cout << std::setprecision(6)
+                  << *reinterpret_cast<float*>(option_item.data_ptr);
+        break;
+
+      case OptionItemDataType::kBool:
+        std::cout << std::boolalpha
+                  << *reinterpret_cast<bool*>(option_item.data_ptr);
+        break;
+
+      default:
+        break;
+    }
+    std::cout << std::endl;
+  }
+}
+
+std::shared_ptr<Interface> CreateMatcher(const MatcherOptions& options,
+                                         bool verbose) {
+  std::shared_ptr<Interface> matcher;
   switch (options.type) {
     case registrator::kIcpPM:
-      matcher.reset(new IcpUsingPointMatcher<PointType>);
+      matcher.reset(new IcpUsingPointMatcher);
       break;
     case registrator::kNdtWithGicp:
-      matcher.reset(new NdtWithGicp<PointType>);
+      matcher.reset(new NdtWithGicp);
       break;
     case registrator::kNdt:
-      matcher.reset(new Ndt<PointType>);
+      matcher.reset(new Ndt);
       break;
     case registrator::kFastIcp:
-      matcher.reset(new registrator::IcpFast<PointType>());
+      matcher.reset(new registrator::IcpFast());
       break;
     case registrator::kLibicp:
     case registrator::kLegoLoam:
@@ -67,9 +171,6 @@ std::shared_ptr<Interface<PointType>> CreateMatcher(
   matcher->InitWithOptions();
   return matcher;
 }
-
-template std::shared_ptr<Interface<pcl::PointXYZI>> CreateMatcher(
-    const MatcherOptions& options, bool verbose);
 
 }  // namespace registrator
 }  // namespace static_map
