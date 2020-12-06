@@ -25,6 +25,7 @@
 
 #include <atomic>
 #include <cmath>
+#include <fstream>
 #include <memory>
 #include <string>
 #include <vector>
@@ -43,13 +44,16 @@ namespace data {
 /// @struct InnerPointType
 /// We use this class to isolate inner class from pcl point type.
 struct InnerPointType {
-  double x = 0.;
-  double y = 0.;
-  double z = 0.;
-  double intensity = 0.;
-  double factor = 0.;
-};
+  float x = 0.;
+  float y = 0.;
+  float z = 0.;
+  float intensity = 0.;
+  float factor = 0.;
 
+  // TODO(edward) Serialize using 3rd party lib.
+  int Serialize(std::fstream *stream) const;
+  int Deserialize(std::fstream *stream);
+};
 struct InnerCloudType {
   SimpleTime stamp;
   std::vector<InnerPointType> points;
@@ -60,6 +64,9 @@ struct InnerCloudType {
 
   // TODO(edward) add operator+
   // TODO(edward) add append
+
+  int Serialize(std::fstream *stream) const;
+  int Deserialize(std::fstream *stream);
 };
 
 static inline InnerPointType ToInnerPoint(const pcl::PointXYZ &point) {

@@ -122,8 +122,7 @@ void DataCollector::CloudPreProcessing() {
     if (kill_cloud_preprocessing_thread_) {
       break;
     }
-    // TODO(edward) Fix this, which will drop the last pointcloud
-    if (cloud_data_before_preprocessing_.size() < 2) {
+    if (cloud_data_before_preprocessing_.empty()) {
       SimpleTime::FromSec(0.005).Sleep();
       continue;
     }
@@ -136,7 +135,6 @@ void DataCollector::CloudPreProcessing() {
     }
 
     // filtering cloud
-    // TODO(edward) change filter api to inner cloud type.
     InnerCloudType::Ptr filtered_cloud(new InnerCloudType);
     filter_factory_->SetInputCloud(data);
     filter_factory_->Filter(filtered_cloud);

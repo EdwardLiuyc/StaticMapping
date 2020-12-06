@@ -42,6 +42,8 @@ class IcpUsingPointMatcher : public Interface<PointType> {
   explicit IcpUsingPointMatcher(const std::string& ymal_file = "");
   ~IcpUsingPointMatcher();
 
+  PROHIBIT_COPY_AND_ASSIGN(IcpUsingPointMatcher);
+
   void SetInputSource(InnerCloudPtr cloud) override;
   void SetInputTarget(InnerCloudPtr cloud) override;
   bool Align(const Eigen::Matrix4d& guess, Eigen::Matrix4d& result) override;

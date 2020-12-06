@@ -46,7 +46,8 @@ bool Ndt<PointType>::Align(const Eigen::Matrix4d& guess,
   inner_matcher_.setInputSource(this->source_cloud_->GetPclCloud());
   inner_matcher_.setInputTarget(this->target_cloud_->GetPclCloud());
 
-  PointCloudTargetPtr aligned_cloud(new PointCloudTarget);
+  typename pcl::PointCloud<PointType>::Ptr aligned_cloud(
+      new pcl::PointCloud<PointType>);
   inner_matcher_.align(*aligned_cloud, guess.cast<float>());
 
   this->final_score_ = inner_matcher_.getFitnessScore();

@@ -67,14 +67,6 @@ struct MatcherOptions {
 template <typename PointType>
 class Interface {
  public:
-  using PointCloudSource = pcl::PointCloud<PointType>;
-  using PointCloudSourcePtr = typename PointCloudSource::Ptr;
-  using PointCloudSourceConstPtr = typename PointCloudSource::ConstPtr;
-
-  using PointCloudTarget = PointCloudSource;
-  using PointCloudTargetPtr = typename PointCloudTarget::Ptr;
-  using PointCloudTargetConstPtr = typename PointCloudTarget::ConstPtr;
-
   using InnerCloudPtr = typename data::InnerPointCloudData<PointType>::Ptr;
 
   Interface() = default;
@@ -249,11 +241,7 @@ std::shared_ptr<Interface<PointType>> CreateMatcher(
 }  // namespace registrator
 }  // namespace static_map
 
-#define USE_REGISTRATOR_CLOUDS                              \
-  using typename Interface<PointType>::PointCloudSource;    \
-  using typename Interface<PointType>::PointCloudTarget;    \
-  using typename Interface<PointType>::PointCloudSourcePtr; \
-  using typename Interface<PointType>::PointCloudTargetPtr; \
+#define USE_REGISTRATOR_CLOUDS \
   using typename Interface<PointType>::InnerCloudPtr;
 
 #define REG_REGISTRATOR_INNER_OPTION(NAME, TYPE, VARIABLE) \
