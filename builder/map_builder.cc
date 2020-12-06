@@ -227,33 +227,33 @@ void MapBuilder::InsertFrameForSubmap(InnerCloud::Ptr cloud_ptr,
 }
 
 namespace {
-void MotionCompensation(const MapBuilder::PointCloudPtr& raw_cloud,
+void MotionCompensation(const data::InnerCloudType& raw_cloud,
                         const Eigen::Matrix4d& delta_transform,
-                        MapBuilder::PointCloudType* const output_cloud) {
-  CHECK(raw_cloud);
+                        data::InnerCloudType* const output_cloud) {
   CHECK(output_cloud);
-  output_cloud->clear();
-  const size_t cloud_size = raw_cloud->size();
-  output_cloud->header = raw_cloud->header;
-  output_cloud->reserve(cloud_size);
+  output_cloud->points.clear();
+  const size_t cloud_size = raw_cloud.points.size();
+  output_cloud->stamp = raw_cloud.stamp;
+  output_cloud->points.reserve(cloud_size);
   for (size_t i = 0; i < cloud_size; ++i) {
-    const auto& point = raw_cloud->points[i];
-    float delta_factor = static_cast<float>(i) / static_cast<float>(cloud_size);
+    const auto& point = raw_cloud.points[i];
     const Eigen::Matrix4d transform = common::InterpolateTransform(
-        Eigen::Matrix4d::Identity().eval(), delta_transform, delta_factor);
+        Eigen::Matrix4d::Identity().eval(), delta_transform, point.factor);
     const Eigen::Vector3d new_point_start =
-        transform.block(0, 0, 3, 3) *
+        common::Rotation(transform) *
             Eigen::Vector3d(point.x, point.y, point.z) +
-        transform.block(0, 3, 3, 1);
+        common::Translation(transform);
 
     const Eigen::Vector3d new_point_current =
         delta_transform.block(0, 0, 3, 3).transpose() *
         (new_point_start - delta_transform.block(0, 3, 3, 1));
-    MapBuilder::PointType new_point;
+
+    data::InnerPointType new_point;
     new_point.x = new_point_current[0];
     new_point.y = new_point_current[1];
     new_point.z = new_point_current[2];
     new_point.intensity = point.intensity;
+    new_point.factor = point.factor;
     output_cloud->points.push_back(new_point);
   }
 }
@@ -313,20 +313,20 @@ void MapBuilder::ScanMatchProcessing() {
     // motion compensation using guess
     // still in test
     Eigen::Matrix4d align_result = Eigen::Matrix4d::Identity();
-    auto pcl_cloud_without_compensation = source_cloud->GetPclCloud();
+    auto inner_cloud_without_comp = source_cloud->GetInnerCloud();
     {
       REGISTER_BLOCK("scan match:target");
       scan_matcher_->SetInputTarget(target_cloud);
 
       // && options_.front_end_options.motion_compensation_options.use_average
       if (options_.front_end_options.motion_compensation_options.enable) {
-        PointCloudPtr compensated_source_cloud(new PointCloudType);
+        data::InnerCloudType::Ptr compensated_source_cloud(
+            new data::InnerCloudType);
         const Pose3d motion_in_source_cloud =
             accumulative_transform.inverse() * guess;
-        MotionCompensation(pcl_cloud_without_compensation,
-                           motion_in_source_cloud,
+        MotionCompensation(*inner_cloud_without_comp, motion_in_source_cloud,
                            compensated_source_cloud.get());
-        source_cloud->SetPclCloud(compensated_source_cloud);
+        source_cloud->SetInnerCloud(compensated_source_cloud);
       }
       scan_matcher_->SetInputSource(source_cloud);
     }
@@ -344,11 +344,12 @@ void MapBuilder::ScanMatchProcessing() {
         average_transform = common::AverageTransforms(transforms);
       }
       // motion compensation using align result
-      PointCloudPtr compensated_source_cloud(new PointCloudType);
-      MotionCompensation(pcl_cloud_without_compensation,
+      data::InnerCloudType::Ptr compensated_source_cloud(
+          new data::InnerCloudType);
+      MotionCompensation(*inner_cloud_without_comp,
                          accumulative_transform.inverse() * average_transform,
                          compensated_source_cloud.get());
-      source_cloud->SetPclCloud(compensated_source_cloud);
+      source_cloud->SetInnerCloud(compensated_source_cloud);
     }
 
     pose_source = pose_target * align_result;

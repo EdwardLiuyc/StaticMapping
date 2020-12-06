@@ -42,6 +42,14 @@ class NdtWithGicp : public Interface<PointType> {
  public:
   USE_REGISTRATOR_CLOUDS;
 
+  using PointCloudSource = pcl::PointCloud<PointType>;
+  using PointCloudSourcePtr = typename PointCloudSource::Ptr;
+  using PointCloudSourceConstPtr = typename PointCloudSource::ConstPtr;
+
+  using PointCloudTarget = PointCloudSource;
+  using PointCloudTargetPtr = typename PointCloudTarget::Ptr;
+  using PointCloudTargetConstPtr = typename PointCloudTarget::ConstPtr;
+
   NdtWithGicp();
   ~NdtWithGicp() = default;
 

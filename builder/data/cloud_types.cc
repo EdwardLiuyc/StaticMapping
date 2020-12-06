@@ -143,6 +143,67 @@ void BuildNormals(EigenPointCloud* const data, const int first, const int last,
 }
 }  // namespace
 
+int InnerPointType::Serialize(std::fstream* stream) const {
+  if (stream && stream->is_open()) {
+    stream->write(reinterpret_cast<const char*>(this), sizeof(InnerPointType));
+    return sizeof(InnerPointType);
+  }
+  return -1;
+}
+
+int InnerPointType::Deserialize(std::fstream* stream) {
+  if (stream && stream->is_open()) {
+    stream->read(reinterpret_cast<char*>(this), sizeof(InnerPointType));
+    if (stream->good() || stream->eof()) {
+      return sizeof(InnerPointType);
+    } else {
+      return -1;
+    }
+  }
+  return -1;
+}
+
+int InnerCloudType::Serialize(std::fstream* stream) const {
+  if (stream && stream->is_open()) {
+    // Write time.
+    stream->write(reinterpret_cast<const char*>(&stamp), sizeof(SimpleTime));
+    // Write size.
+    size_t size = points.size();
+    stream->write(reinterpret_cast<const char*>(&size), sizeof(size_t));
+    // Write points.
+    for (const auto& point : points) {
+      point.Serialize(stream);
+    }
+    return 0;
+  }
+  return -1;
+}
+
+int InnerCloudType::Deserialize(std::fstream* stream) {
+  if (stream && stream->is_open()) {
+    // Read time.
+    stream->read(reinterpret_cast<char*>(&stamp), sizeof(SimpleTime));
+    if (!stream->good()) {
+      return -1;
+    }
+    // Read size.
+    size_t size = 0;
+    stream->read(reinterpret_cast<char*>(&size), sizeof(size_t));
+    if (!stream->good()) {
+      return -1;
+    }
+    // Read points.
+    points.resize(size);
+    for (size_t i = 0; i < size; ++i) {
+      if (points[i].Deserialize(stream) < 0) {
+        return -1;
+      }
+    }
+    return 0;
+  }
+  return -1;
+}
+
 template <typename PointT>
 InnerCloudType::Ptr ToInnerPoints(const pcl::PointCloud<PointT>& cloud) {
   // Set time stamp
@@ -368,12 +429,13 @@ template <typename PointT>
 bool InnerPointCloudData<PointT>::SaveToFile(const std::string& filename) {
   common::ReadMutexLocker locker(mutex_);
   CHECK(!filename.empty());
-  CHECK(pcl_cloud_ && !pcl_cloud_->empty());
+  CHECK(!EmptyImpl());
   filename_ = filename;
-  if (pcl::io::savePCDFileBinary(filename_, *pcl_cloud_) != 0) {
-    filename_ = "";
-    return false;
-  }
+
+  std::fstream of(filename_, std::ios::out | std::ios::binary);
+  CHECK(of.is_open()) << "Could not open file: " << filename_;
+  CHECK_GE(inner_cloud_->Serialize(&of), 0);
+  of.close();
   return true;
 }
 
@@ -382,9 +444,14 @@ bool InnerPointCloudData<PointT>::CloudInMemory() {
   boost::upgrade_lock<common::ReadWriteMutex> locker(mutex_);
   if (!is_cloud_in_memory_.load()) {
     common::WriteMutexLocker write_locker(locker);
-    PclCloudPtr loaded_cloud(new PclCloudType);
-    CHECK(pcl::io::loadPCDFile<PointT>(filename_, *loaded_cloud) == 0);
-    SetPclCloudImpl(loaded_cloud);
+
+    InnerCloudType::Ptr inner_cloud(new InnerCloudType);
+    std::fstream bin_fs(filename_, std::ios::in | std::ios::binary);
+    CHECK(bin_fs.is_open()) << "Could not open file: " << filename_;
+    inner_cloud->Deserialize(&bin_fs);
+    bin_fs.close();
+
+    SetInnerCloudImpl(inner_cloud);
     is_cloud_in_memory_ = true;
     // PRINT_DEBUG("get submap data from disk.");
   }

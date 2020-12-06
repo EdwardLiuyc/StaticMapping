@@ -24,11 +24,36 @@
 
 namespace static_map {
 
+bool FrameId::operator==(const FrameId& other) const {
+  return (trajectory_index == other.trajectory_index &&
+          submap_index == other.submap_index &&
+          frame_index == other.frame_index);
+}
+
+bool FrameId::operator!=(const FrameId& other) const {
+  return !operator==(other);
+}
+
+bool FrameId::operator<(const FrameId& other) const {
+  return std::forward_as_tuple(trajectory_index, submap_index, frame_index) <
+         std::forward_as_tuple(other.trajectory_index, other.submap_index,
+                               other.frame_index);
+}
+
+std::string FrameId::DebugString() const {
+  std::ostringstream out;
+  out << "f_" << trajectory_index << "_" << submap_index << "_" << frame_index;
+  return out.str();
+}
+
+template <typename PointType>
+Frame<PointType>::Frame() : FrameBase<PointType>() {}
+
 template <typename PointType>
 void Frame<PointType>::ToPcdFile(const std::string& filename) {
   CHECK(this->inner_cloud_ && !this->inner_cloud_->Empty());
   const std::string actual_filename =
-      filename.empty() ? id_.DebugString() + ".pcd" : filename;
+      filename.empty() ? id_.DebugString() + ".bin" : filename;
   this->inner_cloud_->SaveToFile(actual_filename);
 }
 

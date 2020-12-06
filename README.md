@@ -178,6 +178,7 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - some examples for ground removal2
 - ground removal recovery mode
 - sort out the mutex in inner cloud data types
+- serialization and deserialization for inner cloud type
 - add factor to inner cloud (for motion compensation) and fix bug
 - isolate input pointcloud type with inner pointcloud type
 - yaml configs

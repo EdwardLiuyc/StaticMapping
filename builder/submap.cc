@@ -165,7 +165,7 @@ void Submap<PointType>::SetId(const SubmapId& id) {
   if (save_filename_.empty()) {
     save_filename_ = options_.saving_name_prefix +
                      std::to_string(id_.trajectory_index) + "_" +
-                     std::to_string(id_.submap_index) + ".pcd";
+                     std::to_string(id_.submap_index) + ".bin";
   }
 }
 

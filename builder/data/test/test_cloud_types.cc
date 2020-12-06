@@ -155,6 +155,36 @@ BOOST_AUTO_TEST_CASE(CloudConversion) {
   }
 }
 
+BOOST_AUTO_TEST_CASE(InnerCloudSerialDeserial) {
+  const int size = 800;
+  const auto inner_cloud = CreateRandomInnerCloud(size);
+  {
+    std::fstream of("/tmp/test.bin", std::ios::out | std::ios::binary);
+    BOOST_CHECK(of.is_open());
+    BOOST_CHECK(inner_cloud->Serialize(&of) >= 0);
+    of.close();
+  }
+
+  InnerCloudType::Ptr loaded_cloud(new InnerCloudType);
+  {
+    std::fstream bin_fs("/tmp/test.bin", std::ios::in | std::ios::binary);
+    BOOST_CHECK(bin_fs.is_open());
+    BOOST_CHECK(loaded_cloud->Deserialize(&bin_fs) >= 0);
+    bin_fs.close();
+  }
+
+  BOOST_CHECK_EQUAL(loaded_cloud->points.size(), size);
+  for (int i = 0; i < size; ++i) {
+    const auto& inner_point = inner_cloud->points.at(i);
+    const auto& loaded_point = loaded_cloud->points.at(i);
+    BOOST_CHECK_DOUBLE_EQUAL(loaded_point.x, inner_point.x);
+    BOOST_CHECK_DOUBLE_EQUAL(loaded_point.y, inner_point.y);
+    BOOST_CHECK_DOUBLE_EQUAL(loaded_point.z, inner_point.z);
+    BOOST_CHECK_DOUBLE_EQUAL(loaded_point.intensity, inner_point.intensity);
+    BOOST_CHECK_DOUBLE_EQUAL(loaded_point.factor, inner_point.factor);
+  }
+}
+
 BOOST_AUTO_TEST_CASE(EigenCloud) {}
 
 BOOST_AUTO_TEST_CASE(InnerCloudData) {
