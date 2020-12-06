@@ -20,57 +20,44 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef PRE_PROCESSORS_FILTER_FACTORY_H_
-#define PRE_PROCESSORS_FILTER_FACTORY_H_
+#include "pre_processors/filter_statistic_removal.h"
 
-#include <map>
-#include <memory>
-#include <string>
-#include <vector>
-
-#include "pre_processors/filter_interface.h"
-#include "pugixml/pugixml.hpp"
+#include "pcl/filters/statistical_outlier_removal.h"
 
 namespace static_map {
 namespace pre_processers {
 namespace filter {
 
-class Factory : public Interface {
- public:
-  Factory() : Interface() { RegisterSupportedFilters(); }
-  ~Factory() = default;
+StatisticRemoval::StatisticRemoval()
+    : Interface(), point_num_meank_(30), std_mul_(1.) {
+  // float params
+  INIT_FLOAT_PARAM("std_mul", std_mul_);
+  // int32_t params
+  INIT_INT32_PARAM("point_num_meank", point_num_meank_);
+}
 
-  Factory(const Factory&) = delete;
-  Factory& operator=(const Factory&) = delete;
+void StatisticRemoval::DisplayAllParams() {
+  PARAM_INFO(point_num_meank_);
+  PARAM_INFO(std_mul_);
+}
 
-  std::shared_ptr<Interface> CreateNewInstance() override {
-    return std::make_shared<Factory>();
+void StatisticRemoval::Filter(const data::InnerCloudType::Ptr &cloud) {
+  if (!cloud || !Interface::inner_cloud_) {
+    LOG(WARNING) << "nullptr cloud, do nothing!" << std::endl;
+    return;
   }
 
-  /* example
-  <filters>
-    <filter name="RandomSampler">
-      <param type="1" name="sampling_rate"> 0.8 </param>
-    </filter>
-    ...
-  </filters>
-  */
-  void InitFromXmlText(const char* text);
+  // this->FilterPrepare(cloud);
+  // pcl::StatisticalOutlierRemoval sor;
+  // sor.setInputCloud(this->inner_cloud_);
+  // sor.setMeanK(point_num_meank_);
+  // sor.setStddevMulThresh(std_mul_);
+  // sor.filter(*cloud);
+  // TODO(edward) implement statistic removal upon inner cloud type
 
-  void InitFromXmlNode(const pugi::xml_node& filters_node);
-
-  void Filter(const data::InnerCloudType::Ptr& cloud) override;
-
- protected:
-  void RegisterSupportedFilters();
-
- private:
-  std::vector<std::shared_ptr<Interface>> filters_;
-  std::map<std::string, std::shared_ptr<Interface>> supported_filters_;
-};
+  // @todo inliers and outliers
+}
 
 }  // namespace filter
 }  // namespace pre_processers
 }  // namespace static_map
-
-#endif  // PRE_PROCESSORS_FILTER_FACTORY_H_

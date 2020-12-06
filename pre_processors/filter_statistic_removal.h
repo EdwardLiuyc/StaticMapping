@@ -24,7 +24,6 @@
 
 #include <memory>
 
-#include "pcl/filters/statistical_outlier_removal.h"
 #include "pre_processors/filter_interface.h"
 
 namespace static_map {
@@ -33,43 +32,18 @@ namespace filter {
 
 class StatisticRemoval : public Interface {
  public:
-  // USE_POINTCLOUD;
-
-  StatisticRemoval() : Interface(), point_num_meank_(30), std_mul_(1.) {
-    // float params
-    INIT_FLOAT_PARAM("std_mul", std_mul_);
-    // int32_t params
-    INIT_INT32_PARAM("point_num_meank", point_num_meank_);
-  }
+  StatisticRemoval();
   ~StatisticRemoval() {}
-  StatisticRemoval(const StatisticRemoval &) = delete;
-  StatisticRemoval &operator=(const StatisticRemoval &) = delete;
+
+  PROHIBIT_COPY_AND_ASSIGN(StatisticRemoval);
 
   std::shared_ptr<Interface> CreateNewInstance() override {
     return std::make_shared<StatisticRemoval>();
   }
 
-  void Filter(const data::InnerCloudType::Ptr &cloud) override {
-    if (!cloud || !Interface::inner_cloud_) {
-      LOG(WARNING) << "nullptr cloud, do nothing!" << std::endl;
-      return;
-    }
+  void Filter(const data::InnerCloudType::Ptr &cloud) override;
 
-    // this->FilterPrepare(cloud);
-    // pcl::StatisticalOutlierRemoval sor;
-    // sor.setInputCloud(this->inner_cloud_);
-    // sor.setMeanK(point_num_meank_);
-    // sor.setStddevMulThresh(std_mul_);
-    // sor.filter(*cloud);
-    // TODO(edward) implement statistic removal upon inner cloud type
-
-    // @todo inliers and outliers
-  }
-
-  void DisplayAllParams() override {
-    PARAM_INFO(point_num_meank_);
-    PARAM_INFO(std_mul_);
-  }
+  void DisplayAllParams() override;
 
  private:
   int32_t point_num_meank_;
