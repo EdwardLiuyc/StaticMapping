@@ -34,62 +34,18 @@ namespace filter {
 
 class RandomSampler : public Interface {
  public:
-  // USE_POINTCLOUD;
-
-  RandomSampler() : Interface(), sampling_rate_(1.) {
-    INIT_FLOAT_PARAM("sampling_rate", sampling_rate_);
-  }
+  RandomSampler();
   ~RandomSampler() = default;
-  RandomSampler(const RandomSampler&) = delete;
-  RandomSampler& operator=(const RandomSampler&) = delete;
+
+  PROHIBIT_COPY_AND_ASSIGN(RandomSampler);
 
   std::shared_ptr<Interface> CreateNewInstance() override {
     return std::make_shared<RandomSampler>();
   }
 
-  void Filter(const data::InnerCloudType::Ptr& cloud) override {
-    if (!cloud || !Interface::inner_cloud_) {
-      LOG(WARNING) << "nullptr cloud, do nothing!" << std::endl;
-      return;
-    }
-    if (sampling_rate_ > 0.999) {
-      *cloud = *this->inner_cloud_;
-      for (int i = 0; i < this->inner_cloud_->points.size(); ++i) {
-        this->inliers_.push_back(i);
-      }
-      this->outliers_.clear();
-      return;
-    }
+  void Filter(const data::InnerCloudType::Ptr& cloud) override;
 
-    // std::rand() is not reentrant or thread-safe, so this filter
-    // can not be optimized to multi-thread version
-    this->FilterPrepare(cloud);
-    const int int_sample_rate = sampling_rate_ * 1000;
-    std::random_device rand_dev;   // obtain a random number from hardware
-    std::mt19937 eng(rand_dev());  // seed the generator
-    std::uniform_int_distribution<> distr(0, 1000);  // define the range
-
-    auto& input = this->inner_cloud_;
-    const int size = input->points.size();
-    this->inliers_.reserve(size);
-    this->outliers_.reserve(size);
-    cloud->points.reserve(size);
-    // i += 4 to speed up
-    // do the rand() only 1/4 times
-    for (int i = 0; i < size; ++i) {
-      if (distr(eng) <= int_sample_rate) {
-        cloud->points.push_back(input->points[i]);
-        this->inliers_.push_back(i);
-      } else {
-        this->outliers_.push_back(i);
-      }
-    }
-    this->inliers_.shrink_to_fit();
-    this->outliers_.shrink_to_fit();
-    cloud->points.shrink_to_fit();
-  }
-
-  void DisplayAllParams() override { PARAM_INFO(sampling_rate_); }
+  void DisplayAllParams() override;
 
  private:
   float sampling_rate_;

@@ -36,7 +36,7 @@ namespace filter {
 
 class VoxelGrid : public Interface {
  public:
-  VoxelGrid() : Interface() {}
+  VoxelGrid();
   ~VoxelGrid() = default;
 
   PROHIBIT_COPY_AND_ASSIGN(VoxelGrid);
@@ -45,51 +45,9 @@ class VoxelGrid : public Interface {
     return std::make_shared<VoxelGrid>();
   }
 
-  void Filter(const data::InnerCloudType::Ptr& cloud) override {
-    if (!cloud || !Interface::inner_cloud_) {
-      LOG(WARNING) << "nullptr cloud, do nothing!" << std::endl;
-      return;
-    }
+  void Filter(const data::InnerCloudType::Ptr& cloud) override;
 
-    this->FilterPrepare(cloud);
-    std::unordered_map<Eigen::Vector3i, std::vector<data::InnerPointType>>
-        voxel_grid;
-    for (const auto& point : this->inner_cloud_->points) {
-      Eigen::Vector3i index(std::lround(point.x / voxel_size_),
-                            std::lround(point.y / voxel_size_),
-                            std::lround(point.z / voxel_size_));
-      voxel_grid[index].push_back(point);
-    }
-
-    const auto get_average_point =
-        [](const std::vector<data::InnerPointType>& points)
-        -> data::InnerPointType {
-      CHECK(!points.empty());
-
-      double sum[4] = {0, 0, 0, 0};
-      for (const auto& point : points) {
-        sum[0] += point.x;
-        sum[1] += point.y;
-        sum[2] += point.z;
-        sum[3] += point.intensity;
-      }
-
-      const int size = points.size();
-      data::InnerPointType result;
-      result.x = sum[0] / size;
-      result.y = sum[1] / size;
-      result.z = sum[2] / size;
-      result.intensity = sum[3] / size;
-      return result;
-    };
-
-    cloud->points.reserve(voxel_grid.size());
-    for (const auto& grid : voxel_grid) {
-      cloud->points.push_back(get_average_point(grid.second));
-    }
-  }
-
-  void DisplayAllParams() override { PARAM_INFO(voxel_size_); }
+  void DisplayAllParams() override;
 
  private:
   float voxel_size_ = 0.1f;

@@ -42,51 +42,14 @@ class Interface : public ProcesserInterface {
   Interface(const Interface&) = delete;
   Interface& operator=(const Interface&) = delete;
 
-  void InitFromXmlNode(const pugi::xml_node& node) {
-    CHECK_EQ(std::string(node.name()), "filter");
-    bool all_right = true;
-    for (auto param_node = node.child("param"); param_node;
-         param_node = param_node.next_sibling("param")) {
-      XmlInterface::ParamType param_type = XmlInterface::kParamTypeCount;
-      if (param_node.attribute("type")) {
-        param_type =
-            (XmlInterface::ParamType)param_node.attribute("type").as_int();
-      }
-      std::string param_name = param_node.attribute("name").as_string();
-      switch (param_type) {
-        case XmlInterface::kInt32Param:
-          all_right = this->SetValue(param_name, param_node.text().as_int());
-          break;
-        case XmlInterface::kFloatParam:
-          all_right = this->SetValue(param_name, param_node.text().as_float());
-          break;
-        default:
-          all_right = false;
-          break;
-      }
-      CHECK(all_right);
-    }
-  }
+  void InitFromXmlNode(const pugi::xml_node& node);
 
-  void InitFromXmlText(const char* xml_text) {
-    pugi::xml_document doc;
-    if (doc.load_string(xml_text)) {
-      InitFromXmlNode(doc.first_child());
-    } else {
-      LOG(FATAL) << "invalid xml text.";
-    }
-  }
+  void InitFromXmlText(const char* xml_text);
 
   virtual std::shared_ptr<Interface> CreateNewInstance() = 0;
   virtual void Filter(const data::InnerCloudType::Ptr& cloud) = 0;
 
-  virtual void FilterPrepare(const data::InnerCloudType::Ptr& cloud) {
-    auto& input = this->inner_cloud_;
-    cloud->points.clear();
-    cloud->stamp = input->stamp;
-    this->inliers_.clear();
-    this->outliers_.clear();
-  }
+  virtual void FilterPrepare(const data::InnerCloudType::Ptr& cloud);
 };
 
 }  // namespace filter
