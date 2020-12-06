@@ -35,7 +35,6 @@
 
 namespace static_map {
 
-template <typename PointType>
 class Submap;
 
 namespace back_end {
@@ -71,7 +70,6 @@ struct DetectResult {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-template <typename PointT>
 class LoopDetector {
  public:
   explicit LoopDetector(const LoopDetectorSettings &l_d_settings)
@@ -81,10 +79,10 @@ class LoopDetector {
   LoopDetector(const LoopDetector &) = delete;
   LoopDetector &operator=(const LoopDetector &) = delete;
 
-  DetectResult AddFrame(const std::shared_ptr<Submap<PointT>> &submap,
+  DetectResult AddFrame(const std::shared_ptr<Submap> &submap,
                         bool do_loop_detect = true);
   void SetSearchWindow(const int start_index, const int end_index);
-  std::vector<std::shared_ptr<Submap<PointT>>> &GetFrames();
+  std::vector<std::shared_ptr<Submap>> &GetFrames();
 
   /// @brief set static tf link from odom to lidar(cloud frame)
   void SetTransformOdomToLidar(const Eigen::Matrix4d &t);
@@ -97,7 +95,7 @@ class LoopDetector {
   bool CheckResult(const DetectResult &result) const;
 
  private:
-  std::vector<std::shared_ptr<Submap<PointT>>> all_frames_;
+  std::vector<std::shared_ptr<Submap>> all_frames_;
   std::vector<Eigen::Vector3d> all_frames_translation_;
 
   int loop_detection_;
@@ -113,9 +111,7 @@ class LoopDetector {
   int search_window_end_ = -1;
 };
 
-template <typename PointT>
-inline std::vector<std::shared_ptr<Submap<PointT>>>
-    &LoopDetector<PointT>::GetFrames() {
+inline std::vector<std::shared_ptr<Submap>> &LoopDetector::GetFrames() {
   return all_frames_;
 }
 

@@ -404,8 +404,7 @@ bool CheckConvergence(const std::vector<Eigen::Quaterniond>& rotations,
   return has_converged;
 }
 
-template <typename PointT>
-IcpFast<PointT>::IcpFast() : Interface<PointT>() {
+IcpFast::IcpFast() : Interface() {
   this->type_ = kFastIcp;
   // TODO(edward) This `knn_normal_estimate` is currently of no use, make it
   // useful later.
@@ -419,15 +418,13 @@ IcpFast<PointT>::IcpFast() : Interface<PointT>() {
                                options_.dist_outlier_ratio);
 }
 
-template <typename PointT>
-void IcpFast<PointT>::SetInputSource(InnerCloudPtr cloud) {
+void IcpFast::SetInputSource(InnerCloudPtr cloud) {
   CHECK(cloud);
   CHECK(cloud->GetEigenCloud());
   source_cloud_.reset(new EigenPointCloud(*cloud->GetEigenCloud()));
 }
 
-template <typename PointT>
-void IcpFast<PointT>::SetInputTarget(InnerCloudPtr cloud) {
+void IcpFast::SetInputTarget(InnerCloudPtr cloud) {
   CHECK(cloud);
   CHECK(cloud->GetEigenCloud());
   CHECK(cloud->GetEigenCloud()->HasNormals());
@@ -455,9 +452,8 @@ void IcpFast<PointT>::SetInputTarget(InnerCloudPtr cloud) {
   //     NNS::create(target_cloud_->points, kDim, NNS::KDTREE_LINEAR_HEAP));
 }
 
-template <typename PointT>
-bool IcpFast<PointT>::Align(const Eigen::Matrix4d& guess,
-                            Eigen::Matrix4d& result) {  // NOLINT
+bool IcpFast::Align(const Eigen::Matrix4d& guess,
+                    Eigen::Matrix4d& result) {  // NOLINT
   const int target_points_count = target_cloud_->points.cols();
   const Eigen::Vector3d target_mean =
       target_cloud_->points.rowwise().sum() / target_points_count;
@@ -532,6 +528,5 @@ bool IcpFast<PointT>::Align(const Eigen::Matrix4d& guess,
   return true;
 }
 
-template class IcpFast<pcl::PointXYZI>;
 }  // namespace registrator
 }  // namespace static_map

@@ -33,9 +33,8 @@ namespace static_map {
 
 constexpr int kTimeStepSec = 1;
 
-template <typename PointType>
-MemoryManager<PointType>::MemoryManager(
-    std::vector<std::shared_ptr<Trajectory<PointType>>>* const trajectories)
+MemoryManager::MemoryManager(
+    std::vector<std::shared_ptr<Trajectory>>* const trajectories)
     : trajectories_(trajectories), quit_(false) {
   CHECK(trajectories_);
 
@@ -43,16 +42,14 @@ MemoryManager<PointType>::MemoryManager(
       std::thread(std::bind(&MemoryManager::Processing, this));
 }
 
-template <typename PointType>
-MemoryManager<PointType>::~MemoryManager() {
+MemoryManager::~MemoryManager() {
   quit_ = true;
   if (memory_managing_thread_.joinable()) {
     memory_managing_thread_.join();
   }
 }
 
-template <typename PointType>
-void MemoryManager<PointType>::Processing() {
+void MemoryManager::Processing() {
   PRINT_INFO("Start managing memory.");
   while (!quit_.load()) {
     for (auto& trajectory : *trajectories_) {
@@ -64,7 +61,5 @@ void MemoryManager<PointType>::Processing() {
   }
   PRINT_INFO("End managing memory.");
 }
-
-template class MemoryManager<pcl::PointXYZI>;
 
 }  // namespace static_map

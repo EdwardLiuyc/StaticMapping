@@ -26,28 +26,35 @@
 namespace static_map {
 namespace registrator {
 
-template <typename PointType>
-Ndt<PointType>::Ndt() : Interface<PointType>() {
+Ndt::Ndt() : Interface() {
   this->type_ = kNdt;
   inner_matcher_.setResolution(1.);
   inner_matcher_.setNumThreads(6);
   inner_matcher_.setNeighborhoodSearchMethod(pclomp::KDTREE);
 }
 
-template <typename PointType>
-Ndt<PointType>::~Ndt() {}
+Ndt::~Ndt() {}
 
-template <typename PointType>
-bool Ndt<PointType>::Align(const Eigen::Matrix4d& guess,
-                           Eigen::Matrix4d& result) {  // NOLINT
+bool Ndt::Align(const Eigen::Matrix4d& guess,
+                Eigen::Matrix4d& result) {  // NOLINT
   if (!this->source_cloud_ || !this->target_cloud_) {
     return false;
   }
-  inner_matcher_.setInputSource(this->source_cloud_->GetPclCloud());
-  inner_matcher_.setInputTarget(this->target_cloud_->GetPclCloud());
 
-  typename pcl::PointCloud<PointType>::Ptr aligned_cloud(
-      new pcl::PointCloud<PointType>);
+  pcl::PointCloud<pcl::PointXYZ>::Ptr source_cloud_pcl(
+      new pcl::PointCloud<pcl::PointXYZ>);
+  pcl::PointCloud<pcl::PointXYZ>::Ptr target_cloud_pcl(
+      new pcl::PointCloud<pcl::PointXYZ>);
+  data::ToPclPointCloud(*this->source_cloud_->GetInnerCloud(),
+                        source_cloud_pcl.get());
+  data::ToPclPointCloud(*this->target_cloud_->GetInnerCloud(),
+                        target_cloud_pcl.get());
+
+  inner_matcher_.setInputSource(source_cloud_pcl);
+  inner_matcher_.setInputTarget(target_cloud_pcl);
+
+  pcl::PointCloud<pcl::PointXYZ>::Ptr aligned_cloud(
+      new pcl::PointCloud<pcl::PointXYZ>);
   inner_matcher_.align(*aligned_cloud, guess.cast<float>());
 
   this->final_score_ = inner_matcher_.getFitnessScore();
@@ -55,9 +62,6 @@ bool Ndt<PointType>::Align(const Eigen::Matrix4d& guess,
 
   return true;
 }
-
-template class Ndt<pcl::PointXYZI>;
-template class Ndt<pcl::PointXYZ>;
 
 }  // namespace registrator
 }  // namespace static_map

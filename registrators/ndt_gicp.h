@@ -37,18 +37,17 @@
 namespace static_map {
 namespace registrator {
 
-template <typename PointType>
-class NdtWithGicp : public Interface<PointType> {
+class NdtWithGicp : public Interface {
  public:
   USE_REGISTRATOR_CLOUDS;
 
-  using PointCloudSource = pcl::PointCloud<PointType>;
-  using PointCloudSourcePtr = typename PointCloudSource::Ptr;
-  using PointCloudSourceConstPtr = typename PointCloudSource::ConstPtr;
+  using PointCloudSource = pcl::PointCloud<pcl::PointXYZ>;
+  using PointCloudSourcePtr = PointCloudSource::Ptr;
+  using PointCloudSourceConstPtr = PointCloudSource::ConstPtr;
 
   using PointCloudTarget = PointCloudSource;
-  using PointCloudTargetPtr = typename PointCloudTarget::Ptr;
-  using PointCloudTargetConstPtr = typename PointCloudTarget::ConstPtr;
+  using PointCloudTargetPtr = PointCloudTarget::Ptr;
+  using PointCloudTargetConstPtr = PointCloudTarget::ConstPtr;
 
   NdtWithGicp();
   ~NdtWithGicp() = default;
@@ -60,13 +59,13 @@ class NdtWithGicp : public Interface<PointType> {
   void InitWithOptions() override;
 
  private:
-  pcl::NormalDistributionsTransform<PointType, PointType> ndt_;
-  pcl::GeneralizedIterativeClosestPoint<PointType, PointType> gicp_;
+  pcl::NormalDistributionsTransform<pcl::PointXYZ, pcl::PointXYZ> ndt_;
+  pcl::GeneralizedIterativeClosestPoint<pcl::PointXYZ, pcl::PointXYZ> gicp_;
 
   PointCloudSourcePtr down_sampled_source_cloud_ = nullptr;
   PointCloudTargetPtr down_sampled_target_cloud_ = nullptr;
 
-  pcl::ApproximateVoxelGrid<PointType> approximate_voxel_filter_;
+  pcl::ApproximateVoxelGrid<pcl::PointXYZ> approximate_voxel_filter_;
 
   struct {
     float voxel_resolution = 0.2;

@@ -45,9 +45,8 @@ const std::map<LoopStatus, std::string> kLoopStatusToStr = {
     {LoopStatus::kLeavingLoop, "Leaving Loop"}};
 }
 
-template <typename PointT>
-DetectResult LoopDetector<PointT>::AddFrame(
-    const std::shared_ptr<Submap<PointT>>& frame, bool do_loop_detect) {
+DetectResult LoopDetector::AddFrame(const std::shared_ptr<Submap>& frame,
+                                    bool do_loop_detect) {
   all_frames_.push_back(frame);
 
   // Update all positions since they could have been changed.
@@ -112,8 +111,8 @@ DetectResult LoopDetector<PointT>::AddFrame(
       for (auto& i : indices_in_distance) {
         CHECK_NE(i, current_index);
         auto& target_frame = all_frames_.at(i);
-        if (descriptor::matchTwoM2dpDescriptors<PointT>(
-                frame->GetDescriptor(), target_frame->GetDescriptor()) >
+        if (descriptor::matchTwoM2dpDescriptors(frame->GetDescriptor(),
+                                                target_frame->GetDescriptor()) >
             settings_.m2dp_match_score) {
           indices_well_matched.push_back(i);
         }
@@ -237,31 +236,39 @@ DetectResult LoopDetector<PointT>::AddFrame(
           const int target_id = edge.close_pair_index.first;
           {
             // Output combined cloud using init pose.
-            typename pcl::PointCloud<PointT>::Ptr none_matched_cloud(
-                new typename pcl::PointCloud<PointT>);
-            pcl::transformPointCloud(
-                *all_frames_.at(source_id)->Cloud()->GetPclCloud(),
-                *none_matched_cloud, edge.init_guess);
+            data::InnerCloudType::Ptr none_matched_cloud(
+                new data::InnerCloudType);
+            all_frames_.at(source_id)
+                ->Cloud()
+                ->GetInnerCloud()
+                ->ApplyTransformToOutput(edge.init_guess,
+                                         none_matched_cloud.get());
             *none_matched_cloud +=
-                *all_frames_.at(target_id)->Cloud()->GetPclCloud();
+                *all_frames_.at(target_id)->Cloud()->GetInnerCloud();
+
+            pcl::PointCloud<pcl::PointXYZI> output_cloud;
+            data::ToPclPointCloud(*none_matched_cloud, &output_cloud);
             pcl::io::savePCDFile("pcd/matched_" + std::to_string(target_id) +
                                      "_" + std::to_string(source_id) +
                                      "_init.pcd",
-                                 *none_matched_cloud);
+                                 output_cloud);
           }
           {
             // Output combined cloud using init pose.
-            typename pcl::PointCloud<PointT>::Ptr none_matched_cloud(
-                new typename pcl::PointCloud<PointT>);
-            pcl::transformPointCloud(
-                *all_frames_.at(source_id)->Cloud()->GetPclCloud(),
-                *none_matched_cloud, edge.transform);
-            *none_matched_cloud +=
-                *all_frames_.at(target_id)->Cloud()->GetPclCloud();
+            data::InnerCloudType::Ptr matched_cloud(new data::InnerCloudType);
+            all_frames_.at(source_id)
+                ->Cloud()
+                ->GetInnerCloud()
+                ->ApplyTransformToOutput(edge.transform, matched_cloud.get());
+            *matched_cloud +=
+                *all_frames_.at(target_id)->Cloud()->GetInnerCloud();
+
+            pcl::PointCloud<pcl::PointXYZI> output_cloud;
+            data::ToPclPointCloud(*matched_cloud, &output_cloud);
             pcl::io::savePCDFile("pcd/matched_" + std::to_string(target_id) +
                                      "_" + std::to_string(source_id) +
                                      "_error.pcd",
-                                 *none_matched_cloud);
+                                 output_cloud);
           }
         }
       }
@@ -271,9 +278,7 @@ DetectResult LoopDetector<PointT>::AddFrame(
   return result;
 }
 
-template <typename PointT>
-void LoopDetector<PointT>::SetSearchWindow(const int start_index,
-                                           const int end_index) {
+void LoopDetector::SetSearchWindow(const int start_index, const int end_index) {
   CHECK_GE(start_index, 0);
   CHECK_GE(end_index, 0);
   CHECK_GE(end_index, start_index);
@@ -282,8 +287,7 @@ void LoopDetector<PointT>::SetSearchWindow(const int start_index,
   search_window_end_ = end_index;
 }
 
-template <typename PointT>
-bool LoopDetector<PointT>::CloseLoop(DetectResult::LoopEdge* edge) const {
+bool LoopDetector::CloseLoop(DetectResult::LoopEdge* edge) const {
   const int target_id = edge->close_pair_index.first;
   const int source_id = edge->close_pair_index.second;
 
@@ -305,7 +309,7 @@ bool LoopDetector<PointT>::CloseLoop(DetectResult::LoopEdge* edge) const {
   edge->init_guess = init_guess;
 
   // TODO(edward) Load the config for submap matching.
-  registrator::IcpUsingPointMatcher<PointT> scan_matcher;
+  registrator::IcpUsingPointMatcher scan_matcher;
   scan_matcher.SetInputSource(all_frames_[source_id]->Cloud());
   scan_matcher.SetInputTarget(all_frames_[target_id]->Cloud());
   scan_matcher.Align(init_guess, edge->transform);
@@ -321,8 +325,7 @@ bool LoopDetector<PointT>::CloseLoop(DetectResult::LoopEdge* edge) const {
   return false;
 }
 
-template <typename PointT>
-bool LoopDetector<PointT>::CheckResult(const DetectResult& result) const {
+bool LoopDetector::CheckResult(const DetectResult& result) const {
   // TODO(edward) CUrrently, this check is rather poor, so disable it.
   // return true;
 
@@ -352,12 +355,9 @@ bool LoopDetector<PointT>::CheckResult(const DetectResult& result) const {
   return true;
 }
 
-template <typename PointT>
-void LoopDetector<PointT>::SetTransformOdomToLidar(const Eigen::Matrix4d& t) {
+void LoopDetector::SetTransformOdomToLidar(const Eigen::Matrix4d& t) {
   tf_odom_lidar_ = t;
 }
-
-template class LoopDetector<pcl::PointXYZI>;
 
 }  // namespace back_end
 }  // namespace static_map

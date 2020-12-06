@@ -25,8 +25,7 @@
 namespace static_map {
 namespace registrator {
 
-template <typename PointType>
-NdtWithGicp<PointType>::NdtWithGicp() : Interface<PointType>() {
+NdtWithGicp::NdtWithGicp() : Interface() {
   this->type_ = kNdtWithGicp;
 
   REG_REGISTRATOR_INNER_OPTION("use_ndt", OptionItemDataType::kBool,
@@ -37,8 +36,7 @@ NdtWithGicp<PointType>::NdtWithGicp() : Interface<PointType>() {
                                options_.voxel_resolution);
 }
 
-template <typename PointType>
-void NdtWithGicp<PointType>::InitWithOptions() {
+void NdtWithGicp::InitWithOptions() {
   LOG(INFO) << "Init ";
   approximate_voxel_filter_.setLeafSize(options_.voxel_resolution,
                                         options_.voxel_resolution,
@@ -54,25 +52,27 @@ void NdtWithGicp<PointType>::InitWithOptions() {
   gicp_.setMaximumIterations(35);
 }
 
-template <typename PointType>
-bool NdtWithGicp<PointType>::Align(const Eigen::Matrix4d& guess,
-                                   Eigen::Matrix4d& result) {  // NOLINT
+bool NdtWithGicp::Align(const Eigen::Matrix4d& guess,
+                        Eigen::Matrix4d& result) {  // NOLINT
+  down_sampled_source_cloud_.reset(new PointCloudSource);
+  down_sampled_target_cloud_.reset(new PointCloudTarget);
   if (options_.using_voxel_filter) {
-    if (!down_sampled_source_cloud_) {
-      down_sampled_source_cloud_ = boost::make_shared<PointCloudSource>();
-    }
-    if (!down_sampled_target_cloud_) {
-      down_sampled_target_cloud_ = boost::make_shared<PointCloudTarget>();
-    }
-
-    approximate_voxel_filter_.setInputCloud(this->source_cloud_->GetPclCloud());
+    PointCloudSourcePtr temp_source_pcl(new PointCloudSource);
+    data::ToPclPointCloud(*this->source_cloud_->GetInnerCloud(),
+                          temp_source_pcl.get());
+    approximate_voxel_filter_.setInputCloud(temp_source_pcl);
     approximate_voxel_filter_.filter(*down_sampled_source_cloud_);
 
-    approximate_voxel_filter_.setInputCloud(this->target_cloud_->GetPclCloud());
+    PointCloudSourcePtr temp_target_pcl(new PointCloudSource);
+    data::ToPclPointCloud(*this->target_cloud_->GetInnerCloud(),
+                          temp_target_pcl.get());
+    approximate_voxel_filter_.setInputCloud(temp_target_pcl);
     approximate_voxel_filter_.filter(*down_sampled_target_cloud_);
   } else {
-    down_sampled_source_cloud_ = this->source_cloud_->GetPclCloud();
-    down_sampled_target_cloud_ = this->target_cloud_->GetPclCloud();
+    data::ToPclPointCloud(*this->source_cloud_->GetInnerCloud(),
+                          down_sampled_source_cloud_.get());
+    data::ToPclPointCloud(*this->target_cloud_->GetInnerCloud(),
+                          down_sampled_target_cloud_.get());
   }
 
   PointCloudSourcePtr output_cloud(new PointCloudSource);
@@ -110,9 +110,6 @@ bool NdtWithGicp<PointType>::Align(const Eigen::Matrix4d& guess,
 
   return true;
 }
-
-template class NdtWithGicp<pcl::PointXYZI>;
-template class NdtWithGicp<pcl::PointXYZ>;
 
 }  // namespace registrator
 }  // namespace static_map

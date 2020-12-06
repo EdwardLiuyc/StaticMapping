@@ -54,26 +54,25 @@ namespace static_map {
  *   2. traejctory.push_back(submap)
  *   ...
  */
-template <typename PointT>
 class Trajectory {
  public:
-  Trajectory() {}
-  ~Trajectory() {}
+  Trajectory() = default;
+  ~Trajectory() = default;
 
   PROHIBIT_COPY_AND_ASSIGN(Trajectory);
 
-  using Ptr = std::shared_ptr<Trajectory<PointT>>;
+  using Ptr = std::shared_ptr<Trajectory>;
 
-  using iterator = typename tbb::concurrent_vector<
-      std::shared_ptr<Submap<PointT>>>::iterator;
-  using const_iterator = typename tbb::concurrent_vector<
-      std::shared_ptr<Submap<PointT>>>::const_iterator;
+  using iterator =
+      typename tbb::concurrent_vector<std::shared_ptr<Submap>>::iterator;
+  using const_iterator =
+      typename tbb::concurrent_vector<std::shared_ptr<Submap>>::const_iterator;
 
   // Element access
-  std::shared_ptr<Submap<PointT>> at(size_t n);
-  std::shared_ptr<Submap<PointT>>& operator[](size_t n);
-  std::shared_ptr<Submap<PointT>>& front();
-  std::shared_ptr<Submap<PointT>>& back();
+  std::shared_ptr<Submap> at(size_t n);
+  std::shared_ptr<Submap>& operator[](size_t n);
+  std::shared_ptr<Submap>& front();
+  std::shared_ptr<Submap>& back();
   // Iterators
   iterator begin();
   iterator end();
@@ -82,7 +81,7 @@ class Trajectory {
   bool empty();
   void reserve(size_t n);
   // Modifiers
-  void push_back(const std::shared_ptr<Submap<PointT>>& submap);
+  void push_back(const std::shared_ptr<Submap>& submap);
   void shrink_to_fit();
 
   // Trajectory APIs
@@ -96,7 +95,7 @@ class Trajectory {
  private:
   // use a read&write mutex locker to ensure efficiency of submap
   // accessment and modifying
-  tbb::concurrent_vector<std::shared_ptr<Submap<PointT>>> submaps_;
+  tbb::concurrent_vector<std::shared_ptr<Submap>> submaps_;
 
   int id_;
   // @todo(edward) change to enu offset
@@ -104,63 +103,38 @@ class Trajectory {
   double enu_offset_y_ = 0.;
 };
 
-template <typename PointT>
-inline std::shared_ptr<Submap<PointT>> Trajectory<PointT>::at(size_t n) {
+inline std::shared_ptr<Submap> Trajectory::at(size_t n) {
   return submaps_.at(n);
 }
 
-template <typename PointT>
-inline std::shared_ptr<Submap<PointT>>& Trajectory<PointT>::operator[](
-    size_t n) {
+inline std::shared_ptr<Submap>& Trajectory::operator[](size_t n) {
   return submaps_[n];
 }
 
-template <typename PointT>
-inline std::shared_ptr<Submap<PointT>>& Trajectory<PointT>::front() {
-  return submaps_.front();
-}
+inline std::shared_ptr<Submap>& Trajectory::front() { return submaps_.front(); }
 
-template <typename PointT>
-inline std::shared_ptr<Submap<PointT>>& Trajectory<PointT>::back() {
-  return submaps_.back();
-}
+inline std::shared_ptr<Submap>& Trajectory::back() { return submaps_.back(); }
 
-template <typename PointT>
-inline typename Trajectory<PointT>::iterator Trajectory<PointT>::begin() {
+inline typename Trajectory::iterator Trajectory::begin() {
   return submaps_.begin();
 }
 
-template <typename PointT>
-inline typename Trajectory<PointT>::iterator Trajectory<PointT>::end() {
+inline typename Trajectory::iterator Trajectory::end() {
   return submaps_.end();
 }
 
-template <typename PointT>
-inline size_t Trajectory<PointT>::size() {
-  return submaps_.size();
-}
+inline size_t Trajectory::size() { return submaps_.size(); }
 
-template <typename PointT>
-inline bool Trajectory<PointT>::empty() {
-  return submaps_.empty();
-}
+inline bool Trajectory::empty() { return submaps_.empty(); }
 
-template <typename PointT>
-inline void Trajectory<PointT>::reserve(size_t n) {
-  submaps_.reserve(n);
-}
+inline void Trajectory::reserve(size_t n) { submaps_.reserve(n); }
 
-template <typename PointT>
-inline void Trajectory<PointT>::push_back(
-    const std::shared_ptr<Submap<PointT>>& submap) {
+inline void Trajectory::push_back(const std::shared_ptr<Submap>& submap) {
   CHECK(submap);
   submaps_.push_back(submap);
 }
 
-template <typename PointT>
-inline void Trajectory<PointT>::shrink_to_fit() {
-  submaps_.shrink_to_fit();
-}
+inline void Trajectory::shrink_to_fit() { submaps_.shrink_to_fit(); }
 
 }  // namespace static_map
 

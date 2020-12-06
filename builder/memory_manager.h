@@ -30,21 +30,19 @@
 
 namespace static_map {
 
-template <typename PointType>
 class Trajectory;
 
-template <typename PointType>
 class MemoryManager {
  public:
   explicit MemoryManager(
-      std::vector<std::shared_ptr<Trajectory<PointType>>>* const trajectories);
+      std::vector<std::shared_ptr<Trajectory>>* const trajectories);
   ~MemoryManager();
 
  private:
   /// @brief managing submaps between RAM and Disk
   void Processing();
   // todo(edward) use tbb::vector instead of std::vector
-  std::vector<std::shared_ptr<Trajectory<PointType>>>* const trajectories_;
+  std::vector<std::shared_ptr<Trajectory>>* const trajectories_;
   std::thread memory_managing_thread_;
   std::atomic_bool quit_;
 };

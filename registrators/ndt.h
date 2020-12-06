@@ -23,19 +23,19 @@
 #ifndef REGISTRATORS_NDT_H_
 #define REGISTRATORS_NDT_H_
 
+#include "pcl/point_types.h"
 #include "pclomp/ndt_omp_impl.hpp"
 #include "registrators/interface.h"
 
 namespace static_map {
 namespace registrator {
 
-template <typename PointType>
-class Ndt : public Interface<PointType> {
+class Ndt : public Interface {
  public:
   USE_REGISTRATOR_CLOUDS;
 
   using NdtRegistrator =
-      pclomp::NormalDistributionsTransform<PointType, PointType>;
+      pclomp::NormalDistributionsTransform<pcl::PointXYZ, pcl::PointXYZ>;
 
   Ndt();
   ~Ndt();

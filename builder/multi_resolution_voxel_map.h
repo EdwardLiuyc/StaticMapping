@@ -30,20 +30,17 @@
 #include <type_traits>
 #include <vector>
 // third party
+#include "builder/data/cloud_types.h"
+#include "common/eigen_hash.h"
+#include "common/macro_defines.h"
+#include "common/math.h"
 #include "glog/logging.h"
 #include "pcl/io/pcd_io.h"
 #include "pcl/point_cloud.h"
 #include "pcl/point_types.h"
-// local
-#include "common/eigen_hash.h"
-#include "common/macro_defines.h"
-#include "common/math.h"
-
-#if defined _OPENMP
-#include <tbb/atomic.h>
-#include <tbb/concurrent_unordered_map.h>
-#include <tbb/concurrent_vector.h>
-#endif
+#include "tbb/atomic.h"
+#include "tbb/concurrent_unordered_map.h"
+#include "tbb/concurrent_vector.h"
 
 namespace static_map {
 
@@ -70,17 +67,11 @@ struct MrvmSettings {
 
 using common::Clamp;
 
-template <typename PointT>
 class MultiResolutionVoxelMap {
  public:
-  using PointCloudType = typename pcl::PointCloud<PointT>;
-  using PointCloudPtr = typename PointCloudType::Ptr;
-  using PointCloudConstPtr = typename PointCloudType::ConstPtr;
-
   using KeyInt3 = Eigen::Vector3i;
 
-  using PointVector =
-      tbb::concurrent_vector<PointT, Eigen::aligned_allocator<PointT>>;
+  using PointVector = tbb::concurrent_vector<data::InnerPointType>;
   using IndexVector = tbb::concurrent_vector<KeyInt3>;
   // @notice use int but not bool because atomic<bool> is not supported in tbb
   // so, use kTure(int 1) instead of true
@@ -103,10 +94,11 @@ class MultiResolutionVoxelMap {
 
   void Initialise(const MrvmSettings& settings);
 
-  void InsertPointCloud(const PointCloudPtr& cloud,
+  void InsertPointCloud(const data::InnerCloudType::Ptr& cloud,
                         const Eigen::Vector3f& origin);
 
-  void OutputToPointCloud(const float threshold, const PointCloudPtr& cloud);
+  void OutputToPointCloud(const float threshold,
+                          const pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud);
 
   void OutputToPointCloud(const float threshold,
                           const pcl::PointCloud<pcl::PointXYZRGB>::Ptr& cloud);
@@ -140,13 +132,11 @@ class MultiResolutionVoxelMap {
   float odds_table_[kTableSize];
 };
 
-template <typename PointT>
-inline float MultiResolutionVoxelMap<PointT>::ProbabilityToOdd(float prob) {
+inline float MultiResolutionVoxelMap::ProbabilityToOdd(float prob) {
   return std::log(prob / (1. - prob));
 }
 
-template <typename PointT>
-inline float MultiResolutionVoxelMap<PointT>::OddToProbability(float odd) {
+inline float MultiResolutionVoxelMap::OddToProbability(float odd) {
   return 1. - 1. / (1. + std::exp(odd));
 }
 

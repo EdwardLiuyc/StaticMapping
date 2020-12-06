@@ -190,37 +190,8 @@ BOOST_AUTO_TEST_CASE(EigenCloud) {}
 BOOST_AUTO_TEST_CASE(InnerCloudData) {
   const int size = 1000;
   const auto inner_cloud = CreateRandomInnerCloud(size);
-  InnerPointCloudData<pcl::PointXYZI> inner_cloud_data(inner_cloud);
-
+  InnerPointCloudData inner_cloud_data(inner_cloud);
   BOOST_CHECK_EQUAL(inner_cloud_data.GetInnerCloud(), inner_cloud);
-
-  auto pcl_cloud = inner_cloud_data.GetPclCloud();
-  for (int i = 0; i < size; ++i) {
-    const auto& pcl_point = pcl_cloud->at(i);
-    const auto& inner_point = inner_cloud->points.at(i);
-    BOOST_CHECK_DOUBLE_EQUAL(pcl_point.x, (float)inner_point.x);
-    BOOST_CHECK_DOUBLE_EQUAL(pcl_point.y, (float)inner_point.y);
-    BOOST_CHECK_DOUBLE_EQUAL(pcl_point.z, (float)inner_point.z);
-    BOOST_CHECK_DOUBLE_EQUAL(pcl_point.intensity, (float)inner_point.intensity);
-  }
-
-  BOOST_CHECK(!inner_cloud_data.Empty());
-  Eigen::Matrix4d transform = Eigen::Matrix4d::Identity();
-  transform.block(0, 3, 3, 1) << 23., 22., 10.;
-  inner_cloud_data.TransformCloud(transform);
-  auto pcl_cloud_transformed = inner_cloud_data.GetPclCloud();
-  BOOST_CHECK(pcl_cloud != pcl_cloud_transformed);
-  for (int i = 0; i < size; ++i) {
-    const auto& pcl_point = pcl_cloud_transformed->at(i);
-    const auto& inner_point = inner_cloud_data.GetInnerCloud()->points.at(i);
-    BOOST_CHECK_DOUBLE_EQUAL(pcl_point.x, (float)inner_point.x);
-    BOOST_CHECK_DOUBLE_EQUAL(pcl_point.y, (float)inner_point.y);
-    BOOST_CHECK_DOUBLE_EQUAL(pcl_point.z, (float)inner_point.z);
-    BOOST_CHECK_DOUBLE_EQUAL(pcl_point.intensity, (float)inner_point.intensity);
-  }
-
-  BOOST_CHECK_EQUAL(inner_cloud->stamp, inner_cloud_data.GetTime());
-  BOOST_CHECK_EQUAL(inner_cloud->stamp, ToLocalTime(pcl_cloud->header.stamp));
 
   inner_cloud_data.Clear();
   BOOST_CHECK(nullptr != inner_cloud_data.GetInnerCloud());

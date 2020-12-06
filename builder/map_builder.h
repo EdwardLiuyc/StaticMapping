@@ -60,7 +60,6 @@ class DataCollector;
 }
 
 namespace back_end {
-template <typename PointT>
 class IsamOptimizer;
 }
 
@@ -133,7 +132,7 @@ class MapBuilder {
   using PointCloudType = pcl::PointCloud<PointType>;
   using PointCloudPtr = PointCloudType::Ptr;
   using PointCloudConstPtr = PointCloudType::ConstPtr;
-  using InnerCloud = data::InnerPointCloudData<PointType>;
+  using InnerCloud = data::InnerPointCloudData;
 
   // call back function for ROS
   using ShowMapFunction = std::function<void(const PointCloudPtr&)>;
@@ -253,16 +252,16 @@ class MapBuilder {
   pre_processers::filter::Factory filter_factory_;
   // frond end
   std::unique_ptr<PoseExtrapolator> extrapolator_ = nullptr;
-  std::shared_ptr<registrator::Interface<PointType>> scan_matcher_ = nullptr;
+  std::shared_ptr<registrator::Interface> scan_matcher_ = nullptr;
   std::unique_ptr<std::thread> scan_match_thread_;
-  tbb::concurrent_vector<std::shared_ptr<Frame<PointType>>> frames_;
+  tbb::concurrent_vector<std::shared_ptr<Frame>> frames_;
   std::atomic<bool> scan_match_thread_running_;
   bool got_first_point_cloud_ = false;
 
   // ************************ back end ************************
   // submaps
   std::unique_ptr<std::thread> submap_thread_;
-  std::unique_ptr<back_end::IsamOptimizer<PointType>> isam_optimizer_;
+  std::unique_ptr<back_end::IsamOptimizer> isam_optimizer_;
 
   // show the result in RVIZ(ros) or other platform
   ShowMapFunction show_map_function_;
@@ -271,8 +270,8 @@ class MapBuilder {
   ShowEdgeFunction show_edge_function_;
 
   // trajectories
-  std::vector<Trajectory<PointType>::Ptr> trajectories_;
-  Trajectory<PointType>::Ptr current_trajectory_;
+  std::vector<Trajectory::Ptr> trajectories_;
+  Trajectory::Ptr current_trajectory_;
 };
 
 }  // namespace static_map

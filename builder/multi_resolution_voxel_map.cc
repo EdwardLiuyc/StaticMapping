@@ -32,8 +32,7 @@ constexpr float kMaxProb = 0.9f;
 constexpr float kMinProb = 0.1f;
 }  // namespace
 
-template <typename PointT>
-void MultiResolutionVoxelMap<PointT>::Initialise(const MrvmSettings& settings) {
+void MultiResolutionVoxelMap::Initialise(const MrvmSettings& settings) {
   settings_ = settings;
   CHECK_GT(settings_.max_point_num_in_cell, 0);
 
@@ -41,16 +40,13 @@ void MultiResolutionVoxelMap<PointT>::Initialise(const MrvmSettings& settings) {
   settings_.miss_prob = Clamp(settings_.miss_prob, kMinProb, kMaxMissProb);
 }
 
-template <typename PointT>
-void MultiResolutionVoxelMap<PointT>::SetOffsetZ(const float& offset) {
+void MultiResolutionVoxelMap::SetOffsetZ(const float& offset) {
   settings_.z_offset = offset;
 }
 
-template <typename PointT>
-void MultiResolutionVoxelMap<PointT>::InsertPointCloud(
-    const MultiResolutionVoxelMap<PointT>::PointCloudPtr& cloud,
-    const Eigen::Vector3f& origin) {
-  if (!cloud || cloud->empty()) {
+void MultiResolutionVoxelMap::InsertPointCloud(
+    const data::InnerCloudType::Ptr& cloud, const Eigen::Vector3f& origin) {
+  if (!cloud || cloud->points.empty()) {
     PRINT_ERROR("cloud is empty.");
     return;
   }
@@ -66,7 +62,7 @@ void MultiResolutionVoxelMap<PointT>::InsertPointCloud(
   };
 
   size_t point_index = 0;
-  const size_t cloud_size = cloud->size();
+  const size_t cloud_size = cloud->points.size();
   const float resolution = settings_.high_resolution;
   VoxelMap<bool> end_voxels;
 #if defined _OPENMP
@@ -117,9 +113,8 @@ void MultiResolutionVoxelMap<PointT>::InsertPointCloud(
   }
 }
 
-template <typename PointT>
-void MultiResolutionVoxelMap<PointT>::OutputToPointCloud(
-    const float threshold, const PointCloudPtr& cloud) {
+void MultiResolutionVoxelMap::OutputToPointCloud(
+    const float threshold, const pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud) {
   if (!cloud) {
     PRINT_WARNING("cloud is nullptr. do nothing!");
   }
@@ -130,7 +125,7 @@ void MultiResolutionVoxelMap<PointT>::OutputToPointCloud(
     if (high_res_voxel.second.probability >= prob_threshold) {
       CHECK(!high_res_voxel.second.points.empty());
       if (settings_.output_average) {
-        PointT average_point;
+        pcl::PointXYZI average_point;
         for (auto& point : high_res_voxel.second.points) {
           average_point.x += point.x;
           average_point.y += point.y;
@@ -152,7 +147,9 @@ void MultiResolutionVoxelMap<PointT>::OutputToPointCloud(
             point.intensity =
                 static_cast<int>(high_res_voxel.second.max_intensity);
           }
-          cloud->points.push_back(point);
+          pcl::PointXYZI pcl_point;
+          data::ToPclPoint(point, &pcl_point);
+          cloud->points.push_back(pcl_point);
         }
       }
     }
@@ -160,8 +157,7 @@ void MultiResolutionVoxelMap<PointT>::OutputToPointCloud(
   cloud->points.shrink_to_fit();
 }
 
-template <typename PointT>
-void MultiResolutionVoxelMap<PointT>::OutputToPointCloud(
+void MultiResolutionVoxelMap::OutputToPointCloud(
     const float threshold,
     const pcl::PointCloud<pcl::PointXYZRGB>::Ptr& cloud) {
   if (!cloud) {
@@ -222,21 +218,20 @@ void MultiResolutionVoxelMap<PointT>::OutputToPointCloud(
     PRINT_WARNING("Cloud is empty. Do not output to file.");           \
   }
 
-template <typename PointT>
-void MultiResolutionVoxelMap<PointT>::OutputToPointCloud(
-    const float threshold, const std::string& filename, bool compress) {
+void MultiResolutionVoxelMap::OutputToPointCloud(const float threshold,
+                                                 const std::string& filename,
+                                                 bool compress) {
   if (settings_.output_rgb) {
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr output_cloud(
         new pcl::PointCloud<pcl::PointXYZRGB>);
     OUTPUT_TO_FILE(output_cloud);
   } else {
-    PointCloudPtr output_cloud(new PointCloudType);
+    pcl::PointCloud<pcl::PointXYZI>::Ptr output_cloud(
+        new pcl::PointCloud<pcl::PointXYZI>);
     OUTPUT_TO_FILE(output_cloud);
   }
 }
 
 #undef OUTPUT_TO_FILE
-
-template class MultiResolutionVoxelMap<pcl::PointXYZI>;
 
 }  // namespace static_map
