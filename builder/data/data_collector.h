@@ -184,7 +184,7 @@ void DataCollector::AddSensorData(
     }
   } else {
     accumulated_point_cloud_.reset();
-    accumulated_point_cloud_ = data::ToInnerPoints(*cloud);
+    accumulated_point_cloud_ = data::ToInnerPointCloud(*cloud);
     first_time_in_accmulated_cloud_ = ToLocalTime(cloud->header.stamp);
   }
 

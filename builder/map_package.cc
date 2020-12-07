@@ -229,9 +229,4 @@ bool SaveTrajectoriesAsMapPackage(
   return true;
 }
 
-bool SaveTrajectoriesAsMapPackage(
-    const std::vector<std::shared_ptr<Trajectory>> trajectores,
-    const MapPackageOptions& map_package_options,
-    const MrvmSettings& mrvm_options, const std::string& export_path);
-
 }  // namespace static_map

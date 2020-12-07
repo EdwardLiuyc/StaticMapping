@@ -65,15 +65,12 @@ struct InnerCloudType {
   using UniquePtr = std::unique_ptr<InnerCloudType>;
   using ConstPtr = std::shared_ptr<const InnerCloudType>;
 
-  // TODO(edward) add operator+
-  // TODO(edward) add append
-
   int Serialize(std::fstream *stream) const;
   int Deserialize(std::fstream *stream);
 
   void ApplyTransformInplace(const Eigen::Matrix4d &transform);
   void ApplyTransformToOutput(const Eigen::Matrix4d &transform,
-                              InnerCloudType *const output);
+                              InnerCloudType *const output) const;
 
   InnerCloudType &operator+=(const InnerCloudType &b);
 };
@@ -109,7 +106,7 @@ static inline void ToPclPoint(const InnerPointType &point,
 }
 
 template <typename PointT>
-InnerCloudType::Ptr ToInnerPoints(const pcl::PointCloud<PointT> &cloud);
+InnerCloudType::Ptr ToInnerPointCloud(const pcl::PointCloud<PointT> &cloud);
 
 template <typename PointT>
 void ToPclPointCloud(const InnerCloudType &cloud,

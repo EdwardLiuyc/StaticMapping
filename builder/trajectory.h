@@ -54,7 +54,7 @@ namespace static_map {
  *   2. traejctory.push_back(submap)
  *   ...
  */
-class Trajectory {
+class Trajectory : public tbb::concurrent_vector<std::shared_ptr<Submap>> {
  public:
   Trajectory() = default;
   ~Trajectory() = default;
@@ -62,27 +62,6 @@ class Trajectory {
   PROHIBIT_COPY_AND_ASSIGN(Trajectory);
 
   using Ptr = std::shared_ptr<Trajectory>;
-
-  using iterator =
-      typename tbb::concurrent_vector<std::shared_ptr<Submap>>::iterator;
-  using const_iterator =
-      typename tbb::concurrent_vector<std::shared_ptr<Submap>>::const_iterator;
-
-  // Element access
-  std::shared_ptr<Submap> at(size_t n);
-  std::shared_ptr<Submap>& operator[](size_t n);
-  std::shared_ptr<Submap>& front();
-  std::shared_ptr<Submap>& back();
-  // Iterators
-  iterator begin();
-  iterator end();
-  // Capacity
-  size_t size();
-  bool empty();
-  void reserve(size_t n);
-  // Modifiers
-  void push_back(const std::shared_ptr<Submap>& submap);
-  void shrink_to_fit();
 
   // Trajectory APIs
   void SetId(int id) { id_ = id; }
@@ -93,48 +72,11 @@ class Trajectory {
   void OutputPathToPointcloud(const std::string& path);
 
  private:
-  // use a read&write mutex locker to ensure efficiency of submap
-  // accessment and modifying
-  tbb::concurrent_vector<std::shared_ptr<Submap>> submaps_;
-
   int id_;
   // @todo(edward) change to enu offset
   double enu_offset_x_ = 0.;
   double enu_offset_y_ = 0.;
 };
-
-inline std::shared_ptr<Submap> Trajectory::at(size_t n) {
-  return submaps_.at(n);
-}
-
-inline std::shared_ptr<Submap>& Trajectory::operator[](size_t n) {
-  return submaps_[n];
-}
-
-inline std::shared_ptr<Submap>& Trajectory::front() { return submaps_.front(); }
-
-inline std::shared_ptr<Submap>& Trajectory::back() { return submaps_.back(); }
-
-inline typename Trajectory::iterator Trajectory::begin() {
-  return submaps_.begin();
-}
-
-inline typename Trajectory::iterator Trajectory::end() {
-  return submaps_.end();
-}
-
-inline size_t Trajectory::size() { return submaps_.size(); }
-
-inline bool Trajectory::empty() { return submaps_.empty(); }
-
-inline void Trajectory::reserve(size_t n) { submaps_.reserve(n); }
-
-inline void Trajectory::push_back(const std::shared_ptr<Submap>& submap) {
-  CHECK(submap);
-  submaps_.push_back(submap);
-}
-
-inline void Trajectory::shrink_to_fit() { submaps_.shrink_to_fit(); }
 
 }  // namespace static_map
 

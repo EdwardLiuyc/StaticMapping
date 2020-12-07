@@ -181,8 +181,7 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - serialization and deserialization for inner cloud type (more elegant way)
 - loop edges trimmer
 - add filter api for init some of the config parameters
-- add factor to inner cloud (for motion compensation) and fix bug
-- isolate input pointcloud type with inner pointcloud type
+- re-think motion compesation
 - yaml configs
 - more feature as heartbeat
 - add odom to pose extrapolater
@@ -229,7 +228,6 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - full support for all kinds of pointcloud
 - totally independent with ROS
 - try SQlite to manage submap memory
-- isam optimizer should not be involved with pointcloud type
 - Introduce a PoseGraph class to handle all things for back-end
 
 ## Something involved with multi-trajectory-situation

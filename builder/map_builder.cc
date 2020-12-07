@@ -546,7 +546,7 @@ void MapBuilder::ConnectAllSubmap() {
           new data::InnerCloudType);
       PointCloudPtr filtered_final_cloud(new PointCloudType);
       pre_processers::filter::RandomSampler random_sample;
-      auto inner_local_map = data::ToInnerPoints(*local_map);
+      auto inner_local_map = data::ToInnerPointCloud(*local_map);
       random_sample.SetInputCloud(inner_local_map);
       random_sample.SetValue("sampling_rate", 0.05);
       random_sample.Filter(inner_filtered_final_cloud);

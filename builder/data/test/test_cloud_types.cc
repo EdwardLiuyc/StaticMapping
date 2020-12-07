@@ -26,6 +26,7 @@
 #define BOOST_TEST_MODULE CloudTypes
 
 #include <boost/test/unit_test.hpp>
+#include "common/math.h"
 
 #define BOOST_CHECK_DOUBLE_EQUAL(A, B) \
   BOOST_CHECK_LE(std::fabs((A) - (B)), 1e-6);
@@ -114,7 +115,7 @@ BOOST_AUTO_TEST_CASE(CloudConversion) {
     const auto pcl_cloud = CreateRandomPclCloud(size);
     BOOST_CHECK_EQUAL(size, pcl_cloud->size());
 
-    auto inner_cloud = ToInnerPoints(*pcl_cloud);
+    auto inner_cloud = ToInnerPointCloud(*pcl_cloud);
     BOOST_CHECK(inner_cloud);
     BOOST_CHECK_EQUAL(size, inner_cloud->points.size());
 
@@ -197,6 +198,68 @@ BOOST_AUTO_TEST_CASE(InnerCloudData) {
   BOOST_CHECK(nullptr != inner_cloud_data.GetInnerCloud());
   BOOST_CHECK(inner_cloud_data.Empty());
   BOOST_CHECK_EQUAL(size, inner_cloud->points.size());
+}
+
+BOOST_AUTO_TEST_CASE(TransformPointAndCloud) {
+  const InnerPointType point = {
+      .x = 10, .y = 0, .z = 30, .intensity = 0., .factor = 1.};
+  {
+    const auto transformed_point =
+        TransformPoint(Eigen::Matrix4d::Identity(), point);
+    BOOST_CHECK_DOUBLE_EQUAL(transformed_point.x, point.x);
+    BOOST_CHECK_DOUBLE_EQUAL(transformed_point.y, point.y);
+    BOOST_CHECK_DOUBLE_EQUAL(transformed_point.z, point.z);
+    BOOST_CHECK_DOUBLE_EQUAL(transformed_point.intensity, point.intensity);
+    BOOST_CHECK_DOUBLE_EQUAL(transformed_point.factor, point.factor);
+  }
+  {
+    Eigen::Vector6<double> se3;
+    se3 << 0., 0., 0., 0., 0., M_PI;
+    Eigen::Matrix4d transform = common::Vector6ToTransform(se3);
+
+    const auto transformed_point = TransformPoint(transform, point);
+    BOOST_CHECK_DOUBLE_EQUAL(transformed_point.x, -point.x);
+    BOOST_CHECK_DOUBLE_EQUAL(transformed_point.y, -point.y);
+    BOOST_CHECK_DOUBLE_EQUAL(transformed_point.z, point.z);
+    BOOST_CHECK_DOUBLE_EQUAL(transformed_point.intensity, point.intensity);
+    BOOST_CHECK_DOUBLE_EQUAL(transformed_point.factor, point.factor);
+  }
+
+  const int size = 1000;
+  const auto inner_cloud = CreateRandomInnerCloud(size);
+  {
+    Eigen::Vector6<double> se3;
+    se3 << 0., 0., 0., 0., 0., M_PI;
+    Eigen::Matrix4d transform = common::Vector6ToTransform(se3);
+
+    auto another_cloud = CreateRandomInnerCloud(200);
+    inner_cloud->ApplyTransformToOutput(transform, another_cloud.get());
+    BOOST_CHECK_EQUAL(inner_cloud->points.size(), another_cloud->points.size());
+    BOOST_CHECK_EQUAL(inner_cloud->stamp, another_cloud->stamp);
+
+    for (int i = 0; i < size; ++i) {
+      const auto& transformed_point = another_cloud->points.at(i);
+      const auto& inner_point = inner_cloud->points.at(i);
+      BOOST_CHECK_DOUBLE_EQUAL(transformed_point.x, -inner_point.x);
+      BOOST_CHECK_DOUBLE_EQUAL(transformed_point.y, -inner_point.y);
+      BOOST_CHECK_DOUBLE_EQUAL(transformed_point.z, inner_point.z);
+      BOOST_CHECK_DOUBLE_EQUAL(transformed_point.intensity,
+                               inner_point.intensity);
+      BOOST_CHECK_DOUBLE_EQUAL(transformed_point.factor, inner_point.factor);
+    }
+
+    inner_cloud->ApplyTransformInplace(transform);
+    for (int i = 0; i < size; ++i) {
+      const auto& transformed_point = another_cloud->points.at(i);
+      const auto& inner_point = inner_cloud->points.at(i);
+      BOOST_CHECK_DOUBLE_EQUAL(transformed_point.x, inner_point.x);
+      BOOST_CHECK_DOUBLE_EQUAL(transformed_point.y, inner_point.y);
+      BOOST_CHECK_DOUBLE_EQUAL(transformed_point.z, inner_point.z);
+      BOOST_CHECK_DOUBLE_EQUAL(transformed_point.intensity,
+                               inner_point.intensity);
+      BOOST_CHECK_DOUBLE_EQUAL(transformed_point.factor, inner_point.factor);
+    }
+  }
 }
 
 }  // namespace data

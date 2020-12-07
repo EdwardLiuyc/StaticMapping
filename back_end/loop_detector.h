@@ -82,7 +82,7 @@ class LoopDetector {
   DetectResult AddFrame(const std::shared_ptr<Submap> &submap,
                         bool do_loop_detect = true);
   void SetSearchWindow(const int start_index, const int end_index);
-  std::vector<std::shared_ptr<Submap>> &GetFrames();
+  const std::vector<std::shared_ptr<Submap>> &GetFrames() const;
 
   /// @brief set static tf link from odom to lidar(cloud frame)
   void SetTransformOdomToLidar(const Eigen::Matrix4d &t);
@@ -111,7 +111,8 @@ class LoopDetector {
   int search_window_end_ = -1;
 };
 
-inline std::vector<std::shared_ptr<Submap>> &LoopDetector::GetFrames() {
+inline const std::vector<std::shared_ptr<Submap>> &LoopDetector::GetFrames()
+    const {
   return all_frames_;
 }
 
