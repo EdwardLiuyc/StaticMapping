@@ -223,8 +223,8 @@ void InnerCloudType::ApplyTransformInplace(const Eigen::Matrix4d& transform) {
   }
 }
 
-void InnerCloudType::ApplyTransformToOutput(const Eigen::Matrix4d& transform,
-                                            InnerCloudType* const output) {
+void InnerCloudType::ApplyTransformToOutput(
+    const Eigen::Matrix4d& transform, InnerCloudType* const output) const {
   CHECK(output);
   output->stamp = stamp;
   output->points.clear();
@@ -242,7 +242,7 @@ InnerCloudType& InnerCloudType::operator+=(const InnerCloudType& b) {
 }
 
 template <typename PointT>
-InnerCloudType::Ptr ToInnerPoints(const pcl::PointCloud<PointT>& cloud) {
+InnerCloudType::Ptr ToInnerPointCloud(const pcl::PointCloud<PointT>& cloud) {
   // Set time stamp
   auto inner_cloud = std::make_shared<InnerCloudType>();
   inner_cloud->stamp = ToLocalTime(cloud.header.stamp);
@@ -384,16 +384,6 @@ void InnerPointCloudData::TransformCloud(const Eigen::Matrix4d& T) {
   boost::upgrade_lock<common::ReadWriteMutex> locker(mutex_);
   common::WriteMutexLocker write_locker(locker);
   if (!EmptyImpl()) {
-    // typename pcl::PointCloud<PointT>::Ptr transformed_cloud(
-    //     new typename pcl::PointCloud<PointT>);
-    // pcl::transformPointCloud(*pcl_cloud_, *transformed_cloud, T);
-    // pcl_cloud_ = transformed_cloud;
-
-    // TODO(edward) Temporarily, we use update the inner cloud using transformed
-    // pcl cloud, later after remove the pcl cloud, we will direct transform the
-    // inner cloud itself.
-    // inner_cloud_.reset();
-    // inner_cloud_ = ToInnerPoints(*pcl_cloud_);
     inner_cloud_->ApplyTransformInplace(T);
   }
   if (eigen_cloud_) {
@@ -463,9 +453,9 @@ InnerCloudType::Ptr InnerPointCloudData::GetInnerCloud() const {
   return inner_cloud_;
 }
 
-template InnerCloudType::Ptr ToInnerPoints(
+template InnerCloudType::Ptr ToInnerPointCloud(
     const pcl::PointCloud<pcl::PointXYZ>& cloud);
-template InnerCloudType::Ptr ToInnerPoints(
+template InnerCloudType::Ptr ToInnerPointCloud(
     const pcl::PointCloud<pcl::PointXYZI>& cloud);
 
 template void ToPclPointCloud(const InnerCloudType& cloud,

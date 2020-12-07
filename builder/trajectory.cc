@@ -34,7 +34,7 @@ void Trajectory::ToXmlNode(pugi::xml_node* map_node) {
   t_node.append_attribute("id") = id_;
   t_node.append_attribute("enu_x") = enu_offset_x_;
   t_node.append_attribute("enu_y") = enu_offset_y_;
-  for (auto& submap : submaps_) {
+  for (auto& submap : *this) {
     pugi::xml_node submap_node = t_node.append_child("Submap");
     submap_node.append_attribute("id") = submap->GetId().submap_index;
     submap_node.append_attribute("file") = submap->SavedFileName().c_str();
@@ -63,7 +63,7 @@ void Trajectory::SetEnuOffset(const double x, const double y) {
 }
 
 void Trajectory::SetSavePath(const std::string& path) {
-  for (auto& submap : submaps_) {
+  for (auto& submap : *this) {
     submap->SetSavePath(path);
   }
 }
@@ -81,8 +81,8 @@ void Trajectory::OutputPathToPointcloud(const std::string& path) {
       new pcl::PointCloud<pcl::_PointXYZI>);
   pcl::PointCloud<pcl::PointXYZI> enu_path_cloud;
   pcl::PointCloud<pcl::PointXYZI> odom_path_cloud;
-  enu_path_cloud.points.reserve(submaps_.size());
-  for (const auto& submap : submaps_) {
+  enu_path_cloud.points.reserve(this->size());
+  for (const auto& submap : *this) {
     // enu path
     if (submap->HasGps()) {
       pcl::PointXYZI enu_point;

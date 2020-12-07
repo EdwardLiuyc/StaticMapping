@@ -235,6 +235,8 @@ DetectResult LoopDetector::AddFrame(const std::shared_ptr<Submap>& frame,
           const int source_id = edge.close_pair_index.second;
           const int target_id = edge.close_pair_index.first;
           {
+            // TODO(edward) Add api of innercloud to write pcd directly or add
+            // tool to view .bin just like pcl_viewer.
             // Output combined cloud using init pose.
             data::InnerCloudType::Ptr none_matched_cloud(
                 new data::InnerCloudType);
