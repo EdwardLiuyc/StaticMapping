@@ -26,7 +26,7 @@ namespace static_map {
 namespace pre_processers {
 namespace filter {
 
-void Interface::InitFromXmlNode(const pugi::xml_node& node) {
+bool Interface::InitFromXmlNode(const pugi::xml_node& node) {
   CHECK_EQ(std::string(node.name()), "filter");
   bool all_right = true;
   for (auto param_node = node.child("param"); param_node;
@@ -50,15 +50,17 @@ void Interface::InitFromXmlNode(const pugi::xml_node& node) {
     }
     CHECK(all_right);
   }
+  return ConfigsValid();
 }
 
-void Interface::InitFromXmlText(const char* xml_text) {
+bool Interface::InitFromXmlText(const char* xml_text) {
   pugi::xml_document doc;
   if (doc.load_string(xml_text)) {
-    InitFromXmlNode(doc.first_child());
+    return InitFromXmlNode(doc.first_child());
   } else {
     LOG(FATAL) << "invalid xml text.";
   }
+  return false;
 }
 
 void Interface::FilterPrepare(const data::InnerCloudType::Ptr& cloud) {

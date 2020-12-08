@@ -46,6 +46,8 @@ class AxisRange : public Interface {
     return std::make_shared<AxisRange>();
   }
 
+  bool ConfigsValid() const override;
+
   void Filter(const data::InnerCloudType::Ptr& cloud) override;
 
   void DisplayAllParams() override;

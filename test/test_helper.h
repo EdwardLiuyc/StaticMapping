@@ -20,42 +20,14 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef PRE_PROCESSORS_FILTER_INTERFACE_H_
-#define PRE_PROCESSORS_FILTER_INTERFACE_H_
-
-#include <memory>
-#include <string>
-
-#include "pre_processors/processor_interface.h"
-
-#include "pugixml/pugixml.hpp"
+#include "builder/data/cloud_types.h"
 
 namespace static_map {
-namespace pre_processers {
-namespace filter {
+namespace test {
 
-class Interface : public ProcesserInterface {
- public:
-  Interface() : ProcesserInterface() {}
-  virtual ~Interface() {}
+pcl::PointCloud<pcl::PointXYZI>::Ptr CreateRandomPclCloud(const int size);
 
-  Interface(const Interface&) = delete;
-  Interface& operator=(const Interface&) = delete;
+data::InnerCloudType::Ptr CreateRandomInnerCloud(const int size);
 
-  bool InitFromXmlNode(const pugi::xml_node& node);
-
-  bool InitFromXmlText(const char* xml_text);
-
-  virtual bool ConfigsValid() const { return true; }
-
-  virtual std::shared_ptr<Interface> CreateNewInstance() = 0;
-  virtual void Filter(const data::InnerCloudType::Ptr& cloud) = 0;
-
-  virtual void FilterPrepare(const data::InnerCloudType::Ptr& cloud);
-};
-
-}  // namespace filter
-}  // namespace pre_processers
+}  // namespace test
 }  // namespace static_map
-
-#endif  // PRE_PROCESSORS_FILTER_INTERFACE_H_

@@ -206,6 +206,9 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - **add imu integrating factor in backend**
 - culling data structures like ImuMsg, NavSatMsg, etc.
 - add tests 
+  - filters
+  - registrators
+  - math functions
 - **lidar motion compensation after optimization**
 - lidar motion compensation inside ICP
 - Normal estimation using GPU

@@ -6,11 +6,12 @@ function(add_boost_test test_name)
     ${PROJECT_NAME}_builder_data 
     ${PROJECT_NAME}_common
     ${PROJECT_NAME}_test_helper
+    ${PROJECT_NAME}_pre_processors
     ${GeographicLib_LIBRARIES} 
-    glog)
+    glog
+    pugixml)
   target_link_libraries(${test_name} ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY})
   add_test(NAME ${test_name} COMMAND ${test_name})
 endfunction()
 
-add_boost_test(test_cloud_types)
-
+add_boost_test(test_filter_axis_range)

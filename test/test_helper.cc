@@ -20,42 +20,45 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef PRE_PROCESSORS_FILTER_INTERFACE_H_
-#define PRE_PROCESSORS_FILTER_INTERFACE_H_
+#include "test/test_helper.h"
 
-#include <memory>
-#include <string>
-
-#include "pre_processors/processor_interface.h"
-
-#include "pugixml/pugixml.hpp"
+#include <random>
 
 namespace static_map {
-namespace pre_processers {
-namespace filter {
+namespace test {
 
-class Interface : public ProcesserInterface {
- public:
-  Interface() : ProcesserInterface() {}
-  virtual ~Interface() {}
+static std::random_device rd;
+static std::mt19937 gen(rd());
+static std::uniform_real_distribution<> distrib(0., 100.);
 
-  Interface(const Interface&) = delete;
-  Interface& operator=(const Interface&) = delete;
+pcl::PointCloud<pcl::PointXYZI>::Ptr CreateRandomPclCloud(const int size) {
+  pcl::PointCloud<pcl::PointXYZI>::Ptr cloud(
+      new pcl::PointCloud<pcl::PointXYZI>);
+  cloud->header.stamp = distrib(gen);
+  for (int i = 0; i < size; ++i) {
+    pcl::PointXYZI pcl_point;
+    pcl_point.x = distrib(gen);
+    pcl_point.y = distrib(gen);
+    pcl_point.z = distrib(gen);
+    pcl_point.intensity = distrib(gen);
+    cloud->push_back(pcl_point);
+  }
+  return cloud;
+}
 
-  bool InitFromXmlNode(const pugi::xml_node& node);
+data::InnerCloudType::Ptr CreateRandomInnerCloud(const int size) {
+  data::InnerCloudType::Ptr cloud(new data::InnerCloudType);
+  cloud->stamp = SimpleTime::FromNanoSec(1000000000);
+  for (int i = 0; i < size; ++i) {
+    data::InnerPointType point;
+    point.x = distrib(gen);
+    point.y = distrib(gen);
+    point.z = distrib(gen);
+    point.intensity = distrib(gen);
+    cloud->points.push_back(point);
+  }
+  return cloud;
+}
 
-  bool InitFromXmlText(const char* xml_text);
-
-  virtual bool ConfigsValid() const { return true; }
-
-  virtual std::shared_ptr<Interface> CreateNewInstance() = 0;
-  virtual void Filter(const data::InnerCloudType::Ptr& cloud) = 0;
-
-  virtual void FilterPrepare(const data::InnerCloudType::Ptr& cloud);
-};
-
-}  // namespace filter
-}  // namespace pre_processers
+}  // namespace test
 }  // namespace static_map
-
-#endif  // PRE_PROCESSORS_FILTER_INTERFACE_H_
