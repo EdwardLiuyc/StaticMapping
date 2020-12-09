@@ -43,6 +43,8 @@ class RandomSampler : public Interface {
     return std::make_shared<RandomSampler>();
   }
 
+  bool ConfigsValid() const override;
+
   void Filter(const data::InnerCloudType::Ptr& cloud) override;
 
   void DisplayAllParams() override;

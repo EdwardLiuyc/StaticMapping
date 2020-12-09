@@ -22,6 +22,9 @@
 
 #include "pre_processors/filter_factory.h"
 
+#include <string>
+#include <unordered_map>
+
 // filters
 #include "pre_processors/filter_axis_range.h"
 #include "pre_processors/filter_bounding_box.h"
@@ -36,6 +39,17 @@
 namespace static_map {
 namespace pre_processers {
 namespace filter {
+
+const std::unordered_map<std::string, std::string> kFilterNameMap{
+    {typeid(RandomSampler).name(), "RandomSampler"},
+    {typeid(RangeImage).name(), "RangeImage"},
+    {typeid(GroundRemoval).name(), "GroundRemoval"},
+    {typeid(GroundRemoval2).name(), "GroundRemoval2"},
+    {typeid(Range).name(), "Range"},
+    {typeid(StatisticRemoval).name(), "StatisticRemoval"},
+    {typeid(VoxelGrid).name(), "VoxelGrid"},
+    {typeid(AxisRange).name(), "AxisRange"},
+    {typeid(BoundingBoxRemoval).name(), "BoundingBoxRemoval"}};
 
 inline void Factory::InitFromXmlText(const char* text) {
   pugi::xml_document doc;

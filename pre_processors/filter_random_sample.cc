@@ -32,6 +32,10 @@ RandomSampler::RandomSampler() : Interface(), sampling_rate_(1.) {
 
 void RandomSampler::DisplayAllParams() { PARAM_INFO(sampling_rate_); }
 
+bool RandomSampler::ConfigsValid() const {
+  return sampling_rate_ >= 0.f && sampling_rate_ <= 1.f;
+}
+
 void RandomSampler::Filter(const data::InnerCloudType::Ptr& cloud) {
   if (!cloud || !Interface::inner_cloud_) {
     LOG(WARNING) << "nullptr cloud, do nothing!" << std::endl;
@@ -49,20 +53,18 @@ void RandomSampler::Filter(const data::InnerCloudType::Ptr& cloud) {
   // std::rand() is not reentrant or thread-safe, so this filter
   // can not be optimized to multi-thread version
   this->FilterPrepare(cloud);
-  const int int_sample_rate = sampling_rate_ * 1000;
-  std::random_device rand_dev;   // obtain a random number from hardware
-  std::mt19937 eng(rand_dev());  // seed the generator
-  std::uniform_int_distribution<> distr(0, 1000);  // define the range
+
+  std::random_device rand_dev;
+  std::mt19937 eng(rand_dev());
+  std::uniform_real_distribution<> distr(0., 1.);  // define the range
 
   auto& input = this->inner_cloud_;
   const int size = input->points.size();
   this->inliers_.reserve(size);
   this->outliers_.reserve(size);
   cloud->points.reserve(size);
-  // i += 4 to speed up
-  // do the rand() only 1/4 times
   for (int i = 0; i < size; ++i) {
-    if (distr(eng) <= int_sample_rate) {
+    if (distr(eng) <= sampling_rate_) {
       cloud->points.push_back(input->points[i]);
       this->inliers_.push_back(i);
     } else {

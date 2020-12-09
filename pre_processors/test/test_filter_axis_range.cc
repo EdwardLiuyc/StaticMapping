@@ -37,6 +37,10 @@ using test::CreateRandomInnerCloud;
 BOOST_AUTO_TEST_CASE(FilterConfig) {
   AxisRange filter_axis_range;
   {
+    const std::string filter_config = "<filter name=\"AxisRangeXXX\" />";
+    BOOST_CHECK(!filter_axis_range.InitFromXmlText(filter_config.c_str()));
+  }
+  {
     const std::string filter_config =
         "<filter name=\"AxisRange\" >"
         "<param type=\"1\" name=\"min\"> 90. </param>"

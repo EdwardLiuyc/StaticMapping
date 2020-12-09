@@ -22,7 +22,7 @@
 
 #include "pre_processors/filter_bounding_box.h"
 
-#define BOOST_TEST_MODULE FilterAxisRange
+#define BOOST_TEST_MODULE FilterBoundingBoxRemoval
 
 #include "boost/test/unit_test.hpp"
 #include "common/bounding_box.h"
@@ -47,7 +47,7 @@ BOOST_AUTO_TEST_CASE(FilterConfig) {
   }
   {
     const std::string filter_config =
-        "<filter name=\"AxisRange\" >"
+        "<filter name=\"BoundingBoxRemoval\" >"
         "<param type=\"1\" name=\"min_x\"> 10. </param>"
         "<param type=\"1\" name=\"max_x\"> 80. </param>"
         "<param type=\"1\" name=\"min_y\"> 10. </param>"
@@ -57,7 +57,7 @@ BOOST_AUTO_TEST_CASE(FilterConfig) {
   }
   {
     const std::string filter_config =
-        "<filter name=\"AxisRange\" >"
+        "<filter name=\"BoundingBoxRemoval\" >"
         "<param type=\"1\" name=\"min_z\"> 90. </param>"
         "<param type=\"1\" name=\"max_z\"> 80. </param>"
         "</filter>";
@@ -79,7 +79,7 @@ BOOST_AUTO_TEST_CASE(Filter) {
 
   {
     const std::string filter_config =
-        "<filter name=\"AxisRange\" >"
+        "<filter name=\"BoundingBoxRemoval\" >"
         "<param type=\"1\" name=\"min_x\"> 0. </param>"
         "<param type=\"1\" name=\"max_x\"> 100. </param>"
         "<param type=\"1\" name=\"min_y\"> 0 </param>"
@@ -95,7 +95,7 @@ BOOST_AUTO_TEST_CASE(Filter) {
 
   {
     const std::string filter_config =
-        "<filter name=\"AxisRange\" >"
+        "<filter name=\"BoundingBoxRemoval\" >"
         "<param type=\"1\" name=\"min_x\"> 10. </param>"
         "<param type=\"1\" name=\"max_x\"> 80. </param>"
         "<param type=\"1\" name=\"min_y\"> 20. </param>"
