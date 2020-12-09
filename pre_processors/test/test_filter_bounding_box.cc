@@ -106,13 +106,14 @@ BOOST_AUTO_TEST_CASE(Filter) {
     BOOST_CHECK(filter_bbox.InitFromXmlText(filter_config.c_str()));
     common::BoundingBox bbox(Eigen::Vector3d(10., 20., 30.),
                              Eigen::Vector3d(80., 70., 80.));
-
-    filter_bbox.Filter(filtered_cloud);
-    for (const auto& point : filtered_cloud->points) {
-      Eigen::Vector3d point_eigen(point.x, point.y, point.z);
-      BOOST_CHECK(!bbox.ContainsPoint(point_eigen));
+    for (int i = 0; i < 100; ++i) {
+      filter_bbox.Filter(filtered_cloud);
+      for (const auto& point : filtered_cloud->points) {
+        Eigen::Vector3d point_eigen(point.x, point.y, point.z);
+        BOOST_CHECK(!bbox.ContainsPoint(point_eigen));
+      }
+      BOOST_CHECK_EQUAL(filtered_cloud->stamp, raw_cloud->stamp);
     }
-    BOOST_CHECK_EQUAL(filtered_cloud->stamp, raw_cloud->stamp);
   }
 }
 
