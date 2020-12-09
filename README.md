@@ -53,8 +53,9 @@ cd your_own_workspace
 ### compiling
 ```bash
 mkdir build && cd build
-cmake ..
+cmake -DENABLE_TEST=ON ..
 make -j8
+make check # optional, only if you want to check the code with unit tests.
 ```
 
 ## Using Docker 
@@ -206,6 +207,9 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - **add imu integrating factor in backend**
 - culling data structures like ImuMsg, NavSatMsg, etc.
 - add tests 
+  - filters
+  - registrators
+  - math functions
 - **lidar motion compensation after optimization**
 - lidar motion compensation inside ICP
 - Normal estimation using GPU

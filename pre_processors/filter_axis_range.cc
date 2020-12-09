@@ -28,7 +28,7 @@ namespace filter {
 
 AxisRange::AxisRange() : Interface(), axis_index_(2) {
   INIT_FLOAT_PARAM("min", min_);
-  INIT_FLOAT_PARAM("max", min_);
+  INIT_FLOAT_PARAM("max", max_);
   INIT_INT32_PARAM("axis_index", axis_index_);
 }
 
@@ -36,6 +36,10 @@ void AxisRange::DisplayAllParams() {
   PARAM_INFO(min_);
   PARAM_INFO(max_);
   PARAM_INFO(axis_index_);
+}
+
+bool AxisRange::ConfigsValid() const {
+  return (max_ > min_) && (axis_index_ >= 0) && (axis_index_ <= 2);
 }
 
 void AxisRange::Filter(const data::InnerCloudType::Ptr& cloud) {

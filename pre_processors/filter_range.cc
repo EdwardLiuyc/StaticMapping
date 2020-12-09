@@ -26,7 +26,10 @@ namespace static_map {
 namespace pre_processers {
 namespace filter {
 
-Range::Range() : Interface(), min_range_(0.), max_range_(100.) {
+Range::Range()
+    : Interface(),
+      min_range_(0.),
+      max_range_(std::numeric_limits<float>::max()) {
   // float params
   INIT_FLOAT_PARAM("min_range", min_range_);
   INIT_FLOAT_PARAM("max_range", max_range_);
@@ -37,7 +40,7 @@ void Range::DisplayAllParams() {
   PARAM_INFO(max_range_);
 }
 
-void Range::Filter(const data::InnerCloudType::Ptr &cloud) {
+void Range::Filter(const data::InnerCloudType::Ptr& cloud) {
   if (!cloud || !Interface::inner_cloud_) {
     LOG(WARNING) << "nullptr cloud, do nothing!" << std::endl;
     return;
@@ -45,12 +48,14 @@ void Range::Filter(const data::InnerCloudType::Ptr &cloud) {
 
   this->FilterPrepare(cloud);
   const int size = this->inner_cloud_->points.size();
-  bool is_inlier[size];  // NOLINT
+  // Do not use std::vector<bool>, it's not thread safe in omp threads.
+  bool is_inlier[size];
+  // TODO(edward) more test on the efficiency
 #ifdef _OPENMP
 #pragma omp parallel for num_threads(LOCAL_OMP_THREADS_NUM)
 #endif
   for (int i = 0; i < size; ++i) {
-    auto &point = this->inner_cloud_->points[i];
+    const auto& point = this->inner_cloud_->points[i];
     float range =
         std::sqrt(point.x * point.x + point.y * point.y + point.z * point.z);
     if (range >= min_range_ && range <= max_range_) {

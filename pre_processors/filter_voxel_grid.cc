@@ -32,6 +32,8 @@ VoxelGrid::VoxelGrid() : Interface() {
 
 void VoxelGrid::DisplayAllParams() { PARAM_INFO(voxel_size_); }
 
+bool VoxelGrid::ConfigsValid() const { return voxel_size_ > 1.e-6; }
+
 void VoxelGrid::Filter(const data::InnerCloudType::Ptr& cloud) {
   if (!cloud || !Interface::inner_cloud_) {
     LOG(WARNING) << "nullptr cloud, do nothing!" << std::endl;

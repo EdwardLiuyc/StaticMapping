@@ -25,6 +25,7 @@
 
 #include <memory>
 #include <string>
+#include <unordered_map>
 
 #include "pre_processors/processor_interface.h"
 
@@ -39,18 +40,29 @@ class Interface : public ProcesserInterface {
   Interface() : ProcesserInterface() {}
   virtual ~Interface() {}
 
-  Interface(const Interface&) = delete;
-  Interface& operator=(const Interface&) = delete;
+  PROHIBIT_COPY_AND_ASSIGN(Interface);
 
-  void InitFromXmlNode(const pugi::xml_node& node);
-
-  void InitFromXmlText(const char* xml_text);
-
+  // @brief Use xml node to init inner config parameters.
+  bool InitFromXmlNode(const pugi::xml_node& node);
+  // @brief Use xml test to construct xml node, then init inner configs.
+  bool InitFromXmlText(const char* xml_text);
+  // @brief return whether all configs are valid.
+  virtual bool ConfigsValid() const { return true; }
+  // TODO(edward) should be a static function.
   virtual std::shared_ptr<Interface> CreateNewInstance() = 0;
+  // @brief Filter and output the inlier points to cloud. should be implemented
+  // by child classes.
   virtual void Filter(const data::InnerCloudType::Ptr& cloud) = 0;
+  // @brief return current filter's class name.
+  virtual std::string GetName() const;
 
+ protected:
+  // @brief Will be called in the beginning of Filter(cloud) to ensure the cloud
+  // ready to go.
   virtual void FilterPrepare(const data::InnerCloudType::Ptr& cloud);
 };
+
+extern const std::unordered_map<std::string, std::string> kFilterNameMap;
 
 }  // namespace filter
 }  // namespace pre_processers

@@ -46,6 +46,10 @@ void BoundingBoxRemoval::DisplayAllParams() {
   PARAM_INFO(max_z_);
 }
 
+bool BoundingBoxRemoval::ConfigsValid() const {
+  return min_x_ < max_x_ && min_y_ < max_y_ && min_z_ < max_z_;
+}
+
 void BoundingBoxRemoval::Filter(const data::InnerCloudType::Ptr& cloud) {
   if (!cloud || !Interface::inner_cloud_) {
     LOG(WARNING) << "nullptr cloud, do nothing!" << std::endl;

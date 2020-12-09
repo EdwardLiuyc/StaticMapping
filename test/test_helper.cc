@@ -20,43 +20,45 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef PRE_PROCESSORS_FILTER_VOXEL_GRID_H_
-#define PRE_PROCESSORS_FILTER_VOXEL_GRID_H_
+#include "test/test_helper.h"
 
-#include <memory>
-#include <unordered_map>
-#include <vector>
-
-#include "common/eigen_hash.h"
-#include "pre_processors/filter_interface.h"
+#include <random>
 
 namespace static_map {
-namespace pre_processers {
-namespace filter {
+namespace test {
 
-class VoxelGrid : public Interface {
- public:
-  VoxelGrid();
-  ~VoxelGrid() = default;
+static std::random_device rd;
+static std::mt19937 gen(rd());
+static std::uniform_real_distribution<> distrib(0., 100.);
 
-  PROHIBIT_COPY_AND_ASSIGN(VoxelGrid);
-
-  std::shared_ptr<Interface> CreateNewInstance() override {
-    return std::make_shared<VoxelGrid>();
+pcl::PointCloud<pcl::PointXYZI>::Ptr CreateRandomPclCloud(const int size) {
+  pcl::PointCloud<pcl::PointXYZI>::Ptr cloud(
+      new pcl::PointCloud<pcl::PointXYZI>);
+  cloud->header.stamp = distrib(gen);
+  for (int i = 0; i < size; ++i) {
+    pcl::PointXYZI pcl_point;
+    pcl_point.x = distrib(gen);
+    pcl_point.y = distrib(gen);
+    pcl_point.z = distrib(gen);
+    pcl_point.intensity = distrib(gen);
+    cloud->push_back(pcl_point);
   }
+  return cloud;
+}
 
-  bool ConfigsValid() const override;
+data::InnerCloudType::Ptr CreateRandomInnerCloud(const int size) {
+  data::InnerCloudType::Ptr cloud(new data::InnerCloudType);
+  cloud->stamp = SimpleTime::FromNanoSec(1000000000);
+  for (int i = 0; i < size; ++i) {
+    data::InnerPointType point;
+    point.x = distrib(gen);
+    point.y = distrib(gen);
+    point.z = distrib(gen);
+    point.intensity = distrib(gen);
+    cloud->points.push_back(point);
+  }
+  return cloud;
+}
 
-  void Filter(const data::InnerCloudType::Ptr& cloud) override;
-
-  void DisplayAllParams() override;
-
- private:
-  float voxel_size_ = 0.1f;
-};
-
-}  // namespace filter
-}  // namespace pre_processers
+}  // namespace test
 }  // namespace static_map
-
-#endif  // PRE_PROCESSORS_FILTER_VOXEL_GRID_H_

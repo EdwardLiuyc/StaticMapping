@@ -20,55 +20,21 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#include <random>
-
 #include "builder/data/cloud_types.h"
 #define BOOST_TEST_MODULE CloudTypes
 
-#include <boost/test/unit_test.hpp>
+#include "boost/test/unit_test.hpp"
 #include "common/math.h"
+#include "test/test_helper.h"
 
 #define BOOST_CHECK_DOUBLE_EQUAL(A, B) \
   BOOST_CHECK_LE(std::fabs((A) - (B)), 1e-6);
 
 namespace static_map {
 namespace data {
-namespace {
 
-static std::random_device rd;
-static std::mt19937 gen(rd());
-static std::uniform_real_distribution<> distrib(0., 100.);
-
-pcl::PointCloud<pcl::PointXYZI>::Ptr CreateRandomPclCloud(const int size) {
-  pcl::PointCloud<pcl::PointXYZI>::Ptr cloud(
-      new pcl::PointCloud<pcl::PointXYZI>);
-  cloud->header.stamp = distrib(gen);
-  for (int i = 0; i < size; ++i) {
-    pcl::PointXYZI pcl_point;
-    pcl_point.x = distrib(gen);
-    pcl_point.y = distrib(gen);
-    pcl_point.z = distrib(gen);
-    pcl_point.intensity = distrib(gen);
-    cloud->push_back(pcl_point);
-  }
-  return cloud;
-}
-
-InnerCloudType::Ptr CreateRandomInnerCloud(const int size) {
-  InnerCloudType::Ptr cloud(new InnerCloudType);
-  cloud->stamp = SimpleTime::FromNanoSec(1000000000);
-  for (int i = 0; i < size; ++i) {
-    InnerPointType point;
-    point.x = distrib(gen);
-    point.y = distrib(gen);
-    point.z = distrib(gen);
-    point.intensity = distrib(gen);
-    cloud->points.push_back(point);
-  }
-  return cloud;
-}
-
-}  // namespace
+using test::CreateRandomInnerCloud;
+using test::CreateRandomPclCloud;
 
 BOOST_AUTO_TEST_CASE(PointConversion) {
   {

@@ -20,43 +20,14 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#ifndef PRE_PROCESSORS_FILTER_VOXEL_GRID_H_
-#define PRE_PROCESSORS_FILTER_VOXEL_GRID_H_
-
-#include <memory>
-#include <unordered_map>
-#include <vector>
-
-#include "common/eigen_hash.h"
-#include "pre_processors/filter_interface.h"
+#include "builder/data/cloud_types.h"
 
 namespace static_map {
-namespace pre_processers {
-namespace filter {
+namespace test {
 
-class VoxelGrid : public Interface {
- public:
-  VoxelGrid();
-  ~VoxelGrid() = default;
+pcl::PointCloud<pcl::PointXYZI>::Ptr CreateRandomPclCloud(const int size);
 
-  PROHIBIT_COPY_AND_ASSIGN(VoxelGrid);
+data::InnerCloudType::Ptr CreateRandomInnerCloud(const int size);
 
-  std::shared_ptr<Interface> CreateNewInstance() override {
-    return std::make_shared<VoxelGrid>();
-  }
-
-  bool ConfigsValid() const override;
-
-  void Filter(const data::InnerCloudType::Ptr& cloud) override;
-
-  void DisplayAllParams() override;
-
- private:
-  float voxel_size_ = 0.1f;
-};
-
-}  // namespace filter
-}  // namespace pre_processers
+}  // namespace test
 }  // namespace static_map
-
-#endif  // PRE_PROCESSORS_FILTER_VOXEL_GRID_H_
