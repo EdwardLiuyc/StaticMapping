@@ -53,8 +53,9 @@ cd your_own_workspace
 ### compiling
 ```bash
 mkdir build && cd build
-cmake ..
+cmake -DENABLE_TEST=ON ..
 make -j8
+make check # optional, only if you want to check the code with unit tests.
 ```
 
 ## Using Docker 

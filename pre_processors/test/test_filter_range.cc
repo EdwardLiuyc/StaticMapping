@@ -57,7 +57,7 @@ BOOST_AUTO_TEST_CASE(Filter) {
   }
   {
     const std::string filter_config =
-        "<filter name=\"AxisRange\" >"
+        "<filter name=\"Range\" >"
         "<param type=\"1\" name=\"min_range\"> 20. </param>"
         "<param type=\"1\" name=\"max_range\"> 80. </param>"
         "</filter>";
