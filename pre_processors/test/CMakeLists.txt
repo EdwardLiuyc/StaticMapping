@@ -15,3 +15,4 @@ function(add_boost_test test_name)
 endfunction()
 
 add_boost_test(test_filter_axis_range)
+add_boost_test(test_filter_bounding_box)
