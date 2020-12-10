@@ -246,14 +246,10 @@ void MotionCompensation(const data::InnerCloudType& raw_cloud,
             Eigen::Vector3d(point.x, point.y, point.z) +
         common::Translation(transform);
 
-    const Eigen::Vector3d new_point_current =
-        delta_transform.block(0, 0, 3, 3).transpose() *
-        (new_point_start - delta_transform.block(0, 3, 3, 1));
-
     data::InnerPointType new_point;
-    new_point.x = new_point_current[0];
-    new_point.y = new_point_current[1];
-    new_point.z = new_point_current[2];
+    new_point.x = new_point_start[0];
+    new_point.y = new_point_start[1];
+    new_point.z = new_point_start[2];
     new_point.intensity = point.intensity;
     new_point.factor = point.factor;
     output_cloud->points.push_back(new_point);
@@ -344,6 +340,7 @@ void MapBuilder::ScanMatchProcessing() {
         transforms.push_back(align_result);
         transforms.push_back(guess);
         average_transform = common::AverageTransforms(transforms);
+        align_result = average_transform;
       }
       // motion compensation using align result
       data::InnerCloudType::Ptr compensated_source_cloud(

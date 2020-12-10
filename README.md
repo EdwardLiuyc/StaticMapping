@@ -183,7 +183,6 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - serialization and deserialization for inner cloud type (more elegant way)
 - loop edges trimmer
 - add filter api for init some of the config parameters
-- re-think motion compensation
 - yaml configs
 - more feature as heartbeat
 - add odom to pose extrapolater
