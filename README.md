@@ -11,6 +11,9 @@
 # Map with kitti dataset
 <img src="doc/kitti_rgb.png" width="800" />
 
+# Indoor mapping example (garage)
+<img src="doc/garage.png" width="800" />
+
 # Build
 > For now, It is recommended to build this repo in your host device but not in docker, due to that the docker image is not enough tested.
 ## Using host device
@@ -161,9 +164,6 @@ Finally, you will get a static map like this:
 part of it:  
 <img src="doc/detail.png" width="800" />  
 
-another example indoor(garage):  
-<img src="doc/garage.png" width="800" />
-
 # Document  
 You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` folder.
 
@@ -178,11 +178,11 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - compare IcpUsingPointMatcher & IcpFast -> what's the exact difference.
 - some examples for ground removal2
 - ground removal recovery mode
+- new loop detection methods
 - sort out the mutex in inner cloud data types
 - serialization and deserialization for inner cloud type (more elegant way)
 - loop edges trimmer
 - add filter api for init some of the config parameters
-- re-think motion compesation
 - yaml configs
 - more feature as heartbeat
 - add odom to pose extrapolater
@@ -202,7 +202,6 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - mrvp using cuda or opencl
 - **supporting multi-lidars**
 - perhaps need a brand-new data type for pointcloud 
-- save submap binary data into a special format file not just pointcloud into .pcd
 - filtering the cars directly at the input of the pointclouds
 - **add imu integrating factor in backend**
 - culling data structures like ImuMsg, NavSatMsg, etc.
@@ -223,7 +222,6 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - - will try ekf or some other ways
 - read GPS noise(and other sensors' noise) from config files
 - add support for different kind of IMU and ODOM
-- add support for more kind of pointclouds
 - add a Pose3d struct for simple operation of matrix4f or just use gtsam::pose3d
 - mrvm output to a special format data file and can be transformed to pcd independently
 - gravity alignment (in pose extrapolator)
