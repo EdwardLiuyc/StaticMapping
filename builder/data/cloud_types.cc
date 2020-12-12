@@ -25,6 +25,7 @@
 #include <algorithm>
 #include <utility>
 
+#include "common/file_utils.h"
 #include "common/macro_defines.h"
 #include "common/math.h"
 #include "common/performance/simple_prof.h"
@@ -190,6 +191,17 @@ int InnerCloudType::Serialize(std::fstream* stream) const {
     return 0;
   }
   return -1;
+}
+
+int InnerCloudType::SerializeToPcd(const std::string& pcd_filename) const {
+  if (pcd_filename.empty() ||
+      !common::CreateDir(common::FilePath(pcd_filename))) {
+    return -1;
+  }
+
+  pcl::PointCloud<pcl::PointXYZI> output_cloud;
+  data::ToPclPointCloud(*this, &output_cloud);
+  return pcl::io::savePCDFileBinary(pcd_filename, output_cloud);
 }
 
 int InnerCloudType::Deserialize(std::fstream* stream) {

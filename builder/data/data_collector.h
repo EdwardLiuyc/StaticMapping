@@ -160,6 +160,7 @@ class DataCollector {
 template <typename PointT>
 void DataCollector::AddSensorData(
     const typename pcl::PointCloud<PointT>::Ptr& cloud) {
+  CHECK(cloud);
   // This should be the final use of the pcl cloud. After inserted into data
   // collector, the whole process should be using InnerCloudType or
   // InnerPointCloudData. Then the inner system will be isolated from the pcl
@@ -174,10 +175,16 @@ void DataCollector::AddSensorData(
       accumulated_point_cloud_.reset(new InnerCloudType);
       first_time_in_accmulated_cloud_ = ToLocalTime(cloud->header.stamp);
     }
-    // TODO(edward) use operator+
-    for (const auto& point : cloud->points) {
-      accumulated_point_cloud_->points.push_back(data::ToInnerPoint(point));
+
+    auto input_inner_cloud = data::ToInnerPointCloud(*cloud);
+    if (input_inner_cloud) {
+      *accumulated_point_cloud_ += *input_inner_cloud;
+    } else {
+      LOG(ERROR)
+          << "Failed to construct inner point cloud from input pcl cloud.";
+      return;
     }
+
     accumulated_cloud_count_++;
     if (accumulated_cloud_count_ < options_.accumulate_cloud_num) {
       return;

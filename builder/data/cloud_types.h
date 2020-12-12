@@ -66,6 +66,7 @@ struct InnerCloudType {
   using ConstPtr = std::shared_ptr<const InnerCloudType>;
 
   int Serialize(std::fstream *stream) const;
+  int SerializeToPcd(const std::string& pcd_filename) const;
   int Deserialize(std::fstream *stream);
 
   void ApplyTransformInplace(const Eigen::Matrix4d &transform);
