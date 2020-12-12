@@ -235,8 +235,6 @@ DetectResult LoopDetector::AddFrame(const std::shared_ptr<Submap>& frame,
           const int source_id = edge.close_pair_index.second;
           const int target_id = edge.close_pair_index.first;
           {
-            // TODO(edward) Add api of innercloud to write pcd directly or add
-            // tool to view .bin just like pcl_viewer.
             // Output combined cloud using init pose.
             data::InnerCloudType::Ptr none_matched_cloud(
                 new data::InnerCloudType);
@@ -247,16 +245,12 @@ DetectResult LoopDetector::AddFrame(const std::shared_ptr<Submap>& frame,
                                          none_matched_cloud.get());
             *none_matched_cloud +=
                 *all_frames_.at(target_id)->Cloud()->GetInnerCloud();
-
-            pcl::PointCloud<pcl::PointXYZI> output_cloud;
-            data::ToPclPointCloud(*none_matched_cloud, &output_cloud);
-            pcl::io::savePCDFile("pcd/matched_" + std::to_string(target_id) +
-                                     "_" + std::to_string(source_id) +
-                                     "_init.pcd",
-                                 output_cloud);
+            none_matched_cloud->SerializeToPcd(
+                "pcd/matched_" + std::to_string(target_id) + "_" +
+                std::to_string(source_id) + "_init.pcd");
           }
           {
-            // Output combined cloud using init pose.
+            // Output combined cloud using matched pose.
             data::InnerCloudType::Ptr matched_cloud(new data::InnerCloudType);
             all_frames_.at(source_id)
                 ->Cloud()
@@ -264,13 +258,9 @@ DetectResult LoopDetector::AddFrame(const std::shared_ptr<Submap>& frame,
                 ->ApplyTransformToOutput(edge.transform, matched_cloud.get());
             *matched_cloud +=
                 *all_frames_.at(target_id)->Cloud()->GetInnerCloud();
-
-            pcl::PointCloud<pcl::PointXYZI> output_cloud;
-            data::ToPclPointCloud(*matched_cloud, &output_cloud);
-            pcl::io::savePCDFile("pcd/matched_" + std::to_string(target_id) +
-                                     "_" + std::to_string(source_id) +
-                                     "_error.pcd",
-                                 output_cloud);
+            matched_cloud->SerializeToPcd(
+                "pcd/matched_" + std::to_string(target_id) + "_" +
+                std::to_string(source_id) + "_error.pcd");
           }
         }
       }
@@ -328,9 +318,6 @@ bool LoopDetector::CloseLoop(DetectResult::LoopEdge* edge) const {
 }
 
 bool LoopDetector::CheckResult(const DetectResult& result) const {
-  // TODO(edward) CUrrently, this check is rather poor, so disable it.
-  // return true;
-
   if (result.edges.size() <= 1) {
     return false;
   }

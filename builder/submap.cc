@@ -207,7 +207,7 @@ void Submap::SetMatchedTransformedToNext(const Eigen::Matrix4d& t) {
 
     // Clear frame cloud as well.
     for (const auto& frame : frames_) {
-      frame->ToPcdFile(save_path_ + frame->id_.DebugString() + ".pcd");
+      frame->ToPcdFile(save_path_ + frame->id_.DebugString() + ".bin");
       frame->ClearCloud();
     }
   }

@@ -24,6 +24,7 @@
 #define BOOST_TEST_MODULE CloudTypes
 
 #include "boost/test/unit_test.hpp"
+#include "common/file_utils.h"
 #include "common/math.h"
 #include "test/test_helper.h"
 
@@ -130,6 +131,8 @@ BOOST_AUTO_TEST_CASE(InnerCloudSerialDeserial) {
     BOOST_CHECK(of.is_open());
     BOOST_CHECK(inner_cloud->Serialize(&of) >= 0);
     of.close();
+    BOOST_CHECK(inner_cloud->SerializeToPcd("/tmp/test/test.pcd") == 0);
+    BOOST_CHECK(common::FileExist("/tmp/test/test.pcd"));
   }
 
   InnerCloudType::Ptr loaded_cloud(new InnerCloudType);

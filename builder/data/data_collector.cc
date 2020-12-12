@@ -142,6 +142,7 @@ void DataCollector::CloudPreProcessing() {
 
     // insert new data
     Locker locker(mutex_[kPointCloudData]);
+    // TODO(edward) these clouds can be cached to disk as well.
     cloud_data_.push_back(filtered_cloud);
 
     // just for debug
