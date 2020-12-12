@@ -4,6 +4,13 @@ add_executable(join_pieces join_pieces.cc)
 target_link_libraries(join_pieces pugixml)
 add_executable(pcl_viewer_normals pcl_viewer_normals.cc)
 
+add_executable(bin_viewer bin_viewer.cc)
+target_link_libraries(bin_viewer 
+  ${PROJECT_NAME}_common
+  ${PROJECT_NAME}_builder_data
+  glog 
+  ${GeographicLib_LIBRARIES})
+
 # no need to compress the pointcloud
 # even there is a need for compression, use zlib instead
 # find_package(Blosc)
