@@ -104,6 +104,7 @@ struct MapBuilderOptions {
     bool separate_output = false;
     bool output_mrvm = true;
     bool output_direct_combined_map = true;
+    bool output_kitti_pose = false;
 
     int separate_step = 200;
   } whole_options;

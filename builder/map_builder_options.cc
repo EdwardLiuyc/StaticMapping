@@ -58,8 +58,6 @@ void ReadMatcherOptions(
 }  // namespace
 
 void CheckOptions(const MapBuilderOptions& options) {
-  CHECK_GE(options.back_end_options.submap_options.frame_count, 2)
-      << "A submap must constain at least 2 frames" << std::endl;
   CHECK(options.back_end_options.loop_detector_setting.use_gps ||
         options.back_end_options.loop_detector_setting.use_descriptor)
       << "You should selete at least one way to do loop detect: use gps or "
@@ -115,10 +113,16 @@ MapBuilderOptions& MapBuilder::Initialise(const char* config_file_name) {
   GET_SINGLE_OPTION(static_map_node, "whole_options", "export_file_path",
                     whole_options.export_file_path, string, string);
   CHECK(common::CreateDir(whole_options.export_file_path)) << strerror(errno);
+  if (whole_options.export_file_path.back() != '/') {
+    whole_options.export_file_path += "/";
+  }
 
   GET_SINGLE_OPTION(static_map_node, "whole_options", "map_package_path",
                     whole_options.map_package_path, string, string);
   CHECK(common::CreateDir(whole_options.map_package_path)) << strerror(errno);
+  if (whole_options.map_package_path.back() != '/') {
+    whole_options.map_package_path += "/";
+  }
 
   GET_SINGLE_OPTION(static_map_node, "whole_options", "odom_calib_mode",
                     whole_options.odom_calib_mode, int, OdomCalibrationMode);
@@ -130,6 +134,8 @@ MapBuilderOptions& MapBuilder::Initialise(const char* config_file_name) {
                     whole_options.output_direct_combined_map, bool, bool);
   GET_SINGLE_OPTION(static_map_node, "whole_options", "output_mrvm",
                     whole_options.output_mrvm, bool, bool);
+  GET_SINGLE_OPTION(static_map_node, "whole_options", "output_kitti_pose",
+                    whole_options.output_kitti_pose, bool, bool);
   GET_SINGLE_OPTION(static_map_node, "whole_options", "separate_step",
                     whole_options.separate_step, int, int);
 

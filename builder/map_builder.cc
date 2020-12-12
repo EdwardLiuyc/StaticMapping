@@ -622,6 +622,23 @@ void MapBuilder::OutputPath() {
                                     "original_gps.pcd");
   data_collector_->RawOdomDataToFile(options_.whole_options.export_file_path +
                                      "original_odom.pcd");
+
+  if (options_.whole_options.output_kitti_pose) {
+    std::ofstream kitti_odom_file(options_.whole_options.export_file_path +
+                                  "kitti_pose.txt");
+    if (kitti_odom_file.is_open()) {
+      for (auto& submap : *current_trajectory_) {
+        const Eigen::Matrix4d pose = submap->GlobalPose();
+        kitti_odom_file << std::setprecision(8) << pose(0, 0) << " "
+                        << pose(0, 1) << " " << pose(0, 2) << " " << pose(0, 3)
+                        << " " << pose(1, 0) << " " << pose(1, 1) << " "
+                        << pose(1, 2) << " " << pose(1, 3) << " " << pose(2, 0)
+                        << " " << pose(2, 1) << " " << pose(2, 2) << " "
+                        << pose(2, 3) << "\n";
+      }
+      kitti_odom_file.close();
+    }
+  }
 }
 
 void MapBuilder::SubmapProcessing() {

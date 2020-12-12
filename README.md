@@ -6,10 +6,12 @@
 [中文文档](README.Chinese.md)  
 
 # Introduction  
-<img src="doc/mapping.png" width="800" />  
+Static Mapping is a full lidar slam system using lidar (required) and gps (optional), imu (optional), odom (optional). More detail about the inner process refer to [flow figure](doc/mapping.png).  
 
 # Map with kitti dataset
 <img src="doc/kitti_rgb.png" width="800" />
+
+More evalution on kitti datasets : [kitti_evaluation](doc/kitti_evaluation.md)  
 
 # Indoor mapping example (garage)
 <img src="doc/garage.png" width="800" />
@@ -61,7 +63,7 @@ make -j8
 make check # optional, only if you want to check the code with unit tests.
 ```
 
-## Using Docker 
+## Or Using Docker 
 If yours host device is with UBUNTU 18.04, it is highly recommended to build and run this project in a docker because the docker is `FROM ros:melodic-ros-core-bionic`. Otherwise, you can also build your envrionment directly on your device refering to **Using host device** section below. 
 ps: there is something wrong with ros message sent from ros-kinetic to ros-melodic, so, it your host deice is not with Ubuntu 18.04, you can not use this docker, and the docker for ros-kinetic will come soon.
 ### Get docker image 
