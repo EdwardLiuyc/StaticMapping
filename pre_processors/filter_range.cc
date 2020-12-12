@@ -22,6 +22,8 @@
 
 #include "pre_processors/filter_range.h"
 
+#include <limits>
+
 namespace static_map {
 namespace pre_processers {
 namespace filter {
@@ -49,7 +51,7 @@ void Range::Filter(const data::InnerCloudType::Ptr& cloud) {
   this->FilterPrepare(cloud);
   const int size = this->inner_cloud_->points.size();
   // Do not use std::vector<bool>, it's not thread safe in omp threads.
-  bool is_inlier[size];
+  bool is_inlier[size];  // NOLINT
   // TODO(edward) more test on the efficiency
 #ifdef _OPENMP
 #pragma omp parallel for num_threads(LOCAL_OMP_THREADS_NUM)

@@ -6,7 +6,8 @@
       map_package_path="pkgs/test/" 
       separate_output="false"
       output_mrvm="false"
-      output_direct_combined_map="true"
+      output_direct_combined_map="false"
+      output_kitti_pose="true"
       separate_step="200" />
     <map_package_options
       enable="false"
@@ -19,7 +20,6 @@
         0 : int
         1 : float  -->
       <filter name="Range" >
-        <param type="1" name="max_range"> 100. </param>
         <param type="1" name="min_range"> 5. </param>
       </filter>
       <filter name="AxisRange" >
@@ -36,7 +36,7 @@
         <param type="0" name="thread_num"> 4 </param>
       </filter> -->
       <filter name="RandomSampler" >
-        <param type="1" name="sampling_rate"> 0.4 </param>
+        <param type="1" name="sampling_rate"> 0.5 </param>
       </filter>
     </filters>
     <front_end_options accumulate_cloud_num="1">
@@ -73,7 +73,7 @@
       <!-- translation unit: m
            angle unit: degree -->
       <motion_filter 
-        translation_range="1."
+        translation_range="-1."
         angle_range="1.5"
         time_range="0.25" />
       <!-- imu type 
@@ -100,9 +100,9 @@
         </registrator_options>
       </submap_matcher_options>
       <submap_options 
-        frame_count="2"
+        frame_count="1"
         enable_voxel_filter="true"
-        voxel_size="0.15"
+        voxel_size="0.1"
         enable_random_sampleing="false"
         enable_check="false"
         random_sampling_rate="0.5"
@@ -116,11 +116,11 @@
         use_gps="false"
         use_descriptor="true"
         output_matched_cloud="false"
-        loop_ignore_threshold="20"
+        loop_ignore_threshold="50"
         trying_detect_loop_count="1"
-        max_close_loop_distance="18"
-        max_close_loop_z_distance="15"
-        m2dp_match_score="0.985"
+        max_close_loop_distance="40"
+        max_close_loop_z_distance="40"
+        m2dp_match_score="0.98"
         accept_scan_match_score="0.80"
         nearest_history_pos_num="5" />
     </back_end_options>
