@@ -193,6 +193,9 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 - may remove libpointmather
 - Qt tool for viewing pcd files
 - Qt wrapper like rviz
+- porting webrviz or find another way to use rivz inside docker 
+  - http://wiki.ros.org/docker/Tutorials/Hardware%20Acceleration#Intel
+  - https://github.com/osrf/rvizweb
 - Fix bug with loop-detector using gps
 - Kitti evaluation
 - seperate map_builder class into several smaller classes : map_option_loader / front_end / back_end

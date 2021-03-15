@@ -5,7 +5,7 @@ CONFIG_PATH=./config/lidar_imu_default.xml
 URDF_FILE=./urdf/test2.urdf
 ## the follow 2 items must be set!!!
 ## the topic name of your pointcloud msg (ros)
-POINT_CLOUD_TOPIC=velodyne_points
+POINT_CLOUD_TOPIC=/points_raw
 ## the frame id of your pointcloud msg (ros)
 POINT_CLOUD_FRAME_ID=frame_velodyne_points
 
@@ -17,10 +17,10 @@ POINT_CLOUD_FRAME_ID=frame_velodyne_points
 ## gps: -gps -gps_frame_id
 ## and If you got one of these topics
 ## you MUST provide the tf connection between the one to pointcloud frame
-IMU_TOPIC=imu/raw_data
+IMU_TOPIC=/imu_raw
 IMU_FRAME_ID=imu_link
 
-BAG_FILE=/mnt/Data/visual/map_test/20200507124024_1_NoPlace.bag
+BAG_FILE=/mnt/park.bag
 
 ./build/ros_node/static_mapping_node \
   -cfg ${CONFIG_PATH} \

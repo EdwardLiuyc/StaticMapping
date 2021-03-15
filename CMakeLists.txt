@@ -137,6 +137,9 @@ find_package(ImageMagick REQUIRED)
 message(STATUS "Image Magick version : ${ImageMagick_VERSION_STRING}")
 list(APPEND require_libs ${ImageMagick_LIBRARIES})
 
+find_package(Boost REQUIRED COMPONENTS timer)
+list(APPEND require_libs Boost::timer)
+
 option(ENABLE_PROF "Enable profiling?" ON)
 if(ENABLE_PROF)
   message(STATUS "Enable simple profiling.")
