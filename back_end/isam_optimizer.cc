@@ -249,15 +249,15 @@ void IsamOptimizer::AddFrame(const std::shared_ptr<Submap> &frame,
     if (options_.enable_extrinsic_calib) {
       isam_factor_graph_->addExpressionFactor(
           gps_noise_model_, gtsam::Point3(enu),
-          gtsam::transform_from(
+          gtsam::transformFrom(
               gtsam::compose(map_origin_in_gps, pose),
               gtsam::compose(gtsam::Point3_(tracking_gps_translation),
                              tf_error)));
     } else {
       isam_factor_graph_->addExpressionFactor(
           gps_noise_model_, gtsam::Point3(enu),
-          gtsam::transform_from(gtsam::compose(map_origin_in_gps, pose),
-                                gtsam::Point3_(tracking_gps_translation)));
+          gtsam::transformFrom(gtsam::compose(map_origin_in_gps, pose),
+                               gtsam::Point3_(tracking_gps_translation)));
     }
   };
 
@@ -322,8 +322,8 @@ void IsamOptimizer::SolveGpsCorrdAlone() {
     // later.
     graph.addExpressionFactor(
         gps_noise_model_, gtsam::Point3(index_enu.second),
-        gtsam::transform_from(gtsam::compose(Pose3_(gps_key), Pose3_(pose_key)),
-                              gtsam::Point3_(tracking_gps_translation)));
+        gtsam::transformFrom(gtsam::compose(Pose3_(gps_key), Pose3_(pose_key)),
+                             gtsam::Point3_(tracking_gps_translation)));
   }
 
   gtsam::GaussNewtonParams parameters;
