@@ -1,5 +1,15 @@
 #!/bin/bash
 
+Jobs=$(nproc)
+
+while getopts j: flag
+do
+    case "${flag}" in
+        j) Jobs=${OPTARG};;
+    esac
+done
+echo "Jobs: $Jobs";
+
 set -o errexit
 set -o verbose
 
@@ -13,7 +23,7 @@ cmake -DGTSAM_USE_SYSTEM_EIGEN=ON \
   -DGTSAM_BUILD_TESTS=OFF \
   -DGTSAM_BUILD_WITH_MARCH_NATIVE=OFF \
   -DGTSAM_INSTALL_GEOGRAPHICLIB=OFF ..
-make -j4
+make -j$Jobs
 sudo make install
 
 exit 0
