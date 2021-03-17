@@ -44,7 +44,7 @@
 
 namespace static_map {
 
-typedef uint8_t Probability;
+using Probability = uint8_t;
 
 constexpr size_t kTableSize = (1 << (sizeof(Probability) * 8));
 constexpr Probability kUnknown = (kTableSize >> 1);
@@ -82,18 +82,17 @@ class MultiResolutionVoxelMap {
   using VoxelMap =
       tbb::concurrent_unordered_map<KeyInt3, T, std::hash<KeyInt3>>;
 
-  MultiResolutionVoxelMap() {
-    for (int i = 0; i < kTableSize; ++i) {
-      odds_table_[i] = ProbabilityToOdd(static_cast<float>(i) / kTableSize);
-    }
-  }
-  ~MultiResolutionVoxelMap() {}
+  // Ctor and Dtor, distable copy.
+  MultiResolutionVoxelMap();
+  ~MultiResolutionVoxelMap() = default;
 
   MultiResolutionVoxelMap(const MultiResolutionVoxelMap&) = delete;
   MultiResolutionVoxelMap& operator=(const MultiResolutionVoxelMap&) = delete;
 
   void Initialise(const MrvmSettings& settings);
 
+  /// @brief Insert single point cloud with its origin position (for ray cast
+  /// calculation).
   void InsertPointCloud(const data::InnerCloudType::Ptr& cloud,
                         const Eigen::Vector3f& origin);
 
@@ -122,8 +121,6 @@ class MultiResolutionVoxelMap {
     AtomicBool need_update;
     AtomicInt max_intensity;
     PointVector points;
-
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   };
 
   VoxelMap<HighResolutionVoxel> high_resolution_voxels_;

@@ -55,8 +55,6 @@ class SimpleTime {
   SimpleTime();
   SimpleTime(const uint32_t s, const uint32_t n);
 
-  SimpleTime &operator=(const SimpleTime &b);
-
   ~SimpleTime() = default;
 
   /// @brief Get current system time into a SimpleTime instance

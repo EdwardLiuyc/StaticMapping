@@ -25,5 +25,6 @@ cmake -DGTSAM_USE_SYSTEM_EIGEN=ON \
   -DGTSAM_INSTALL_GEOGRAPHICLIB=OFF ..
 make -j$Jobs
 sudo make install
+cd ../.. && rm -rf gtsam
 
 exit 0

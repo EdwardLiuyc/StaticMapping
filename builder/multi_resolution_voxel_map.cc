@@ -22,6 +22,7 @@
 
 // local
 #include "builder/multi_resolution_voxel_map.h"
+
 #include "common/point_utils.h"
 
 namespace static_map {
@@ -31,6 +32,12 @@ constexpr float kMaxMissProb = 0.499f;
 constexpr float kMaxProb = 0.9f;
 constexpr float kMinProb = 0.1f;
 }  // namespace
+
+MultiResolutionVoxelMap::MultiResolutionVoxelMap() {
+  for (int i = 0; i < kTableSize; ++i) {
+    odds_table_[i] = ProbabilityToOdd(static_cast<float>(i) / kTableSize);
+  }
+}
 
 void MultiResolutionVoxelMap::Initialise(const MrvmSettings& settings) {
   settings_ = settings;

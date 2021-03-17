@@ -67,8 +67,7 @@ PM::DataPoints InnerCloudToPmPoints(
     }
   }
 
-  PM::DataPoints d(pm_cloud.leftCols(index), labels);
-  return std::move(d);
+  return PM::DataPoints(pm_cloud.leftCols(index), labels);
 }
 
 IcpUsingPointMatcher::IcpUsingPointMatcher(const std::string& ymal_file)

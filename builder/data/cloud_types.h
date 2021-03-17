@@ -175,7 +175,7 @@ class InnerPointCloudData {
 
   /// Set Geters.
   EigenPointCloud::Ptr GetEigenCloud() const;
-  SimpleTime GetTime() const;
+  const SimpleTime& GetTime() const;
   InnerCloudType::Ptr GetInnerCloud() const;
 
  private:
