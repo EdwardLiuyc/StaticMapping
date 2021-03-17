@@ -1,2 +1,4 @@
-cmake --build build -- -j 8
+#!/bin/bash
+
+cmake --build build -- -j $(nproc)
 exit 0
