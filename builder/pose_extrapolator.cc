@@ -127,7 +127,9 @@ void PoseExtrapolator::AddImuData(const data::ImuMsg& imu_data) {
   }
   common::MutexLocker locker(&mutex_);
   CHECK(timed_pose_queue_.empty() ||
-        imu_data.header.stamp >= timed_pose_queue_.back().time);
+        imu_data.header.stamp >= timed_pose_queue_.back().time)
+      << imu_data.header.stamp.DebugString() << ", "
+      << timed_pose_queue_.back().time.DebugString();
   imu_data_.push_back(imu_data);
   TrimImuData();
 }

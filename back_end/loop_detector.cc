@@ -336,7 +336,7 @@ bool LoopDetector::CheckResult(const DetectResult& result) const {
     const double rotation_diff = common::RotationMatrixToEulerAngles(
                                      Eigen::Matrix3d(diff.block(0, 0, 3, 3)))
                                      .norm();
-    if (trans_diff > 0.25 || rotation_diff > 0.02) {
+    if (trans_diff > 0.3 /* || rotation_diff > 0.02 */) {
       PRINT_DEBUG_FMT("Invalid result, %lf, %lf", trans_diff, rotation_diff);
       return false;
     }

@@ -56,7 +56,7 @@ using static_map::data::OdomMsg;
 
 namespace {
 
-constexpr char kMapFrameId[] = "/map";
+constexpr char kMapFrameId[] = "map";
 
 void pointcloud_callback(const sensor_msgs::PointCloud2::ConstPtr& msg) {
   pcl::PCLPointCloud2 pcl_pc2;
@@ -418,7 +418,7 @@ int main(int argc, char** argv) {
       // read bag in twice time of the bag speed
       // like : rosbag play ***.bag -r 2
       if (message.getTime() > last_message_time) {
-        usleep((message.getTime() - last_message_time).toSec() * 0.1 * 1000000);
+        usleep((message.getTime() - last_message_time).toSec() * 1000000);
       }
       last_message_time = message.getTime();
 

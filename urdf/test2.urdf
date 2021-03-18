@@ -42,7 +42,7 @@
     </visual>
   </link>
 
-  <link name="frame_velodyne_points">
+  <link name="velodyne">
     <visual>
       <origin xyz="0.0 0.0 0.0" />
       <geometry>
@@ -72,12 +72,12 @@
 
   <joint name="velodyne_joint" type="fixed">
     <parent link="base_link" />
-    <child link="frame_velodyne_points" />
-    <origin xyz="0.04 -0.02 +0.30" rpy="0.0 0.0 0.0" />
+    <child link="velodyne" />
+    <origin xyz="0 0 0" rpy="0.0 0.0 0.0" />
   </joint>
 
   <joint name="velodyne_joint_between" type="fixed">
-    <parent link="frame_velodyne_points" />
+    <parent link="velodyne" />
     <child link="frame_l2" />
     <origin xyz="-0.0034 -0.0026 -0.1537" rpy="-0.0123633 0.5231489 -0.0007506" />
   </joint>

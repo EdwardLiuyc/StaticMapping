@@ -179,6 +179,8 @@ void MapBuilder::InsertImuMsg(const data::ImuMsg::Ptr& imu_msg) {
 
   imu_msg->linear_acceleration = new_acc;
   imu_msg->angular_velocity = new_angular_velocity;
+  imu_msg->header.stamp = imu_msg->header.stamp;
+
   data_collector_->AddSensorData(*imu_msg);
 
   if (!extrapolator_) {

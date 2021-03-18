@@ -4,8 +4,8 @@
     <whole_options 
       export_file_path="pcd/"
       map_package_path="pkgs/test/"
-      output_mrvm="false"
-      output_direct_combined_map="true" />
+      output_mrvm="true"
+      output_direct_combined_map="false" />
     <map_package_options
       enable="false"
       border_offset="100"
@@ -17,21 +17,20 @@
         0 : int
         1 : float  -->
       <filter name="Range" >
-        <param type="1" name="max_range"> 75. </param>
-        <param type="1" name="min_range"> 4.5 </param>
+        <param type="1" name="min_range"> 3. </param>
       </filter>
-      <filter name="RandomSampler" >
-        <param type="1" name="sampling_rate"> 0.4 </param>
-      </filter>
+      <!-- <filter name="RandomSampler" >
+        <param type="1" name="sampling_rate"> 0.6 </param>
+      </filter> -->
     </filters>
-    <front_end_options accumulate_cloud_num="151">
+    <front_end_options accumulate_cloud_num="20">
       <!-- matcher type  
         0: none 
         1: icp using pointmatcher 
         3: ndt&gicp 
         5: ndt (in test)
         6: fast icp (most recommended) -->
-      <scan_matcher_options type="6" >
+      <scan_matcher_options type="1" >
         <registrator_options type = "6">
           <param name="dist_outlier_ratio"> 0.7 </param>
           <param name="knn_normal_estimate"> 7 </param>
@@ -58,14 +57,14 @@
       <!-- translation unit: m
            angle unit: degree -->
       <motion_filter 
-        translation_range="1"
-        angle_range="1.5" />
+        translation_range="0.5"
+        angle_range="3." />
       <!-- imu type 
           0: normal type
           1: imu in ins(combined imu) -->
       <imu_options 
-        use_imu="true"
-        imu_frequency="200"
+        use_imu="false"
+        imu_frequency="100"
         type="0"
         gravity_constant="9.8" />
       <motion_compensation_options 
@@ -75,7 +74,7 @@
     <back_end_options>
       <!-- type just the same as front end -->
       <submap_matcher_options 
-        type="6"
+        type="1"
         accepted_min_score="0.75">
         <registrator_options type = "6">
           <param name="dist_outlier_ratio"> 0.7 </param>
@@ -84,8 +83,8 @@
         </registrator_options>
       </submap_matcher_options>
       <submap_options 
-        frame_count="2"
-        enable_voxel_filter="false"
+        frame_count="5"
+        enable_voxel_filter="true"
         enable_random_sampleing="false"
         enable_check="false"
         random_sampling_rate="0.5"
@@ -101,20 +100,20 @@
         output_matched_cloud="false"
         loop_ignore_threshold="15"
         trying_detect_loop_count="1"
-        max_close_loop_distance="3"
-        max_close_loop_z_distance="2."
-        m2dp_match_score="0.96"
-        accept_scan_match_score="0.8"
+        max_close_loop_distance="8."
+        max_close_loop_z_distance="10."
+        m2dp_match_score="0.95"
+        accept_scan_match_score="0.75"
         nearest_history_pos_num="5" />
     </back_end_options>
     <output_mrvm_settings
       output_average="false"
       output_rgb="false"
-      prob_threshold="0.57" 
+      prob_threshold="0.555" 
       low_resolution="1." 
       high_resolution="0.1"
       hit_prob="0.55"
-      miss_prob="0.48"
+      miss_prob="0.485"
       z_offset="0."
       max_point_num_in_cell="10">
     </output_mrvm_settings>
