@@ -67,7 +67,7 @@ static_map::data::ImuMsg ToLocalImu(const sensor_msgs::Imu& msg) {
     local_imu.orientation_covariance[i] = msg.orientation_covariance[i];
   }
 
-  return std::move(local_imu);
+  return local_imu;
 }
 
 static_map::data::OdomMsg ToLocalOdom(const nav_msgs::Odometry& msg) {
@@ -91,7 +91,7 @@ static_map::data::OdomMsg ToLocalOdom(const nav_msgs::Odometry& msg) {
     local_odom.twist.covariance[i] = msg.twist.covariance[i];
   }
 
-  return std::move(local_odom);
+  return local_odom;
 }
 
 static_map::data::NavSatFixMsg ToLocalNavSatMsg(
@@ -109,7 +109,7 @@ static_map::data::NavSatFixMsg ToLocalNavSatMsg(
     local_navsat.position_covariance[i] = msg.position_covariance[i];
   }
   local_navsat.position_covariance_type = msg.position_covariance_type;
-  return std::move(local_navsat);
+  return local_navsat;
 }
 
 }  // namespace static_map_ros

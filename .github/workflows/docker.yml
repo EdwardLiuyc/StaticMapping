@@ -36,7 +36,7 @@ jobs:
           password: ${{ secrets.DOCKER_TOKEN }}
           
       - name: Build and push Docker images
-        id: docker_build_push
+        id: docker_build_push_bionic
         # You may pin to the exact commit or the version.
         # uses: docker/build-push-action@9379083e426e2e84abb80c8c091f5cdeb7d3fd7a
         uses: docker/build-push-action@v2.3.0
@@ -45,6 +45,17 @@ jobs:
           file: ./Dockerfile.bionic
           push: true
           tags: edwardliuyc/static_mapping:bionic
+
+      - name: Build and push Docker images (focal)
+        id: docker_build_push_focal
+        # You may pin to the exact commit or the version.
+        # uses: docker/build-push-action@9379083e426e2e84abb80c8c091f5cdeb7d3fd7a
+        uses: docker/build-push-action@v2.3.0
+        with:
+          context: ./
+          file: ./Dockerfile.focal
+          push: true
+          tags: edwardliuyc/static_mapping:focal
           
       - name: Image digest
-        run: echo ${{ steps.docker_build_push.outputs.digest }}
+        run: echo ${{ steps.docker_build_push_bionic.outputs.digest }} && echo ${{ steps.docker_build_push_focal.outputs.digest }}

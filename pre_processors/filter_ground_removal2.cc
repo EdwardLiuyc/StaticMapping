@@ -248,7 +248,7 @@ GroundRemoval2::Segment GroundRemoval2::FitLines(const int32_t& seg_index) {
     }
   }
   if (start_index >= bin_num_ - 1) {
-    return std::move(segment);
+    return segment;
   }
 
   std::vector<Point> current_line_points;
@@ -312,8 +312,7 @@ GroundRemoval2::Segment GroundRemoval2::FitLines(const int32_t& seg_index) {
     auto new_line = FitLocalLine(current_line_points);
     segment.push_back(LocalLineToLine(new_line, current_line_points));
   }
-
-  return std::move(segment);
+  return segment;
 }
 
 void GroundRemoval2::FitSegments(std::vector<Segment>* const segments) {

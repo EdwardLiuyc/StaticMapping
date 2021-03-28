@@ -29,12 +29,6 @@ SimpleTime::SimpleTime() : secs(0), nsecs(0), u_judge_range(1) {}
 SimpleTime::SimpleTime(const uint32_t s, const uint32_t n)
     : secs(s), nsecs(n), u_judge_range(1) {}
 
-SimpleTime &SimpleTime::operator=(const SimpleTime &b) {
-  this->nsecs = b.nsecs;
-  this->secs = b.secs;
-  return *this;
-}
-
 SimpleTime SimpleTime::GetCurrentTime() {
   struct timespec ts;
   clock_gettime(CLOCK_REALTIME, &ts);

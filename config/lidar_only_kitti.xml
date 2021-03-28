@@ -5,7 +5,7 @@
       export_file_path="pcd/"
       map_package_path="pkgs/test/" 
       separate_output="false"
-      output_mrvm="false"
+      output_mrvm="true"
       output_direct_combined_map="false"
       output_kitti_pose="true"
       separate_step="200" />
@@ -73,7 +73,7 @@
       <!-- translation unit: m
            angle unit: degree -->
       <motion_filter 
-        translation_range="-1."
+        translation_range="0.5"
         angle_range="1.5"
         time_range="0.25" />
       <!-- imu type 
@@ -100,7 +100,7 @@
         </registrator_options>
       </submap_matcher_options>
       <submap_options 
-        frame_count="1"
+        frame_count="2"
         enable_voxel_filter="true"
         voxel_size="0.1"
         enable_random_sampleing="false"

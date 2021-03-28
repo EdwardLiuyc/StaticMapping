@@ -460,7 +460,7 @@ std::shared_ptr<EigenPointCloud> InnerPointCloudData::GetEigenCloud() const {
   return eigen_cloud_;
 }
 
-SimpleTime InnerPointCloudData::GetTime() const { return time_; }
+const SimpleTime& InnerPointCloudData::GetTime() const { return time_; }
 InnerCloudType::Ptr InnerPointCloudData::GetInnerCloud() const {
   return inner_cloud_;
 }

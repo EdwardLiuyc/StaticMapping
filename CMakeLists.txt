@@ -7,7 +7,7 @@ project(static_mapping)
 set(CMAKE_BUILD_TYPE Release)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_FLAGS "-O3 -Wall \
+set(CMAKE_CXX_FLAGS "-O2 -Wall \
   -Wextra -fPIC \
   -Wno-sign-compare \
   -Wno-unused-parameter \
@@ -83,6 +83,11 @@ include_directories(${PCL_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})
 link_libraries(${PCL_LIBRARIES})
 
+find_package(Boost REQUIRED COMPONENTS 
+  timer
+  thread)
+list(APPEND require_libs Boost::timer Boost::thread)
+
 add_subdirectory(tools)
 #### gtsam ####
 find_package(GTSAM REQUIRED)
@@ -136,9 +141,6 @@ list(APPEND require_libs ${GeographicLib_LIBRARIES})
 find_package(ImageMagick REQUIRED)
 message(STATUS "Image Magick version : ${ImageMagick_VERSION_STRING}")
 list(APPEND require_libs ${ImageMagick_LIBRARIES})
-
-find_package(Boost REQUIRED COMPONENTS timer)
-list(APPEND require_libs Boost::timer)
 
 option(ENABLE_PROF "Enable profiling?" ON)
 if(ENABLE_PROF)

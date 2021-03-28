@@ -30,7 +30,6 @@
 #include <vector>
 
 #include "back_end/loop_detector_options.h"
-#include "tbb/atomic.h"
 #include "tbb/concurrent_vector.h"
 
 namespace static_map {
