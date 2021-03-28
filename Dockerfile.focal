@@ -1,0 +1,13 @@
+# docker file for static mapping 
+
+FROM edwardliuyc/static_mapping_base:focal
+
+COPY . $HOME/src/StaticMapping
+RUN . /opt/ros/noetic/setup.sh && \
+  cd $HOME/src/StaticMapping && \
+  sudo rm -rf build && mkdir build && \
+  cd build && cmake .. && cd .. && \
+  ./make.sh
+RUN cd $HOME && sudo rm -rf $HOME/src/StaticMapping
+
+CMD roscore &
