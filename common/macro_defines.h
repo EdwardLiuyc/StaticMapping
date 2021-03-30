@@ -26,8 +26,8 @@
  */
 #pragma once
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 #include <iostream>
 #include <string>
 
@@ -57,7 +57,7 @@
 #define REVERSE "\e[7m"
 #define HIDE "\e[8m"
 #define CLEAR "\e[2J"
-#define CLRLINE "\r\e[K"  // or "\e[1K\r"
+#define CLRLINE "\r\e[K"
 
 namespace static_map {
 /*!
