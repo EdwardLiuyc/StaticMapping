@@ -67,35 +67,22 @@ make check # optional, only if you want to check the code with unit tests.
 If yours host device is with UBUNTU 18.04, it is highly recommended to build and run this project in a docker because the docker is `FROM ros:melodic-ros-core-bionic`. Otherwise, you can also build your envrionment directly on your device refering to **Using host device** section below. 
 ps: there is something wrong with ros message sent from ros-kinetic to ros-melodic, so, it your host deice is not with Ubuntu 18.04, you can not use this docker, and the docker for ros-kinetic will come soon.
 ### Get docker image 
-#### For China Mainland
-The fastest way to get the image is pulling from aliyun if you live in mainland of China
-```docker
-docker pull registry.cn-hangzhou.aliyuncs.com/edward_slam/static_mapping:master_bionic_latest
-```
-or you can build it on your own device 
-```docker
-docker build --rm -t slam/static_mapping:latest . --file Dockerfile.bionic
-```
-
-#### For somewhere else
-first, remove lines in Dockerfile (these lines are for fast access to official images in China mainland) :
-```docker
-COPY ./config/tsinghua_source.txt /etc/apt/sources.list
-RUN sh -c '. /etc/lsb-release && echo "deb http://mirrors.tuna.tsinghua.edu.cn/ros/ubuntu/ `lsb_release -cs` main" > /etc/apt/sources.list.d/ros1-latest.list' 
-```
-then, you can build it on your own using
-```docker
-docker build --rm -t slam/static_mapping:latest . --file Dockerfile.bionic
+```bash
+## If your host device in with ubuntu 18.04, then the docker with tag `bionic` is prefered
+docker pull edwardliuyc/static_mapping:bionic
+## If your host device in with ubuntu 20.04, then the docker with tag `focal` is prefered
+docker pull edwardliuyc/static_mapping:focal
 ```
 
 ### Build in docker 
+In this part we use `edwardliuyc/static_mapping:bionic` as an example, you can use `edwardliuyc/static_mapping:focal` instead.
 ```bash 
 ## get code 
 git clone https://github.com/EdwardLiuyc/StaticMapping.git
 cd StaticMapping
 
 ## start the docker container
-docker run -it --rm -v /mnt:/mnt registry.cn-hangzhou.aliyuncs.com/edward_slam/static_mapping:master_bionic_latest /bin/bash
+docker run -it --rm -v /mnt:/mnt -v pwd:/home/docker/src/StaticMapping edwardliuyc/static_mapping:bionic /bin/bash
 
 ## in the container 
 mkdir -p build && cd build
@@ -112,7 +99,7 @@ perhaps you would meet some error like ` conflicting declaration ‘typedef stru
 
 ## step1 run the mapping process
 ```bash
-./mapping.sh
+./mapping_lidar_only.sh
 ```
 
 before that, you should know what is in the script:
@@ -177,6 +164,9 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 
 # TODO
 - **Loop Close factor should be rubust**
+- interface with datasets
+- fix tbb warning when compiling in ubuntu focal
+- fix compile warning in ubuntu xenial
 - compare IcpUsingPointMatcher & IcpFast -> what's the exact difference.
 - some examples for ground removal2
 - ground removal recovery mode
