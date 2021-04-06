@@ -106,11 +106,11 @@ MapBuilder::PointCloudPtr ReadFromFile(const char *filename) {
   num = fread(data, sizeof(float), num, stream) / 4;
   point_cloud->reserve(num);
   for (int32_t i = 0; i < num; i++) {
-    pcl::PointXYZI point;
+    pcl::PointXYZ point;
     point.x = *px;
     point.y = *py;
     point.z = *pz;
-    point.intensity = (*pr) * 255;
+    // point.intensity = (*pr) * 255;
     point_cloud->points.push_back(point);
     px += 4;
     py += 4;

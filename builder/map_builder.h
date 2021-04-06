@@ -43,6 +43,7 @@
 
 // local headers
 #include <boost/optional.hpp>
+
 #include "back_end/options.h"
 #include "builder/map_package.h"
 #include "builder/multi_resolution_voxel_map.h"
@@ -129,7 +130,7 @@ class MapBuilder {
 
   // type define
   // point and cloud definitions
-  using PointType = pcl::PointXYZI;
+  using PointType = pcl::PointXYZ;
   using PointCloudType = pcl::PointCloud<PointType>;
   using PointCloudPtr = PointCloudType::Ptr;
   using PointCloudConstPtr = PointCloudType::ConstPtr;
