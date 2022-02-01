@@ -8,7 +8,7 @@ function(add_boost_test test_name)
     ${PROJECT_NAME}_test_helper
     ${GeographicLib_LIBRARIES} 
     glog)
-  target_link_libraries(${test_name} ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY})
+  target_link_libraries(${test_name} ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY} boost_thread)
   add_test(NAME ${test_name} COMMAND ${test_name})
 endfunction()
 

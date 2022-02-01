@@ -3,7 +3,7 @@ function(add_boost_test test_name)
   target_include_directories(${test_name} PRIVATE ${Boost_INCLUDE_DIRS})
   target_compile_definitions(${test_name} PRIVATE "BOOST_TEST_DYN_LINK=1")
   target_link_libraries(${test_name} ${PROJECT_NAME}_common glog)
-  target_link_libraries(${test_name} ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY})
+  target_link_libraries(${test_name} ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY} boost_thread)
   add_test(NAME ${test_name} COMMAND ${test_name})
 endfunction()
 
