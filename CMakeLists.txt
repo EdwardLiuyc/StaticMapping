@@ -107,23 +107,7 @@ message( STATUS
 find_package(libpointmatcher REQUIRED)
 include_directories(${libpointmatcher_INCLUDE_DIRS})
 list(APPEND require_libs ${libpointmatcher_LIBRARIES})
-#### ceres ####
-# find_package(Ceres REQUIRED)
-# include_directories(${CERES_INCLUDE_DIR})
-# list(APPEND require_libs ceres)
-
-# option(USE_OPENVDB "Use Openvdb?" OFF)
-# if(USE_OPENVDB)
-#   find_package(OpenVDB)
-#   if(OpenVDB_FOUND)
-#     message(STATUS "OpenVDB Found.")
-#     include_directories(${OpenVDB_INCLUDE_DIR})
-#     link_directories(${OpenVDB_LIBRARY_DIR})
-#     link_libraries(${OpenVDB_LIBRARIES})
-#     add_definitions(-D_USE_OPENVDB_)
-#   endif(OpenVDB_FOUND)
-# endif(USE_OPENVDB)
-
+#### tbb ####
 find_package(TBB REQUIRED)
 message(STATUS "TBB version: ${TBB_INTERFACE_VERSION}")
 include_directories(${TBB_INCLUDE_DIRS})
@@ -159,6 +143,11 @@ if(ENABLE_TEST)
 
   add_subdirectory(test)
 endif(ENABLE_TEST)
+
+option(ENABLE_EXAMPLE "" ON)
+if(ENABLE_EXAMPLE)
+  message(SATUS "Enable building examples")
+endif(ENABLE_EXAMPLE)
 
 #######################################################
 ###  Source files

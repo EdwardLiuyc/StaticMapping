@@ -166,7 +166,6 @@ You can use `doxygen Doxyfile` to generate your docs, they are in the `doc` fold
 # TODO
 - **Loop Close factor should be rubust**
 - interface with datasets
-- fix tbb warning when compiling in ubuntu focal
 - fix compile warning in ubuntu xenial
 - compare IcpUsingPointMatcher & IcpFast -> what's the exact difference.
 - some examples for ground removal2
