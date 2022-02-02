@@ -1,0 +1,1 @@
+add_executable(atomic_wrapper_example atomic_wrapper_example.cc)

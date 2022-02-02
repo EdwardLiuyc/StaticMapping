@@ -90,6 +90,8 @@ void MultiResolutionVoxelMap::InsertPointCloud(
 
       auto& voxel = high_resolution_voxels_[high_end_index];
       auto& prob = voxel.probability;
+      // TODO(edward) actually this compare and store is not atomic operaion.
+      // Try to find another way to achieve this.
       if (static_cast<int>(point.intensity) >
           static_cast<int>(voxel.max_intensity)) {
         voxel.max_intensity = static_cast<int>(point.intensity);

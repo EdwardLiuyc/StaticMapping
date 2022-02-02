@@ -31,6 +31,7 @@
 #include <vector>
 // third party
 #include "builder/data/cloud_types.h"
+#include "common/atomic_wrapper.h"
 #include "common/eigen_hash.h"
 #include "common/macro_defines.h"
 #include "common/math.h"
@@ -38,7 +39,6 @@
 #include "pcl/io/pcd_io.h"
 #include "pcl/point_cloud.h"
 #include "pcl/point_types.h"
-#include "tbb/atomic.h"
 #include "tbb/concurrent_unordered_map.h"
 #include "tbb/concurrent_vector.h"
 
@@ -76,8 +76,10 @@ class MultiResolutionVoxelMap {
   // @notice use int but not bool because atomic<bool> is not supported in tbb
   // so, use kTure(int 1) instead of true
   // as long as using kFalse(int 0) instead of false
-  using AtomicBool = tbb::atomic<int>;
-  using AtomicInt = tbb::atomic<int>;
+  // TODO(edward) now we use std::atomic instead which supports bool, so we
+  // should use AtomicWrapper<bool> directly.
+  using AtomicBool = common::AtomicWrapper<int8_t>;
+  using AtomicInt = common::AtomicWrapper<int32_t>;
   template <typename T>
   using VoxelMap =
       tbb::concurrent_unordered_map<KeyInt3, T, std::hash<KeyInt3>>;
