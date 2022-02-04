@@ -29,7 +29,7 @@ using static_map::common::AtomicWrapper;
 
 int main() {
   AtomicWrapper<int32_t> atomic_int(0);
-  std::atomic_int32_t std_atomic_int(0);
+  std::atomic<int32_t> std_atomic_int(0);
 
   std::thread t1([&]() -> void {
     for (int i = 0; i < 1000000; ++i) {
