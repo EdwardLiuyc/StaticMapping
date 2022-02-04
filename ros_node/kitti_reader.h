@@ -28,6 +28,7 @@
 #include <pcl_conversions/pcl_conversions.h>
 
 #include <string>
+#include <vector>
 
 #include "builder/map_builder.h"
 
@@ -42,8 +43,13 @@ class KittiReader {
 
   MapBuilder::PointCloudPtr ReadFromBin(const int index);
 
+  MapBuilder::PointCloudPtr ReadNext();
+
  private:
   std::string point_cloud_data_path_;
+
+  uint32_t current_index_;
+  std::vector<std::string> files_;
 };
 
 }  // namespace static_map
