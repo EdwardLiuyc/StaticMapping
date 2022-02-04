@@ -23,8 +23,10 @@
 
 #include "common/file_utils.h"
 
-#include <sys/stat.h>
-#include <boost/filesystem.hpp>
+#include <vector>
+
+#include "boost/filesystem.hpp"
+#include "sys/stat.h"
 
 namespace static_map {
 namespace common {
@@ -53,6 +55,23 @@ bool CreateDir(const std::string& path) {
     return true;
   }
   return boost::filesystem::create_directories(path_without_slash);
+}
+
+std::vector<std::string> ListFilesInPath(const std::string& path) {
+  if (!boost::filesystem::is_directory(path)) {
+    return {};
+  }
+
+  boost::filesystem::path p(path);
+  boost::filesystem::directory_iterator end_itr;
+
+  std::vector<std::string> filenames;
+  for (boost::filesystem::directory_iterator itr(p); itr != end_itr; ++itr) {
+    if (is_regular_file(itr->path())) {
+      filenames.push_back(itr->path().string());
+    }
+  }
+  return filenames;
 }
 
 }  // namespace common

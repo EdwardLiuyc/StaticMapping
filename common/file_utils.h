@@ -24,7 +24,9 @@
 #define COMMON_FILE_UTILS_H_
 
 #include <unistd.h>
+
 #include <string>
+#include <vector>
 
 namespace static_map {
 namespace common {
@@ -38,6 +40,10 @@ std::string FilePath(const std::string& file);
 /// @brief Create a new path recursively. return true if succeed of already
 /// existed.
 bool CreateDir(const std::string& path);
+
+/// @brief List all files in given path into a vector. Please notice that files
+/// are not sorted.
+std::vector<std::string> ListFilesInPath(const std::string& path);
 
 }  // namespace common
 }  // namespace static_map

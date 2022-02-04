@@ -75,27 +75,20 @@ Of course this 'untwisting' only works for non-dynamic environments.
 
 */
 
+#include "ros_node/kitti_reader.h"
+
 #include <glog/logging.h>
 #include <unistd.h>
 
+#include <algorithm>
+
 #include "common/file_utils.h"
-#include "ros_node/kitti_reader.h"
 
 namespace static_map {
-
-void KittiReader::SetPointCloudDataPath(const std::string &path) {
-  point_cloud_data_path_ = path;
-  CHECK(common::FileExist(point_cloud_data_path_));
-}
-
-MapBuilder::PointCloudPtr KittiReader::ReadFromBin(const int index) {
-  char filename[256] = {0};
-  snprintf(filename, sizeof(filename), "%s/%06d.bin",
-           point_cloud_data_path_.c_str(), index);
-  if (!common::FileExist(filename)) {
-    return nullptr;
-  }
-
+namespace {
+// File existing check should be done before calling this function. We will NOT
+// perform any check on this filename in this function.
+MapBuilder::PointCloudPtr ReadFromFile(const char *filename) {
   // allocate 4 MB buffer (only ~130*4*4 KB are needed)
   int32_t num = 1000000;
   float *data = reinterpret_cast<float *>(malloc(num * sizeof(float)));
@@ -127,5 +120,31 @@ MapBuilder::PointCloudPtr KittiReader::ReadFromBin(const int index) {
   fclose(stream);
   return point_cloud;
 }
+}  // namespace
 
+void KittiReader::SetPointCloudDataPath(const std::string &path) {
+  point_cloud_data_path_ = path;
+  CHECK(common::FileExist(point_cloud_data_path_));
+
+  files_ = common::ListFilesInPath(path);
+  std::sort(files_.begin(), files_.end());
+  current_index_ = 0u;
+}
+
+MapBuilder::PointCloudPtr KittiReader::ReadFromBin(const int index) {
+  char filename[256] = {0};
+  snprintf(filename, sizeof(filename), "%s/%010d.bin",
+           point_cloud_data_path_.c_str(), index);
+  if (!common::FileExist(filename)) {
+    return nullptr;
+  }
+  return ReadFromFile(filename);
+}
+
+MapBuilder::PointCloudPtr KittiReader::ReadNext() {
+  if (current_index_ < files_.size()) {
+    return ReadFromFile(files_.at(current_index_++).c_str());
+  }
+  return nullptr;
+}
 }  // namespace static_map

@@ -34,6 +34,7 @@
 #include <visualization_msgs/Marker.h>
 // stl
 #include <unistd.h>
+
 #include <sstream>
 // local
 #include "builder/map_builder.h"
@@ -433,7 +434,7 @@ int main(int argc, char** argv) {
     kitti_reader.SetPointCloudDataPath(kitti_path);
     int index = 0;
     while (true && ros::ok()) {
-      MapBuilder::PointCloudPtr point_cloud = kitti_reader.ReadFromBin(index);
+      MapBuilder::PointCloudPtr point_cloud = kitti_reader.ReadNext();
       if (point_cloud && !point_cloud->empty()) {
         // LOG(ERROR) << point_cloud->size();
         point_cloud->header.frame_id = cloud_frame_id;
