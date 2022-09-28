@@ -13,7 +13,7 @@ echo "Jobs: $Jobs";
 set -o errexit
 set -o verbose
 
-git clone https://github.com.cnpmjs.org/borglab/gtsam.git
+git clone https://github.com/borglab/gtsam.git
 cd gtsam
 git checkout tags/4.0.3
 mkdir build && cd build

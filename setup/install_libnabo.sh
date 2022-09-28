@@ -13,7 +13,7 @@ echo "Jobs: $Jobs";
 set -o errexit
 set -o verbose
 
-git clone https://github.com.cnpmjs.org/ethz-asl/libnabo.git
+git clone https://github.com/ethz-asl/libnabo.git
 cd libnabo
 git checkout tags/1.0.7
 mkdir build && cd build
